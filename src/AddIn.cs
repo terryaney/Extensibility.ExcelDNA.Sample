@@ -5,8 +5,11 @@ namespace KAT.Extensibility.Excel.AddIn;
 
 public class AddIn : IExcelAddIn
 {
+	internal static string XllPath = null!;
+
 	public void AutoOpen()
 	{
+		XllPath = Path.GetDirectoryName( (string)XlCall.Excel( XlCall.xlGetName ) )!;
 		RegisterFunctions();
 	}
 

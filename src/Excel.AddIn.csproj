@@ -19,6 +19,7 @@
         <ExcelAddInComServer>true</ExcelAddInComServer>
 		<ExcelAddInName>KAT Tools</ExcelAddInName>
 		<ExcelAddInFileName>KAT.Extensibility</ExcelAddInFileName>
+		<ExcelDnaPublishPath>packed</ExcelDnaPublishPath>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -30,4 +31,10 @@
 	  <PackageReference Include="ExcelDna.IntelliSense" Version="1.8.0-alpha2" />
 	  <PackageReference Include="ExcelDna.Registration" Version="1.8.0-alpha2" />
 	</ItemGroup>
-</Project>
+
+	<ItemGroup>
+		<Reference Include="KAT.Camelot.RBLe.Lookups">
+		  <HintPath>..\..\..\..\Camelot\Assemblies\KAT.Camelot.RBLe.Lookups.dll</HintPath>
+		</Reference>
+	  </ItemGroup>
+	</Project>
