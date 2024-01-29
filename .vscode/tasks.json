@@ -1,0 +1,104 @@
+{
+    "version": "2.0.0",
+	"inputs": [
+		{
+			"id": "versionType",
+			"type": "pickString",
+			"description": "Select a versioning type",
+			"options": [
+			  "major",
+			  "minor",
+			  "git commit"
+			],
+			"default": "git commit"
+		},
+		{
+			"id": "buildType",
+			"type": "pickString",
+			"description": "Select the build configuration",
+			"options": [
+			  "Debug",
+			  "Release"
+			]
+		}
+	],
+    "tasks": [
+		{
+			"label": "version Excel Add-In",
+			"command": "lprun.exe",
+			"type": "process",
+			"args": [
+				"${config:tasks.buildEventsScript}",
+				"ProjectFile:${config:tasks.projectFile}",
+				"Command:version.${input:versionType}"
+			],
+			"presentation": {
+				"clear": true,
+				"echo": false,
+				"showReuseMessage": false
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "build Excel Add-In",
+			"dependsOn": [
+				"build - MSBuild",
+				"build - post"
+			],
+			"dependsOrder": "sequence",
+			"problemMatcher": []
+		},
+		{
+			"label": "build - MSBuild",
+			"hide": true,
+			"isBuildCommand": true,
+			"command": "dotnet",
+			"type": "process",
+			"args": [
+				"build", "${config:tasks.projectFile}",
+				"-c", "${input:buildType}",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"presentation": {
+				"clear": true,
+				"echo": false,
+				"showReuseMessage": false
+			},
+			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "build - post",
+			"command": "lprun.exe",
+			"type": "process",
+			"presentation": {
+				"echo": false,
+				"showReuseMessage": false
+			},
+			"hide": true,
+			"args": [
+				"${config:tasks.buildEventsScript}",
+				"ProjectFile:${config:tasks.projectFile}",
+				"Command:post.build",
+				"ConfigurationName:${input:buildType}"
+			],
+			"problemMatcher": []
+		},
+		{
+			"label": "debug",
+			"hide": true,
+			"command": "dotnet",
+			"type": "process",
+			"presentation": {
+				"clear": true
+			},
+			"args": [
+				"build",
+				"${config:tasks.projectFile}",
+				"/property:GenerateFullPaths=true",
+				"/consoleloggerparameters:NoSummary"
+			],
+			"problemMatcher": "$msCompile"
+		}
+    ]
+}

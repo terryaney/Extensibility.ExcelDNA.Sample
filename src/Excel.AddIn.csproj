@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net7.0-windows</TargetFramework>
+		<UseWindowsForms>true</UseWindowsForms>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<RootNamespace>KAT.Extensibility.Excel.AddIn</RootNamespace>
+		<AssemblyName>KAT.Extensibility.Excel.AddIn</AssemblyName>
+		<KATVersionPrefix>1.0.*</KATVersionPrefix>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<ExcelDna32BitAddInSuffix>.x86</ExcelDna32BitAddInSuffix>
+		<ExcelDna64BitAddInSuffix>%none%</ExcelDna64BitAddInSuffix>
+		<ExcelDnaPackXllSuffix>%none%</ExcelDnaPackXllSuffix>
+        <ExcelAddInExplicitExports>true</ExcelAddInExplicitExports>
+        <ExcelAddInExplicitRegistration>true</ExcelAddInExplicitRegistration>
+        <ExcelAddInComServer>true</ExcelAddInComServer>
+		<ExcelAddInName>KAT Tools</ExcelAddInName>
+		<ExcelAddInFileName>KAT.Extensibility</ExcelAddInFileName>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="Resources\Ribbon.xml" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="ExcelDna.AddIn" Version="1.8.0-alpha2" />
+	  <PackageReference Include="ExcelDna.IntelliSense" Version="1.8.0-alpha2" />
+	  <PackageReference Include="ExcelDna.Registration" Version="1.8.0-alpha2" />
+	</ItemGroup>
+</Project>

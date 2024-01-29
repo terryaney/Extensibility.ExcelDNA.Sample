@@ -1,0 +1,11 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+	<ribbon>
+		<tabs>
+			<tab id="tab1" label="KAT Tools">
+				<group id="group1" label="My Group">
+					<button id="button1" label="My Button" onAction="OnButtonPressed"/>
+				</group >
+			</tab>
+		</tabs>
+	</ribbon>
+</customUI>

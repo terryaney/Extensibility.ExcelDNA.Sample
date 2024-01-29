@@ -1,0 +1,7 @@
+{
+	"tasks.buildEventsScript": "..\\..\\Build.Scripts\\Build.Events.linq",
+	"tasks.projectFile": "${workspaceFolder}\\src\\Excel.AddIn.csproj",
+	"explorer.fileNesting.patterns": {
+		"*.cs": "${capture}.*.cs"
+	}
+}
