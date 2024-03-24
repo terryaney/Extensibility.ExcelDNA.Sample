@@ -10,6 +10,8 @@ public class AddIn : IExcelAddIn
 	public void AutoOpen()
 	{
 		XllPath = Path.GetDirectoryName( (string)XlCall.Excel( XlCall.xlGetName ) )!;
+		
+		// TODO: Why am I using this via ExcelAddInExplicitRegistration instead of automatic?
 		RegisterFunctions();
 	}
 

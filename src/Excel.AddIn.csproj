@@ -11,12 +11,17 @@
 	</PropertyGroup>
 
 	<PropertyGroup>
+		<!-- 
+			ExcelDna Settings
+			https://excel-dna.net/docs/guides-basic/sdk-style-project-properties/
+			https://github.com/Excel-DNA/ExcelDna/blob/master/Source/Tests/ExcelDna.AddIn.Tasks.IntegrationTests.TestTarget/SDKProperties/SDKProperties.csproj
+		-->
 		<ExcelDna32BitAddInSuffix>.x86</ExcelDna32BitAddInSuffix>
 		<ExcelDna64BitAddInSuffix>%none%</ExcelDna64BitAddInSuffix>
 		<ExcelDnaPackXllSuffix>%none%</ExcelDnaPackXllSuffix>
-        <ExcelAddInExplicitExports>true</ExcelAddInExplicitExports>
-        <ExcelAddInExplicitRegistration>true</ExcelAddInExplicitRegistration>
-        <ExcelAddInComServer>true</ExcelAddInComServer>
+		<ExcelAddInExplicitExports>true</ExcelAddInExplicitExports>
+		<ExcelAddInExplicitRegistration>true</ExcelAddInExplicitRegistration>
+		<ExcelAddInComServer>true</ExcelAddInComServer>
 		<ExcelAddInName>KAT Tools</ExcelAddInName>
 		<ExcelAddInFileName>KAT.Extensibility</ExcelAddInFileName>
 		<ExcelDnaPublishPath>packed</ExcelDnaPublishPath>
@@ -24,17 +29,18 @@
 
 	<ItemGroup>
 		<EmbeddedResource Include="Resources\Ribbon.xml" />
+		<EmbeddedResource Include="Resources\ShowScriptBlockMark.png" />
 	</ItemGroup>
 
 	<ItemGroup>
-	  <PackageReference Include="ExcelDna.AddIn" Version="1.8.0-alpha2" />
-	  <PackageReference Include="ExcelDna.IntelliSense" Version="1.8.0-alpha2" />
-	  <PackageReference Include="ExcelDna.Registration" Version="1.8.0-alpha2" />
+		<PackageReference Include="ExcelDna.AddIn" Version="1.8.0-alpha2" />
+		<PackageReference Include="ExcelDna.IntelliSense" Version="1.8.0-alpha2" />
+		<PackageReference Include="ExcelDna.Registration" Version="1.8.0-alpha2" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<Reference Include="KAT.Camelot.RBLe.Lookups">
-		  <HintPath>..\..\..\..\Camelot\Assemblies\KAT.Camelot.RBLe.Lookups.dll</HintPath>
+			<HintPath>..\..\..\..\Camelot\Assemblies\KAT.Camelot.RBLe.Lookups.dll</HintPath>
 		</Reference>
-	  </ItemGroup>
-	</Project>
+	</ItemGroup>
+</Project>

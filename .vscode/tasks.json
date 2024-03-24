@@ -2,6 +2,14 @@
     "version": "2.0.0",
 	"inputs": [
 		{
+			"id": "projectFile",
+			"type": "command",
+			"command": "extension.commandvariable.transform",
+			"args": {
+				"text": "${workspaceFolder}\\src\\Excel.AddIn.csproj"
+			}
+		},
+		{
 			"id": "versionType",
 			"type": "pickString",
 			"description": "Select a versioning type",
@@ -28,8 +36,8 @@
 			"command": "lprun.exe",
 			"type": "process",
 			"args": [
-				"${config:tasks.buildEventsScript}",
-				"ProjectFile:${config:tasks.projectFile}",
+				"${config:kat.tasks.buildEventsScript}",
+				"ProjectFile:${input:projectFile}",
 				"Command:version.${input:versionType}"
 			],
 			"presentation": {
@@ -55,7 +63,7 @@
 			"command": "dotnet",
 			"type": "process",
 			"args": [
-				"build", "${config:tasks.projectFile}",
+				"build", "${input:projectFile}",
 				"-c", "${input:buildType}",
 				"/property:GenerateFullPaths=true",
 				"/consoleloggerparameters:NoSummary"
@@ -77,8 +85,8 @@
 			},
 			"hide": true,
 			"args": [
-				"${config:tasks.buildEventsScript}",
-				"ProjectFile:${config:tasks.projectFile}",
+				"${config:kat.tasks.buildEventsScript}",
+				"ProjectFile:${input:projectFile}",
 				"Command:post.build",
 				"ConfigurationName:${input:buildType}"
 			],
@@ -94,7 +102,7 @@
 			},
 			"args": [
 				"build",
-				"${config:tasks.projectFile}",
+				"${input:projectFile}",
 				"/property:GenerateFullPaths=true",
 				"/consoleloggerparameters:NoSummary"
 			],
