@@ -5,7 +5,7 @@ An Excel-DNA add-in for the KAT teams that uses many of the features provided by
 ## TODO
 
 1. Implement ribbon 'state'
-	1. Get 'State Coded'
+	1. Get 'State event handlers' coded
 	1. Ribbon_GetContent - is hacked to get it working
 1. Implement Ribbon handlers
 	1. exportMappedxDSData - Rename this better after you figure out what it is doing
