@@ -13,6 +13,7 @@ public partial class Ribbon
 		// to re-evaluate, but that could be expensive, so for now, not doing it, the function log display
 		// is just helpful information for CalcEngine developer to 'clean' up their formulas.
 		auditShowLogBadgeCount = 0;
+		cellsInError.Clear();
 		ExcelDna.Logging.LogDisplay.Clear();
 	}
 

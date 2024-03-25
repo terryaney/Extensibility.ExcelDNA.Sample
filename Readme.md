@@ -5,8 +5,6 @@ An Excel-DNA add-in for the KAT teams that uses many of the features provided by
 ## TODO
 
 1. Implement ribbon 'state'
-	1. Get 'app settings' working, note: AddInSettings don't work in debug mode :(
-		1. https://excel-dna.net/docs/guides-advanced/user-settings-and-the-xllconfig-file
 	1. Get 'State Coded'
 	1. Ribbon_GetContent - is hacked to get it working
 1. Implement Ribbon handlers
@@ -104,11 +102,11 @@ The use of the `IRibbonUI` in the KAT Tools add-in is quite extensive.  There is
 1. **Helpful Documenation Links**
 	1. [CustomUI Reference](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-customui/31f152d6-2a5d-4b50-a867-9dbc6d01aa43)
 	1. [imageMso Reference](https://codekabinett.com/download/Microsoft-Office-2016_365-imageMso-Gallery.pdf)
-1. **Sheer Amount of Code**
-	1. Given the amount of methods I had to implement to provide all the required functionality, the lines of code became quite overwhelming (at least given the way I organized the code).  To help alleviate this, I used [partial classes](https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/partial-classes-and-methods#partial-classes) just as an organizational tool.  This made it easier to find and maintain the code for me.  Additionally, to make this separation easier to manage in the (Solution) Explorer side bar, I would suggest to enable file nesting.<sup>1</sup>
-	1. I also used method prefixes that matched the CustomUI `group.id` as well to make code navigation easier (via `CTRL+T` keyboard shortcut).  For example, for my group with an `id` of `Navigation`, the methods all have the prefix `Navigation_`.
 
-<sup>1</sup> To enable file nesting in Visual Studio Code, add the following to your `settings.json` file:
+
+**Sheer Amount of Code**
+
+Given the amount of methods I had to implement to provide all the required functionality, the lines of code became quite overwhelming (at least given the way I organized the code).  To help alleviate this, I used [partial classes](https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/partial-classes-and-methods#partial-classes) just as an organizational tool.  This made it easier to find and maintain the code for me.  Additionally, to make this separation easier to manage in the (Solution) Explorer side bar, I would suggest to enable file nesting.  To enable file nesting in Visual Studio Code, add the following to your `settings.json` file:
 
 ```json
 {
@@ -117,6 +115,9 @@ The use of the `IRibbonUI` in the KAT Tools add-in is quite extensive.  There is
 	}
 }
 ```
+
+I also used method prefixes that matched the CustomUI `group.id` as well to make code navigation easier (via `CTRL+T` keyboard shortcut).  For example, for my group with an `id` of `Navigation`, the methods all have the prefix `Navigation_`.
+
 
 ### ExcelIntegration.RegisterUnhandledExceptionHandler
 
@@ -172,6 +173,7 @@ private void Application_WorkbookOpen( MSExcel.Workbook Wb )
 	// to re-evaluate, but that could be expensive, so for now, not doing it, the function log display
 	// is just helpful information for CalcEngine developer to 'clean' up their formulas.
 	auditShowLogBadgeCount = 0;
+	cellsInError.Clear();
 	ExcelDna.Logging.LogDisplay.Clear();
 }
 
