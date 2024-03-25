@@ -1,6 +1,6 @@
 # Excel-DNA Add-In
 
-An Excel-DNA add-in for Excel demonstrates many of the features provided by Excel-DNA along with how I overcame many, not so obvious, obstacles.
+An Excel-DNA add-in for the KAT teams that uses many of the features provided by Excel-DNA along with how I overcame many, not so obvious, obstacles.
 
 ## TODO
 
@@ -253,5 +253,3 @@ public static class ExcelApi
 	}
 }
 ```
-
-https://groups.google.com/d/msg/exceldna/cHD8Tx56Msg/MdPa2PR13hkJ
