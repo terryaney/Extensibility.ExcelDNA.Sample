@@ -4,6 +4,11 @@ namespace KAT.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
+	public void Navigation_NavigateToTable( IRibbonControl control )
+	{
+		MessageBox.Show( "// TODO: Process " + control.Id );
+	}
+	
 	public void Navigation_GoToInputs( IRibbonControl control )
 	{
 		MessageBox.Show( "// TODO: Process " + control.Id );

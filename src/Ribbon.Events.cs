@@ -5,16 +5,7 @@ namespace KAT.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
-	// Need reference to IRibbonUI so I can change the enable/disable state of buttons and 
-	// dynmically update the ribbon (i.e. debug CalcEngine dropdown).
-	private IRibbonUI ribbon = null!;
-
-	public void ribbon_OnLoad( IRibbonUI ribbon )
-	{
-		this.ribbon = ribbon;
-	}
-
-	public bool ribbon_GetVisible( IRibbonControl control )
+	public bool Ribbon_GetVisible( IRibbonControl control )
 	{
 		switch ( control.Id )
 		{
@@ -22,7 +13,7 @@ public partial class Ribbon
 		}
 	}
 
-	public bool ribbon_GetEnabled( IRibbonControl control )
+	public bool Ribbon_GetEnabled( IRibbonControl control )
 	{
 		switch ( control.Id )
 		{
@@ -30,7 +21,7 @@ public partial class Ribbon
 		}
 	}
 
-	public string? ribbon_GetScreentip( IRibbonControl control )
+	public string? Ribbon_GetScreentip( IRibbonControl control )
 	{
 		switch ( control.Id )
 		{
@@ -38,7 +29,7 @@ public partial class Ribbon
 		}
 	}
 
-	public string? ribbon_GetContent( IRibbonControl control )
+	public string? Ribbon_GetContent( IRibbonControl control )
 	{
 		switch ( control.Id )
 		{
@@ -101,15 +92,19 @@ public partial class Ribbon
 	}
 
 	private int auditShowLogBadgeCount;
-	public Bitmap ribbon_GetImage( IRibbonControl control )
+	public Bitmap Ribbon_GetImage( IRibbonControl control )
 	{
 		switch ( control.Id )
 		{
 			case "auditShowLog":
 			{
+				using var ms = new MemoryStream( auditShowLogImage );
+
+				var img = System.Drawing.Image.FromStream( ms );
+
 				if ( auditShowLogBadgeCount > 0 )
 				{
-					var flagGraphics = Graphics.FromImage( auditShowLogImage );
+					var flagGraphics = Graphics.FromImage( img );
 					flagGraphics.FillEllipse(
 						new SolidBrush( Color.FromArgb( 242, 60, 42 ) ),
 						new Rectangle( 11, 0, 19, 19 )
@@ -123,11 +118,10 @@ public partial class Ribbon
 					);
 				}
 
-				return (Bitmap)auditShowLogImage;
+				return (Bitmap)img;
 			}
 
 			default: throw new ArgumentOutOfRangeException( nameof( control.Id ), $"The id {control.Id} does not support custom image generation." );
 		}
-
 	}
 }

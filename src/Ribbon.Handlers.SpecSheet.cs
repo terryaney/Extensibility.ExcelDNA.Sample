@@ -6,6 +6,7 @@ public partial class Ribbon
 {
 	public void SpecSheet_ExportConfigurations( IRibbonControl control )
 	{
+		throw new NotImplementedException( "Not implemented yet." );
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 

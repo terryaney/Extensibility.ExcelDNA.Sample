@@ -9,9 +9,11 @@ public partial class Ribbon
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public void RBLe_ShowLog( IRibbonControl control )
+	public void RBLe_ShowLog( IRibbonControl? _ )
 	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
+		ExcelDna.Logging.LogDisplay.Show();
+		auditShowLogBadgeCount = 0;
+		ribbon.InvalidateControl( "auditShowLog" );
 	}
 
 	public void RBLe_OpenHelp( IRibbonControl control )
