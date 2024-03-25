@@ -13,6 +13,7 @@ An Excel-DNA add-in for the KAT teams that uses many of the features provided by
 	1. exportMappedxDSData - Rename this better after you figure out what it is doing
 	1. [Using Windows Forms](https://groups.google.com/g/exceldna/c/84IIhcdAPRk/m/8cRtFOvvAAAJ)	
 1. [Custom Intellisense/Help Info](https://github.com/Excel-DNA/IntelliSense/issues/21) - read this and linked topic to see what's possible
+	1. https://github.com/Excel-DNA/Tutorials/blob/master/SpecialTopics/IntelliSenseForVBAFunctions/README.md
 1. [Path of Xll](https://groups.google.com/g/exceldna/c/1rScvDdeVOk) - `XlCall.Excel( XlCall.xlGetName )` to get the name of the add-in
 1. [Possible Async Information](https://github.com/Excel-DNA/Samples/blob/master/Registration.Sample/AsyncFunctionExamples.cs)
 	1. https://excel-dna.net/docs/guides-advanced/performing-asynchronous-work
@@ -20,12 +21,14 @@ An Excel-DNA add-in for the KAT teams that uses many of the features provided by
 	1. Excel-DNA/Samples/Archive/Async/NativeAsyncCancellation.dna
 1. BTR* functions...
 	1. https://excel-dna.net/docs/guides-advanced/dynamic-delegate-registration - possible dynamic creation instead of having to create functions for each item and passing through?  Reference the SSG assembly detect custom functions.
-
 1. Look for email/thread about excel not shutting down properly
 
 ## Development Environment
 
 All the Excel-DNA samples seem to make the assumption that Visual Studio will be the IDE of choice.  I prefer to use Visual Studio Code.  This section will describe how I set up my development environment to work with Excel-DNA.
+
+
+### launch.json/tasks.json Configuration To Enable Debugging
 
 **launch.json**
 
@@ -38,6 +41,9 @@ All the Excel-DNA samples seem to make the assumption that Visual Studio will be
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "debug",
+            "logging": {
+                "moduleLoad": false
+            },
             "program": "C:\\Program Files\\Microsoft Office\\root\\Office16\\EXCEL.EXE",
             "args": ["/x", "${workspaceFolder}\\src\\bin\\Debug\\net7.0-windows\\KAT.Extensibility.xll"],
             "cwd": "${workspaceFolder}\\src\\bin\\Debug\\net7.0-windows",
@@ -71,6 +77,21 @@ All the Excel-DNA samples seem to make the assumption that Visual Studio will be
 			"problemMatcher": "$msCompile"
 		}
     ]
+}
+```
+
+### Intellisense in Ribbon.xml
+
+My add-in has a CustomUI ribbon and to enable intellisense in the `Ribbon.xml` file, I had to add the following to the `settings.json` file:
+
+```json
+{
+	"xml.fileAssociations": [
+		{
+			"pattern": "Ribbon.xml",
+			"systemId": "https://raw.githubusercontent.com/Excel-DNA/ExcelDna/master/Distribution/XmlSchemas/customUI.xsd"
+		}
+	]
 }
 ```
 
@@ -250,6 +271,188 @@ public static class ExcelApi
 		{
 			throw new ApplicationException( $"GetAddress failed.  reference.RowFirst:{reference?.RowFirst}, reference.RowLast:{reference?.RowLast}, reference.ColumnFirst:{reference?.ColumnFirst}, reference.ColumnLast:{reference?.ColumnLast}", ex );
 		}
+	}
+}
+```
+
+### appsettings.json Support
+
+The KAT add-in requires support for user settings and the most convenient way to provide that functionality was simply by leveraging an `appsettings.json` file.  In the previous .NET Framework version, I used an `app.config` file which was distributed as `*.xll.config` and `*64.xll.config`.
+
+To enable this support:
+
+1. Output the `appsettings.json` file to the output directory during build so that it could be used during debugging.  Not displayed here, but additionally, a default `appsettings.json` file is included in the project distribution, but is based on whatever mechanism you choose to distribute your add-in.
+1. Read and monitor the `appsettings.json` file for changes.
+1. Access settings throughout the add-in.
+
+#### Output `appsettings.json` File
+
+Simply add the following to the `.csproj` file and the `appsettings.json` file will be copied to the output directory during build.
+
+```xml
+<ItemGroup>
+	<Content Include="appsettings.json">
+		<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	</Content>
+</ItemGroup>
+```
+
+#### Read and Monitor `appsettings.json` File
+
+This was probably the trickiest part of the process.  As Excel-DNA documentation has stated, it does not want to include Dependency Injection into the project.  This means that the `IConfiguration` interface is not available by default.  To get around this, I used the `Microsoft.Extensions.Configuration` package (and couple others) to read the `appsettings.json` file directly.  This strongly typed settings class is a singleton and is accessed throughout the add-in via `AddIn.Settings`.
+
+To monitor for changes (since `IOptionsSnapshot<T>` pattern is not available), I used a `FileSystemWatcher` to monitor the `appsettings.json` file for changes.  When a change is detected, the settings are reloaded (with a little protection against multiple notifications).  
+
+Below I will demonstrate what is needed to wire this all together.
+
+1. The *.csproj file needs to include the following package references:
+
+```xml
+<PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
+<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="7.0.0" />
+<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
+```
+
+2.  For this documentation, assume the AddInSettings class simply has a single property.
+
+```csharp
+public class AddInSettings
+{
+	public bool ShowRibbon { get; init; }
+}
+```
+
+3. In `IExcelAddIn.AutoOpen`, leverage the `FileWatcherNotification` class to monitor the `appsettings.json` file for changes and when a change is detected, reload the settings and invalidate the ribbon (the first time through, the ribbon might not be ready, but when subsequent 'file/settings' updates occur, it will be ready).
+
+```csharp
+public class AddIn : IExcelAddIn
+{
+	internal static AddInSettings Settings = new();
+	private FileWatcherNotification settingsProcessor = null!;
+
+	public void AutoOpen()
+	{
+		settingsProcessor = new( 
+			notificationDelay: 300, 
+			path: Path.GetDirectoryName( (string)XlCall.Excel( XlCall.xlGetName ) )!, 
+			filter: "appsettings.json", 
+			action: e => {
+			try
+			{
+				IConfiguration configuration = new ConfigurationBuilder()
+					.AddJsonFile( e.FullPath, optional: true )
+					.Build();
+
+				Settings = configuration.GetSection( "AddInSettings" ).Get<AddInSettings>() ?? new();
+			}
+			catch ( Exception ex )
+			{
+				// TODO: Need to log this somewhere...event viewer via Logging?
+				Console.WriteLine( ex.ToString() );
+				Settings = new();
+			}
+
+			// On the manual .Change() method called after this constructor, the Ribbon might not yet be initialized
+			Ribbon.CurrentRibbon?.InvalidateSettings();
+		} );
+
+		settingsProcessor.Changed();
+	}
+}
+
+/// <summary>
+/// FileSystemWatcher notifications are capable of happening 'multiple' times for a single 'action'.  For example, if Notepad saves a file,
+/// you might not get a single 'Changed' event when everything is 'done', you might get multiple 'Changed' events.  Similarily, "when a file is 
+/// moved from one directory to another, several OnChanged and some OnCreated and OnDeleted events might be raised." (from MS Docs).  This class 
+/// mitigates that by having an internal timer that starts/restarts on each event.  So once the timer is created (first event), if no other events
+/// occur for notificationDelay milliseconds, then, and only then, is the event raised.
+/// </summary>
+/// <remarks>
+/// See https://asp-blogs.azurewebsites.net/ashben/31773 - see 'Events being raised multiple times'
+/// </remarks>
+public class FileWatcherNotification
+{
+	private readonly System.Timers.Timer timer;
+	private readonly FileSystemWatcher watcher;
+
+	private readonly string path;
+	private readonly string name;
+	private FileSystemEventArgs fileSystemEventArgs = null!;
+
+	public FileWatcherNotification( int notificationDelay, string path, string name, Action<FileSystemEventArgs> action )
+	{
+		watcher = new FileSystemWatcher( path, name ) { EnableRaisingEvents = true };
+		watcher.Changed += watcher_Changed;
+
+		timer = new( notificationDelay );
+		timer.Elapsed += ( sender, args ) =>
+		{
+			timer.Enabled = false;
+			action( fileSystemEventArgs );
+		};
+		this.path = path;
+		this.name = name;
+	}
+
+	private void watcher_Changed( object sender, FileSystemEventArgs e )
+	{
+		timer.Stop();
+		fileSystemEventArgs = e;
+		timer.Start();
+	}
+
+	public void Start() => timer.Start();
+	public void Stop() => timer.Stop();
+	public void Changed() => watcher_Changed( this, new FileSystemEventArgs( WatcherChangeTypes.Changed, path, name ) );
+}
+```
+
+#### Access Settings
+
+To access the settings, simply use `AddIn.Settings.*` properties when needed.  However, I had one property (the only one in this sample) that needed to update the ribbon immediately when the settings where changed.  The call in the previous sample code to `Ribbon.CurrentRibbon?.InvalidateSettings();` is what accomplishes this.
+
+** Ribbon.xml **
+```xml
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="Ribbon_OnLoad">
+	<ribbon startFromScratch="false">
+		<tabs>
+			<tab id="btrRBLe" keytip="K" label="KAT Tools" getVisible="Ribbon_GetVisible">
+				
+				<!-- All the group elements making up my ribbon omitted for brevity -->
+
+			</tab>
+		</tabs>
+	</ribbon>
+</customUI>
+```
+
+** Ribbon.cs **
+```csharp
+public partial class Ribbon : ExcelRibbon
+{
+	public static Ribbon CurrentRibbon { get; private set; } = null!;
+	private bool showRibbon;
+
+	public void Ribbon_OnLoad( IRibbonUI ribbon )
+	{
+		this.ribbon = ribbon;
+		showRibbon = AddIn.Settings.ShowRibbon;
+	}
+
+	public void InvalidateSettings()
+	{
+		// Store new setting and invalidate the ribbon
+		showRibbon = AddIn.Settings.ShowRibbon;
+		ribbon.InvalidateControl( "btrRBLe" );
+	}
+
+	public bool Ribbon_GetVisible( IRibbonControl control )
+	{
+		return control.Id switch
+		{
+			"btrRBLe" => showRibbon,
+			_ => true,
+		};
 	}
 }
 ```

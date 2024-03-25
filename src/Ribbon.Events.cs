@@ -7,10 +7,11 @@ public partial class Ribbon
 {
 	public bool Ribbon_GetVisible( IRibbonControl control )
 	{
-		switch ( control.Id )
+		return control.Id switch
 		{
-			default: return true;
-		}
+			"btrRBLe" => showRibbon,
+			_ => true,
+		};
 	}
 
 	public bool Ribbon_GetEnabled( IRibbonControl control )
@@ -35,16 +36,10 @@ public partial class Ribbon
 		{
 			case "debugCalcEngines":
 			{
-				// TODO: Need real settings
-				var historyAuthor = (string?)null; // AddInSettings.Settings?.HistoryAuthor;
+				var historyAuthor = AddIn.Settings.SaveHistory.Name;
 				if ( string.IsNullOrEmpty( historyAuthor ) )
 				{
 					historyAuthor = null;
-				}
-				if ( string.IsNullOrEmpty( historyAuthor ) && System.Diagnostics.Debugger.IsAttached )
-				{
-					// TODO: AddInSettings don't work in debug mode :(
-					historyAuthor = "terry.aney";
 				}
 				if ( historyAuthor == "thomas.aney" )
 				{
@@ -55,8 +50,8 @@ public partial class Ribbon
 					? $"btr.{historyAuthor!.Split( '.' )[ 1 ]}.{historyAuthor.Split( '.' )[ 0 ]}"
 					: $"conduent.{historyAuthor!.Split( '.' )[ 1 ]}.{historyAuthor.Split( '.' )[ 0 ]}";
 
-				var ceName = "Conduent_Nexgen_Home_SE.xlsm"; // workbookState.ManagementName;
-				var debugFiles = // LibraryHelpers.GetDebugCalcEngines( userDirectory, ceName );
+				var ceName = "Conduent_Nexgen_Home_SE.xlsm"; // TODO: workbookState.ManagementName;
+				var debugFiles = // TODO: LibraryHelpers.GetDebugCalcEngines( userDirectory, ceName );
 					Enumerable.Range( 0, 3 ).Select( i => new { Name = $"{Path.GetFileNameWithoutExtension( ceName )} Debug at {DateTime.Now.AddHours( -1 * ( i + 1 ) ):yyyy-MM-dd hh-mm-sstt} for 011391001.xlsm" } );
 
 				XNamespace ns = "http://schemas.microsoft.com/office/2009/07/customui";
@@ -84,8 +79,6 @@ public partial class Ribbon
 						);
 
 				return menu.ToString();
-
-				// foreach ( var c in ribbonStatesDebugCEs ) { ribbon.InvalidateControl( c ); }
 			}
 			default: return null;
 		}
@@ -121,7 +114,7 @@ public partial class Ribbon
 				return (Bitmap)img;
 			}
 
-			default: throw new ArgumentOutOfRangeException( nameof( control.Id ), $"The id {control.Id} does not support custom image generation." );
+			default: throw new ArgumentOutOfRangeException( nameof( control ), $"The id {control.Id} does not support custom image generation." );
 		}
 	}
 }

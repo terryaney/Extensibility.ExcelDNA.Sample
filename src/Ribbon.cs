@@ -25,12 +25,23 @@ public partial class Ribbon : ExcelRibbon
 	private IRibbonUI ribbon = null!;
 
 	private readonly byte[] auditShowLogImage;
-	private readonly bool enableAddIn;
+	private bool showRibbon;
 	private readonly MSExcel.Application application;
 
 	public static Ribbon CurrentRibbon { get; private set; } = null!;
 
-	public void Ribbon_OnLoad( IRibbonUI ribbon ) => this.ribbon = ribbon;
+	public Ribbon()
+	{
+		application = ( ExcelDnaUtil.Application as MSExcel.Application )!;
+
+		var assembly = Assembly.GetExecutingAssembly();
+
+		using var stream = assembly.GetManifestResourceStream( "KAT.Extensibility.Excel.AddIn.Resources.ShowScriptBlockMark.png" )!;
+		using var ms = new MemoryStream();
+		stream.CopyTo( ms );
+
+		auditShowLogImage = ms.ToArray();
+	}
 
 	public override string GetCustomUI( string RibbonID )
 	{
@@ -43,26 +54,36 @@ public partial class Ribbon : ExcelRibbon
 		return customUi;
 	}
 
-	public Ribbon()
+	public void Ribbon_OnLoad( IRibbonUI ribbon )
 	{
-		CurrentRibbon = this;
-		application = ( ExcelDnaUtil.Application as MSExcel.Application )!;
-		enableAddIn = /* AddInSettings.Settings?.ShowRibbon ?? */ System.Diagnostics.Debugger.IsAttached;
-
-		var assembly = Assembly.GetExecutingAssembly();
-
-		using var stream = assembly.GetManifestResourceStream( "KAT.Extensibility.Excel.AddIn.Resources.ShowScriptBlockMark.png" )!;
-		using var ms = new MemoryStream();
-		stream.CopyTo( ms );
-
-		auditShowLogImage = ms.ToArray();
+		this.ribbon = ribbon;
+		showRibbon = AddIn.Settings.ShowRibbon;
 	}
 
 	public override void OnConnection( object Application, ext_ConnectMode ConnectMode, object AddInInst, ref Array custom )
 	{
 		base.OnConnection( Application, ConnectMode, AddInInst, ref custom );
+		AddEventHandlers();
+		CurrentRibbon = this;
+	}
 
-		if ( enableAddIn )
+	public override void OnDisconnection( ext_DisconnectMode RemoveMode, ref Array custom )
+	{
+		base.OnDisconnection( RemoveMode, ref custom );
+		RemoveEventHandlers();
+	}
+
+	public void InvalidateSettings()
+	{
+		RemoveEventHandlers();
+		showRibbon = AddIn.Settings.ShowRibbon;
+		AddEventHandlers();
+		ribbon.InvalidateControl( "btrRBLe" );
+	}
+
+	private void AddEventHandlers()
+	{
+		if ( showRibbon )
 		{
 			application.WorkbookOpen += Application_WorkbookOpen;
 			application.WorkbookBeforeSave += Application_WorkbookBeforeSave;
@@ -82,11 +103,9 @@ public partial class Ribbon : ExcelRibbon
 		}
 	}
 
-	public override void OnDisconnection( ext_DisconnectMode RemoveMode, ref Array custom )
+	private void RemoveEventHandlers()
 	{
-		base.OnDisconnection( RemoveMode, ref custom );
-
-		if ( enableAddIn )
+		if ( showRibbon )
 		{
 			application.WorkbookOpen -= Application_WorkbookOpen;
 			application.WorkbookBeforeSave -= Application_WorkbookBeforeSave;
@@ -98,6 +117,7 @@ public partial class Ribbon : ExcelRibbon
 			application.SheetChange -= Application_SheetChange;
 		}
 	}
+
 
 	public void Ribbon_OnAction( IRibbonControl control )
 	{

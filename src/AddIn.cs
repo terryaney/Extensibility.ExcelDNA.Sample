@@ -1,15 +1,44 @@
 ﻿using ExcelDna.Integration;
 using ExcelDna.Registration;
+using Microsoft.Extensions.Configuration;
 
 namespace KAT.Extensibility.Excel.AddIn;
 
 public class AddIn : IExcelAddIn
 {
 	internal static string XllPath = null!;
+	internal static AddInSettings Settings = new();
+	private FileWatcherNotification settingsProcessor = null!;
 
 	public void AutoOpen()
 	{
 		XllPath = Path.GetDirectoryName( (string)XlCall.Excel( XlCall.xlGetName ) )!;
+		Console.WriteLine( $"XllPath: {XllPath}" );
+
+		settingsProcessor = new( 
+			notificationDelay: 300, 
+			path: XllPath, 
+			name: "appsettings.json", 
+			action: e => {
+			try
+			{
+				IConfiguration configuration = new ConfigurationBuilder()
+					.AddJsonFile( e.FullPath, optional: true )
+					.Build();
+
+				Settings = configuration.GetSection( "AddInSettings" ).Get<AddInSettings>() ?? new();
+			}
+			catch ( Exception ex )
+			{
+				// TODO: Need to log this somewhere...event viewer via Logging?
+				Console.WriteLine( ex.ToString() );
+				Settings = new();
+			}
+
+			Ribbon.CurrentRibbon?.InvalidateSettings();
+		} );
+
+		settingsProcessor.Changed();
 
 		RegisterFunctions();
 

@@ -6,6 +6,9 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "debug",
+            "logging": {
+                "moduleLoad": false
+            },
             "program": "C:\\Program Files\\Microsoft Office\\root\\Office16\\EXCEL.EXE",
             "args": ["/x", "${workspaceFolder}\\src\\bin\\Debug\\net7.0-windows\\KAT.Extensibility.xll"],
             "cwd": "${workspaceFolder}\\src\\bin\\Debug\\net7.0-windows",

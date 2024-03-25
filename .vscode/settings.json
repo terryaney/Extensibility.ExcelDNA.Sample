@@ -1,5 +1,11 @@
 {
 	"explorer.fileNesting.patterns": {
 		"*.cs": "${capture}.*.cs"
-	}
+	},
+	"xml.fileAssociations": [
+		{
+			"pattern": "Ribbon.xml",
+			"systemId": "https://raw.githubusercontent.com/Excel-DNA/ExcelDna/master/Distribution/XmlSchemas/customUI.xsd"
+		}
+	]
 }
