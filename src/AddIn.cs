@@ -2,6 +2,7 @@
 using ExcelDna.Registration;
 using Microsoft.Extensions.Configuration;
 
+
 namespace KAT.Extensibility.Excel.AddIn;
 
 public class AddIn : IExcelAddIn
