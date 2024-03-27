@@ -25,6 +25,7 @@ public partial class Ribbon : ExcelRibbon
 	private IRibbonUI ribbon = null!;
 
 	private readonly byte[] auditShowLogImage;
+	private readonly string customUi;
 	private bool showRibbon;
 	private readonly MSExcel.Application application;
 
@@ -39,23 +40,17 @@ public partial class Ribbon : ExcelRibbon
 
 		var assembly = Assembly.GetExecutingAssembly();
 
-		using var stream = assembly.GetManifestResourceStream( "KAT.Extensibility.Excel.AddIn.Resources.ShowScriptBlockMark.png" )!;
+		using var streamImage = assembly.GetManifestResourceStream( "KAT.Extensibility.Excel.AddIn.Resources.ShowScriptBlockMark.png" )!;
 		using var ms = new MemoryStream();
-		stream.CopyTo( ms );
-
+		streamImage.CopyTo( ms );
 		auditShowLogImage = ms.ToArray();
+
+		using var streamXml = assembly.GetManifestResourceStream( "KAT.Extensibility.Excel.AddIn.Resources.Ribbon.xml" )!;
+		using var sr = new StreamReader( streamXml );
+		customUi = sr.ReadToEnd();
 	}
 
-	public override string GetCustomUI( string RibbonID )
-	{
-		var assembly = Assembly.GetExecutingAssembly();
-
-		using var stream = assembly.GetManifestResourceStream( "KAT.Extensibility.Excel.AddIn.Resources.Ribbon.xml" )!;
-		using var reader = new StreamReader( stream );
-		var customUi = reader.ReadToEnd();
-
-		return customUi;
-	}
+	public override string GetCustomUI( string RibbonID ) => customUi;
 
 	public void Ribbon_OnLoad( IRibbonUI ribbon ) => this.ribbon = ribbon;
 
@@ -73,6 +68,7 @@ public partial class Ribbon : ExcelRibbon
 	public override void OnDisconnection( ext_DisconnectMode RemoveMode, ref Array custom )
 	{
 		base.OnDisconnection( RemoveMode, ref custom );
+
 		RemoveEventHandlers();
 	}
 
@@ -131,7 +127,6 @@ public partial class Ribbon : ExcelRibbon
 			// application.SheetChange -= Application_SheetChange;
 		}
 	}
-
 
 	public void Ribbon_OnAction( IRibbonControl control )
 	{
