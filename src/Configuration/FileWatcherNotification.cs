@@ -1,3 +1,5 @@
+using System.Collections.Concurrent;
+
 namespace KAT.Extensibility.Excel.AddIn;
 
 /// <summary>
@@ -13,37 +15,44 @@ namespace KAT.Extensibility.Excel.AddIn;
 /// </remarks>
 public class FileWatcherNotification
 {
-	private readonly System.Timers.Timer timer;
+	private readonly ConcurrentDictionary<string, System.Timers.Timer> notificationTimers = new();
 	private readonly FileSystemWatcher watcher;
-
+	private readonly int notificationDelay;
 	private readonly string path;
-	private readonly string name;
-	private FileSystemEventArgs fileSystemEventArgs = null!;
+	private readonly Action<FileSystemEventArgs> action;
 
-	public FileWatcherNotification( int notificationDelay, string path, string name, Action<FileSystemEventArgs> action )
+	public FileWatcherNotification( int notificationDelay, string path, string filter, Action<FileSystemEventArgs> action )
 	{
-		watcher = new FileSystemWatcher( path, name ) { EnableRaisingEvents = true };
-		watcher.Changed += watcher_Changed;
-
-		timer = new( notificationDelay );
-		timer.Elapsed += ( sender, args ) =>
-		{
-			timer.Enabled = false;
-			action( fileSystemEventArgs );
-		};
+		this.notificationDelay = notificationDelay;
 		this.path = path;
-		this.name = name;
+		this.action = action;
+
+		watcher = new FileSystemWatcher( path, filter ) { EnableRaisingEvents = true };
+		watcher.Changed += Watcher_Changed;
 	}
 
-	private void watcher_Changed( object sender, FileSystemEventArgs e )
+	private void Watcher_Changed( object sender, FileSystemEventArgs e )
 	{
+		var timer = notificationTimers.GetOrAdd(
+			e.FullPath,
+			p =>
+			{
+				var t = new System.Timers.Timer( notificationDelay );
+				// new FileWatcherNotification( folderConfiguration, e, fileNotification )
+
+				t.Elapsed += ( sender, args ) =>
+				{
+					t.Enabled = false;
+					action( e );
+				};
+
+				return t;
+			}
+		);
+
 		timer.Stop();
-		fileSystemEventArgs = e;
 		timer.Start();
 	}
 
-	public void Start() => timer.Start();
-	public void Stop() => timer.Stop();
-
-	public void Changed() => watcher_Changed( this, new FileSystemEventArgs( WatcherChangeTypes.Changed, path, name ) );	
+	public void Changed( string name ) => Watcher_Changed( this, new FileSystemEventArgs( WatcherChangeTypes.Changed, path, name ) );	
 }

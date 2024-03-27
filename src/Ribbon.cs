@@ -30,6 +30,9 @@ public partial class Ribbon : ExcelRibbon
 
 	public static Ribbon CurrentRibbon { get; private set; } = null!;
 
+	private WorkbookState? workbookState = null;
+	public WorkbookState WorkbookState => workbookState ??= WorkbookState.Current( application ) ;
+
 	public Ribbon()
 	{
 		application = ( ExcelDnaUtil.Application as MSExcel.Application )!;
@@ -54,17 +57,17 @@ public partial class Ribbon : ExcelRibbon
 		return customUi;
 	}
 
-	public void Ribbon_OnLoad( IRibbonUI ribbon )
-	{
-		this.ribbon = ribbon;
-		showRibbon = AddIn.Settings.ShowRibbon;
-	}
+	public void Ribbon_OnLoad( IRibbonUI ribbon ) => this.ribbon = ribbon;
 
 	public override void OnConnection( object Application, ext_ConnectMode ConnectMode, object AddInInst, ref Array custom )
 	{
 		base.OnConnection( Application, ConnectMode, AddInInst, ref custom );
-		AddEventHandlers();
+
 		CurrentRibbon = this;
+
+		showRibbon = AddIn.Settings.ShowRibbon;
+
+		AddEventHandlers();
 	}
 
 	public override void OnDisconnection( ext_DisconnectMode RemoveMode, ref Array custom )
@@ -78,7 +81,7 @@ public partial class Ribbon : ExcelRibbon
 		RemoveEventHandlers();
 		showRibbon = AddIn.Settings.ShowRibbon;
 		AddEventHandlers();
-		ribbon.InvalidateControl( "btrRBLe" );
+		ribbon.InvalidateControls( "btrRBLe", "SpecSheet", "processGlobalTables" );
 	}
 
 	private void AddEventHandlers()
@@ -89,16 +92,27 @@ public partial class Ribbon : ExcelRibbon
 			application.WorkbookBeforeSave += Application_WorkbookBeforeSave;
 			application.WorkbookAfterSave += Application_WorkbookAfterSave;
 			application.WorkbookActivate += Application_WorkbookActivate;
-			application.WorkbookDeactivate += Application_WorkbookDeactivate;
+
+			// Used to simply trigger a SheetDeactivate if ActiveSheet != null
+			// if ( Wb.ActiveSheet != null )
+			// {
+			// 	Application_SheetDeactivate( Wb.ActiveSheet );
+			// }
+			// application.WorkbookDeactivate += Application_WorkbookDeactivate;
+
 			application.SheetActivate += Application_SheetActivate;
-			application.SheetDeactivate += Application_SheetDeactivate;
-			application.SheetChange += Application_SheetChange;
+
+			// Used to remove event handlers to all charts that helped with old 'Excel' chart export 
+			// functionality, but SSG does not support that so only use Highcharts/Apex now.
+			// application.SheetDeactivate += Application_SheetDeactivate;
+			
+			// Used to update 'validation lists' in Tahiti spec sheets when any cell values changed, but no longer use Tahiti, 
+			// so disabling for now, but may bring back if 'improve' evolution spec sheet functionality.
+			// application.SheetChange += Application_SheetChange;
 
 			if ( application.ActiveWorkbook != null )
 			{
-				// TODO
-				// workbookState = WorkbookState.Current( application );
-				// worksheetState = WorksheetState.Current( workbookState, application );
+				workbookState = null;
 			}
 		}
 	}
@@ -111,10 +125,10 @@ public partial class Ribbon : ExcelRibbon
 			application.WorkbookBeforeSave -= Application_WorkbookBeforeSave;
 			application.WorkbookAfterSave -= Application_WorkbookAfterSave;
 			application.WorkbookActivate -= Application_WorkbookActivate;
-			application.WorkbookDeactivate -= Application_WorkbookDeactivate;
+			// application.WorkbookDeactivate -= Application_WorkbookDeactivate;
 			application.SheetActivate -= Application_SheetActivate;
-			application.SheetDeactivate -= Application_SheetDeactivate;
-			application.SheetChange -= Application_SheetChange;
+			// application.SheetDeactivate -= Application_SheetDeactivate;
+			// application.SheetChange -= Application_SheetChange;
 		}
 	}
 
@@ -147,24 +161,29 @@ public partial class Ribbon : ExcelRibbon
 			}
 			catch ( Exception ex )
 			{
-				var exDisplay = 
-					ex.InnerException ?? // Exception in ribbon handler method
-					ex; // Exception in try clause above discovering the method to invoke.
-
-				ExcelDna.Logging.LogDisplay.WriteLine( $"Ribbon_OnAction {control.Tag} Exception: {exDisplay.Message}{Environment.NewLine}{exDisplay.StackTrace}" );
-
-				exDisplay = exDisplay.InnerException;
-
-				while ( exDisplay != null )
-				{
-					ExcelDna.Logging.LogDisplay.WriteLine( $"Inner Exception: {exDisplay.Message}{Environment.NewLine}Trace: {exDisplay.StackTrace}" );
-					exDisplay = exDisplay.InnerException;
-				}
+				LogError( $"Ribbon_OnAction {control.Tag}", ex );
 			}
 		} );
 	}
 
 	private readonly ConcurrentDictionary<string, string?> cellsInError = new();
+
+	private static void LogError( string message, Exception ex )
+	{
+		var exDisplay = 
+			ex.InnerException ?? // Exception in ribbon handler method
+			ex; // Exception in try clause above discovering the method to invoke.
+
+		ExcelDna.Logging.LogDisplay.WriteLine( $"{message} Exception: {exDisplay.Message}{Environment.NewLine}{exDisplay.StackTrace}" );
+
+		exDisplay = exDisplay.InnerException;
+
+		while ( exDisplay != null )
+		{
+			ExcelDna.Logging.LogDisplay.WriteLine( $"Inner Exception: {exDisplay.Message}{Environment.NewLine}Trace: {exDisplay.StackTrace}" );
+			exDisplay = exDisplay.InnerException;
+		}
+	}
 
 	public void LogFunctionError( ExcelReference caller, object exception )
 	{

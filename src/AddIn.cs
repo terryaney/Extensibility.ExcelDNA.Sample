@@ -1,45 +1,61 @@
 ﻿using ExcelDna.Integration;
 using ExcelDna.Registration;
 using Microsoft.Extensions.Configuration;
-
+using System.Text.Json.Nodes;
 
 namespace KAT.Extensibility.Excel.AddIn;
 
 public class AddIn : IExcelAddIn
 {
 	internal static string XllPath = null!;
+	internal static string ResourcePath => Directory.CreateDirectory( Path.Combine( XllPath, "Resources" ) ).FullName;
+	internal static string PreferencesPath => Path.Combine( XllPath, "appsettings.preferences.json" );
+	internal static JsonObject Preferences
+	{
+		get
+		{
+			var path = PreferencesPath;
+
+			return File.Exists( path )
+				? ( JsonNode.Parse( File.ReadAllText( path ) ) as JsonObject )!
+				: new JsonObject();
+		}
+	}
+
 	internal static AddInSettings Settings = new();
 	private FileWatcherNotification settingsProcessor = null!;
 
 	public void AutoOpen()
 	{
+		// Store this for access from anywhere in my workflows: https://groups.google.com/g/exceldna/c/1rScvDdeVOk/m/euij1L-VihoJ
 		XllPath = Path.GetDirectoryName( (string)XlCall.Excel( XlCall.xlGetName ) )!;
-		Console.WriteLine( $"XllPath: {XllPath}" );
 
 		settingsProcessor = new( 
 			notificationDelay: 300, 
 			path: XllPath, 
-			name: "appsettings.json", 
+			filter: "appsettings*.json", 
 			action: e => {
-			try
-			{
-				IConfiguration configuration = new ConfigurationBuilder()
-					.AddJsonFile( e.FullPath, optional: true )
-					.Build();
+				try
+				{
+					IConfiguration configuration = new ConfigurationBuilder()
+						.AddJsonFile( Path.Combine( XllPath, "appsettings.json" ), optional: true )
+						.AddJsonFile( Path.Combine( XllPath, "appsettings.features.json" ), optional: true )
+						.Build();
 
-				Settings = configuration.GetSection( "AddInSettings" ).Get<AddInSettings>() ?? new();
-			}
-			catch ( Exception ex )
-			{
-				// TODO: Need to log this somewhere...event viewer via Logging?
-				Console.WriteLine( ex.ToString() );
-				Settings = new();
-			}
+					Settings = configuration.GetSection( "AddInSettings" ).Get<AddInSettings>() ?? new();
+				}
+				catch ( Exception ex )
+				{
+					// TODO: Need to log this somewhere...event viewer via Logging?
+					Console.WriteLine( ex.ToString() );
+					Settings = new();
+				}
 
-			Ribbon.CurrentRibbon?.InvalidateSettings();
-		} );
+				Ribbon.CurrentRibbon?.InvalidateSettings();
+			} 
+		);
 
-		settingsProcessor.Changed();
+		settingsProcessor.Changed( "appsettings.json" );
 
 		RegisterFunctions();
 

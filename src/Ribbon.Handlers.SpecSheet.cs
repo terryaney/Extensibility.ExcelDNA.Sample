@@ -6,11 +6,16 @@ public partial class Ribbon
 {
 	public void SpecSheet_ExportConfigurations( IRibbonControl control )
 	{
-		throw new NotImplementedException( "Not implemented yet." );
-		MessageBox.Show( "// TODO: Process " + control.Id );
+		skipHistoryUpdateOnMoveSpecFromDownloads = true;
+		throw new NotImplementedException( "// TODO: Process " + control.Id );
 	}
 
 	public void SpecSheet_ProcessGlobalTables( IRibbonControl control )
+	{
+		MessageBox.Show( "// TODO: Process " + control.Id );
+	}
+
+	public void SpecSheet_ExportSheet( IRibbonControl control )
 	{
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}

@@ -26,9 +26,10 @@ public partial class Ribbon
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public void RBLe_RefreshRibbon( IRibbonControl control )
+	public void RBLe_RefreshRibbon( IRibbonControl _ )
 	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
+		workbookState = null;
+		ribbon.Invalidate();
 	}
 
 	public void RBLe_HelpAbout( IRibbonControl control )

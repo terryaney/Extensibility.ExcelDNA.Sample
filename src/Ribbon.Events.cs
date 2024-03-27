@@ -1,33 +1,105 @@
 ﻿using ExcelDna.Integration.CustomUI;
+using System.Security.Cryptography;
+using System.Text;
 using System.Xml.Linq;
+using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
+	string[] RibbonStatesToInvalidateOnWorkbookChange =>
+		new[] {
+			"exportConfigurations", "processGlobalTables",
+
+			"manageCalcEngine", "debugCalcEngines",
+
+			"navigateToTable", "navigateToInputs", "navigateToInputData", "navigateToCalculationInputs", "navigateToInputTables", "navigateToFrameworkInputs",
+
+			"processWorkbook", "processLocalBatch", "convertToRBLe", 
+
+			"exportxDSData", "exportJsonData", "exportAuditxDSHeaders", "exportMappedxDSData",
+
+			"auditCalcEngineTabs"			
+		}.Concat( RibbonStatesToInvalidateOnSheetChange ).Concat( RibbonStatesToInvalidateOnCalcEngineManagement ).ToArray();
+	
+	readonly string[] RibbonStatesToInvalidateOnCalcEngineManagement =
+		new[] {
+			"downloadLatestCalcEngine", "checkInCalcEngine", "checkOutCalcEngine"
+		};
+	readonly string[] RibbonStatesToInvalidateOnSheetChange =
+		new[] {
+			"exportSheet",
+
+			"navigateToBTRCellAddressCell", "navigateToRBLeMacro",
+
+			"loadDataIntoInput", "previewResults", "configureHighCharts", "importBrdSettings",
+
+			"exportRBLDocGen", "exportResultJsonData"
+		};
+
 	public bool Ribbon_GetVisible( IRibbonControl control )
 	{
+		var showSpecSheet = new Lazy<bool>( () => Convert.ToBase64String( SHA256.HashData( Encoding.UTF8.GetBytes( Features.Salt + "SpecSheet:Allow" ) ) ) == AddIn.Settings.Features.SpecSheet );
+		var showGlobalTables = new Lazy<bool>( () => Convert.ToBase64String( SHA256.HashData( Encoding.UTF8.GetBytes( Features.Salt + "GlobalTables:Allow" ) ) ) == AddIn.Settings.Features.GlobalTables );
+		var hasxDSDataFields = new Lazy<bool>( () => application.ActiveWorkbook?.Names.Cast<MSExcel.Name>().Any( n => n.Name == "xDSDataFields" ) ?? false );
+
 		return control.Id switch
 		{
 			"btrRBLe" => showRibbon,
+
+			"debugCalcEngines" => !string.IsNullOrEmpty( AddIn.Settings.SaveHistoryName ),
+
+			"SpecSheet" => showGlobalTables.Value || showSpecSheet.Value,
+			"processGlobalTables" => showGlobalTables.Value,
+			"navigateToInputs" => !hasxDSDataFields.Value,
+
+			"navigateToInputData" or "navigateToCalculationInputs" or "navigateToFrameworkInputs" => hasxDSDataFields.Value,
+
 			_ => true,
 		};
 	}
 
 	public bool Ribbon_GetEnabled( IRibbonControl control )
 	{
-		switch ( control.Id )
+		return control.Id switch
 		{
-			default: return true;
-		}
+			// Change when sheet/book changes
+			"exportSheet" => WorkbookState.SheetState.CanExport,
+			"loadDataIntoInput" => WorkbookState.SheetState.IsInputSheet,
+			"exportRBLDocGen" or "exportResultJsonData" or "importBrdSettings" => WorkbookState.SheetState.IsResultSheet,
+			"configureHighCharts" or "previewResults" => WorkbookState.SheetState.CanPreview,
+			"exportConfigurations" => WorkbookState.IsSpecSheetFile || WorkbookState.IsGlobalTablesFile || WorkbookState.IsRTCFile,
+			"processGlobalTables" => WorkbookState.IsGlobalTablesFile,
+			"exportMappedxDSData" => WorkbookState.SheetState.IsXmlMappingSheet,
+			"exportxDSData" or "exportJsonData" => !WorkbookState.IsSpecSheetFile && !WorkbookState.IsGlobalTablesFile && !WorkbookState.IsRTCFile && !WorkbookState.IsCalcEngine,
+
+			"convertToRBLe" or "navigateToInputs" or "navigateToInputData"or "navigateToCalculationInputs" or "navigateToFrameworkInputs" 
+				or "navigateToInputTables" or "processWorkbook" or "auditCalcEngine" or "auditCalcEngineTab" or "processLocalBatch" => WorkbookState.IsCalcEngine,
+
+			"manageCalcEngine" or "downloadLatestCalcEngine" => WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( WorkbookState.UploadedVersion ),
+
+			"debugCalcEngines" => WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( AddIn.Settings.SaveHistoryName ) && !string.IsNullOrEmpty( WorkbookState.UploadedVersion ),
+
+			"checkInCalcEngine" => WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( WorkbookState.CheckedOutBy ) && string.Compare( WorkbookState.CheckedOutBy, AddIn.Settings.CalcEngineManagement.Email, true ) == 0,
+			"checkOutCalcEngine" => WorkbookState.IsCalcEngine && string.Compare( WorkbookState.CheckedOutBy, AddIn.Settings.CalcEngineManagement.Email, true ) != 0 && !string.IsNullOrEmpty( WorkbookState.UploadedVersion ),
+
+			"navigateToTable" => WorkbookState.IsCalcEngine || WorkbookState.IsSpecSheetFile,
+			"navigateToBTRCellAddressCell" => WorkbookState.SheetState.IsMacroSheet,
+			"navigateToRBLeMacro" => WorkbookState.HasRBLeMacro,
+			"linkToLoadedAddIns" => WorkbookState.HasLinks,
+
+			_ => true,
+		};
 	}
 
 	public string? Ribbon_GetScreentip( IRibbonControl control )
 	{
-		switch ( control.Id )
+		// TODO: Need to implement
+		return control.Id switch
 		{
-			default: return null;
-		}
+			_ => null,
+		};
 	}
 
 	public string? Ribbon_GetContent( IRibbonControl control )
@@ -36,11 +108,7 @@ public partial class Ribbon
 		{
 			case "debugCalcEngines":
 			{
-				var historyAuthor = AddIn.Settings.SaveHistory.Name;
-				if ( string.IsNullOrEmpty( historyAuthor ) )
-				{
-					historyAuthor = null;
-				}
+				var historyAuthor = AddIn.Settings.SaveHistoryName;
 				if ( historyAuthor == "thomas.aney" )
 				{
 					historyAuthor = "tom.aney";
@@ -107,7 +175,7 @@ public partial class Ribbon
 						new Font( FontFamily.GenericSansSerif, 6, FontStyle.Bold ),
 						Brushes.White,
 						x: auditShowLogBadgeCount < 10 ? 16 : 13,
-						y: 3 
+						y: 3
 					);
 				}
 

@@ -1,5 +1,4 @@
 ﻿using ExcelDna.Integration;
-using KAT.Camelot.RBLe.Lookups;
 
 namespace KAT.Extensibility.Excel.AddIn;
 
@@ -12,6 +11,6 @@ public static class MyFunctions
 		{
 			throw new ApplicationException( "Use property case" );
 		}
-		return "Hello " + name + ", there are " + LookupTables.MortalityTableNames().Length + " mortality tables available.";
+		return "Hello " + name;
 	}
 }

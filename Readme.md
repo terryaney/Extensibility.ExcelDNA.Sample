@@ -4,15 +4,11 @@ An Excel-DNA add-in for the KAT teams that uses many of the features provided by
 
 ## TODO
 
-1. Implement ribbon 'state'
-	1. Get 'State event handlers' coded
-	1. Ribbon_GetContent - is hacked to get it working
+1. Ribbon_GetContent - is hacked to get it working
 1. Implement Ribbon handlers
 	1. exportMappedxDSData - Rename this better after you figure out what it is doing
-	1. [Using Windows Forms](https://groups.google.com/g/exceldna/c/84IIhcdAPRk/m/8cRtFOvvAAAJ)	
 1. [Custom Intellisense/Help Info](https://github.com/Excel-DNA/IntelliSense/issues/21) - read this and linked topic to see what's possible
 	1. https://github.com/Excel-DNA/Tutorials/blob/master/SpecialTopics/IntelliSenseForVBAFunctions/README.md
-1. [Path of Xll](https://groups.google.com/g/exceldna/c/1rScvDdeVOk) - `XlCall.Excel( XlCall.xlGetName )` to get the name of the add-in
 1. [Possible Async Information](https://github.com/Excel-DNA/Samples/blob/master/Registration.Sample/AsyncFunctionExamples.cs)
 	1. https://excel-dna.net/docs/guides-advanced/performing-asynchronous-work
 	1. https://excel-dna.net/docs/tips-n-tricks/creating-a-threaded-modal-dialog
@@ -20,6 +16,9 @@ An Excel-DNA add-in for the KAT teams that uses many of the features provided by
 1. BTR* functions...
 	1. https://excel-dna.net/docs/guides-advanced/dynamic-delegate-registration - possible dynamic creation instead of having to create functions for each item and passing through?  Reference the SSG assembly detect custom functions.
 1. Look for email/thread about excel not shutting down properly
+1. Readme
+	1. Badge count on ribbon image
+	1. Dynamic menus
 
 ## Development Environment
 
@@ -95,6 +94,14 @@ My add-in has a CustomUI ribbon and to enable intellisense in the `Ribbon.xml` f
 
 ## Features
 
+1. [Ribbon Organization](#ribbon-organization)
+1. [ExcelIntegration.RegisterUnhandledExceptionHandler](#excelintegrationregisterunhandledexceptionhandler)
+1. [appsettings.json Support](#appsettingsjson-support)
+1. [Fixing Workbook Links](#fixing-workbook-links)
+1. [Changing Visible/Enabled State of Ribbon Controls](#changing-visibleenabled-state-of-ribbon-controls)
+1. [Custom Ribbon Image with Badge Count](#custom-ribbon-image-with-badge-count)
+1. [Using Windows Form Dialogs](#using-windows-form-dialogs)
+
 ### Ribbon Organization
 
 The use of the `IRibbonUI` in the KAT Tools add-in is quite extensive.  There is state management of CustomUI elements via ribbon events, CustomUI element handlers, dynamic menus, and dynamic images to name a few.  In this section I will describe some of the challenges I faced with `IRibbonUI` and how I overcame them.
@@ -103,7 +110,6 @@ The use of the `IRibbonUI` in the KAT Tools add-in is quite extensive.  There is
 
 1. [CustomUI Reference](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-customui/31f152d6-2a5d-4b50-a867-9dbc6d01aa43)
 1. [imageMso Reference](https://codekabinett.com/download/Microsoft-Office-2016_365-imageMso-Gallery.pdf)
-
 
 **Managing the Sheer Amount of Code**
 
@@ -119,6 +125,7 @@ Given the amount of methods I had to implement to provide all the required funct
 
 I also used method prefixes that matched the CustomUI `group.id` as well to make code navigation easier (via `CTRL+T` keyboard shortcut).  For example, for my group with an `id` of `Navigation`, the methods all have the prefix `Navigation_`.
 
+Back to [Features listing](#features).
 
 ### ExcelIntegration.RegisterUnhandledExceptionHandler
 
@@ -155,7 +162,7 @@ public override void OnConnection( object Application, ext_ConnectMode ConnectMo
 {
 	base.OnConnection( Application, ConnectMode, AddInInst, ref custom );
 
-	application.WorkbookOpen += Application_WorkbookOpen;
+	application.WorkbookActivate += Application_WorkbookActivate;
 	application.WorkbookBeforeSave += Application_WorkbookBeforeSave;
 }
 
@@ -163,11 +170,11 @@ public override void OnDisconnection( ext_DisconnectMode RemoveMode, ref Array c
 {
 	base.OnDisconnection( RemoveMode, ref custom );
 
-	application.WorkbookOpen -= Application_WorkbookOpen;
+	application.WorkbookActivate -= Application_WorkbookActivate;
 	application.WorkbookBeforeSave -= Application_WorkbookBeforeSave;
 }
 
-private void Application_WorkbookOpen( MSExcel.Workbook Wb )
+private void Application_WorkbookActivate( MSExcel.Workbook Wb )
 {
 	// Clear error info whenever a new workbook is opened.  Currenly, only show any 
 	// errors after a cell is calculated.  Could call application.Calculate() to force everything
@@ -251,7 +258,6 @@ public Bitmap Ribbon_GetImage( IRibbonControl control )
 	}
 }
 
-
 // Utility class wrapping Excel C API calls
 public static class ExcelApi
 {
@@ -278,6 +284,8 @@ public static class ExcelApi
 }
 ```
 
+Back to [Features listing](#features).
+
 ### appsettings.json Support
 
 The KAT add-in requires support for user settings and the most convenient way to provide that functionality was simply by leveraging an `appsettings.json` file.  In the previous .NET Framework version, I used an `app.config` file which was distributed as `*.xll.config` and `*64.xll.config`.
@@ -303,6 +311,8 @@ Simply add the following to the `.csproj` file and the `appsettings.json` file w
 #### Read and Monitor `appsettings.json` File
 
 This was probably the trickiest part of the process.  As Excel-DNA documentation has stated, it does not want to include Dependency Injection into the project.  This means that the `IConfiguration` interface is not available by default.  To get around this, I used the `Microsoft.Extensions.Configuration` package (and couple others) to read the `appsettings.json` file directly.  This strongly typed settings class is a singleton and is accessed throughout the add-in via `AddIn.Settings`.
+
+Note: See [ExcelRna.Extensions.Hosting](https://github.com/altso/ExcelRna.Extensions.Hosting) for what seems like a possible solution for Dependency Injection in Excel-DNA.  The project looks very promising, but I wanted to try and only use Excel-DNA for this project until Dependency Injection was a requirement.
 
 To monitor for changes (since `IOptionsSnapshot<T>` pattern is not available), I used a `FileSystemWatcher` to monitor the `appsettings.json` file for changes.  When a change is detected, the settings are reloaded (with a little protection against multiple notifications).  
 
@@ -459,3 +469,263 @@ public partial class Ribbon : ExcelRibbon
 	}
 }
 ```
+
+Back to [Features listing](#features).
+
+### Fixing Workbook Links
+
+Totally random topic here, but thought I'd document it.  During the original creation of addin (.NET Framework and/or *.xla files) we often had problems where links to add-ins would get broken because users who uploaded Spreadengines to be used by our APIs had different installation locations for the various addins that were required.
+
+For example, let's say we have an addin named `rbl.xla` that exposed a function called `CalculateProjection`.  If the user had a formula of `=CalculateProjection(A1)` in their workbook all worked fine.  But when they uploaded, and the rbl.xla file was not in the same location as the workbook, the link would be broken **and the formula would be modified** to `=c:\installation\path\to\rbl.xla!CalculateProjection(A1)`.  This was compounded when the formula used several functions from `rbl.xla` because the length of the formula (after the path injections) would sometimes exceed the allowed limit for a formula expression and simply lose chunks of the formula.
+
+To combat this, our 'calculation servers' would run a function like the `UpdateWorkbookLinks` below when a workbook was opened before it was prcoessed.  This process has continued to live on in the Excel-DNA add-in.  To be honest, I'm not 100% sure it is still needed (i.e. if Excel improved its addin installation location detection).  But we do run the `UpdateWorkbookLinks` during the `Application_WorkbookOpen` event and also expose a ribbon button to run it manually in case users are sharing Excel files and having link issues.
+
+```csharp
+private void UpdateWorkbookLinks( MSExcel.Workbook wb )
+{
+	if ( wb == null )
+	{
+		ExcelDna.Logging.LogDisplay.RecordLine( $"LinkToLoadedAddIns: ActiveWorkbook is null." );
+		return;
+	}
+
+	if ( !WorkbookState.HasLinks ) return;
+
+	var linkSources = ( wb.LinkSources( MSExcel.XlLink.xlExcelLinks ) as Array )!;
+
+	var protectedInfo = wb.ProtectStructure
+		? new[] { "Entire Workbook" }
+		: wb.Worksheets.Cast<MSExcel.Worksheet>().Where( w => w.ProtectContents ).Select( w => string.Format( "Worksheet: {0}", w.Name ) ).ToArray();
+
+	if ( protectedInfo.Length > 0 )
+	{
+		MessageBox.Show( 
+			"Unable to update links due to protection.  The following items are protected:\r\n\r\n" + string.Join( "\r\n", protectedInfo ), 
+			"Unable to Update", 
+			MessageBoxButtons.OK, 
+			MessageBoxIcon.Warning 
+		);
+		return;
+	}
+
+	foreach ( var addin in application.AddIns.Cast<MSExcel.AddIn>().Where( a => a.Installed ) )
+	{
+		var fullName = addin.FullName;
+		var name = Path.GetFileName( fullName );
+
+		foreach ( object o in linkSources )
+		{
+			var link = (string)o;
+			var linkName = Path.GetFileName( link );
+
+			if ( string.Compare( name, linkName, true ) == 0 )
+			{
+				try
+				{
+					application.ActiveWorkbook.ChangeLink( link, fullName );
+				}
+				catch ( Exception ex )
+				{
+					ExcelDna.Logging.LogDisplay.RecordLine( $"LinkToLoadedAddIns Exception:\r\n\tAddIn Name:{addin.Name}\r\n\tapplication Is Null:{application == null}\r\n\tapplication.ActiveWorkbook Is Null:{application?.ActiveWorkbook == null}\r\n\tName: {name}\r\n\tLink: {link}\r\n\tFullName: {fullName}\r\n\tMessage: {ex.Message}" );
+					throw;
+				}
+			}
+		}
+	}
+}
+```
+
+Back to [Features listing](#features).
+
+### Changing Visible/Enabled State of Ribbon Controls
+
+Given the size of our ribbon, the visiblity and enabled states were toggling based on the current context of the workbook and or worksheet.  The following shows different parts of our addin demonstrating how we implemented this.
+
+1. Changing `Ribbon.xml` to have `getEnabled` and `getVisible` attributes indicating which method to call to determine the state of the control.
+1. Implementing the `Ribbon_OnLoad`, `Ribbon_GetVisible` and `Ribbon_GetEnabled` methods to use a built in `WorkbookState` class to determine the proper values for the requested state.
+1. Implementing the `WorkbookState` class to determine the state of the workbook and worksheet.  Can example repository code, but this is just any mechanism you choose to determine the state of the workbook and worksheet (i.e. presence of named ranges, presence of tabs, etc.).
+1. Refreshing the ribbon when `WorkbookState` was updated via the `InvalidateControl` method.
+
+#### Modifying Ribbon.xml for Visibility and Enabled State
+
+Part of our ribbon.xml file showing the `onLoad` specified on `customUI` element and then the `getEnabled` and `getVisible` attributes specified on a `button` element (but can be applied to `tab`, `group`, `button`, etc.).
+
+```xml
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="Ribbon_OnLoad">
+	<ribbon startFromScratch="false">
+		<tabs>
+			<tab id="btrRBLe" keytip="K" label="KAT Tools">
+				<group id="SpecSheet" keytip="ss" label="Configuration Exporting" imageMso="WorkspaceHtmlProperties">
+					<button id="processGlobalTables" keytip="G" label="Process Global Tables" imageMso="ExportMoreMenu" size="normal" onAction="Ribbon_OnAction" tag="SpecSheet_ProcessGlobalTables" getVisible="Ribbon_GetVisible" getEnabled="Ribbon_GetEnabled"/>
+				</group>
+			</tab>
+		</tabs>
+	</ribbon>
+</customUI>
+```
+
+#### Handling Ribbon Events for Visibility and Enabled State
+
+To manually refresh the state of the ribbon, we need to call the `InvalidateControl` method on the `IRibbonUI` object.  Therefore, in the `Ribbon_OnLoad` method, we store the `IRibbonUI` object in a class level variable.  Simple examples of the `Ribbon_GetVisible` and `Ribbon_GetEnabled` methods are also listed.
+
+```csharp
+public partial class Ribbon
+{
+	private IRibbonUI ribbon = null!;
+
+	public void Ribbon_OnLoad( IRibbonUI ribbon ) => this.ribbon = ribbon;
+
+	public bool Ribbon_GetVisible( IRibbonControl control )
+	{
+		return control.Id switch
+		{
+			"id1" => someCondition,
+
+			"id2" => someCondition2,
+
+			"id3" or "id4" => someCondition3,
+
+			_ => true,
+		};
+	}
+
+	public bool Ribbon_GetEnabled( IRibbonControl control )
+	{
+		return control.Id switch
+		{
+			"id1" => someCondition,
+
+			"id2" => someCondition2,
+
+			"id3" or "id4" => someCondition3,
+
+			_ => true,
+		};
+	}
+}
+```
+
+#### Refreshing Ribbon State on Demand
+
+Nothing too complicated about manually refreshing the ribbon state.  Basically, you just have to indicate which controls to refresh (via `InvalidateControl` method on the `IRibbonUI` object) when the 'context' changes.  To accomplish this you probably will at a minimum have the following application event handlers:
+
+```csharp
+public partial class Ribbon : ExcelRibbon
+{
+	private readonly MSExcel.Application application;
+
+	// This is a class that has a static `Current` method that detects all the current context indicators
+	// that our ribbon needs to know about.  To force a refresh, you can set workbookState to null so it is regenerated.
+	private WorkbookState? workbookState = null;
+	public WorkbookState WorkbookState => workbookState ??= WorkbookState.Current( application ) ;
+
+	public Ribbon()
+	{
+		application = ( ExcelDnaUtil.Application as MSExcel.Application )!;
+	}
+
+	public override void OnConnection( object Application, ext_ConnectMode ConnectMode, object AddInInst, ref Array custom )
+	{
+		base.OnConnection( Application, ConnectMode, AddInInst, ref custom );
+		application.WorkbookActivate += Application_WorkbookActivate;
+		application.SheetActivate += Application_SheetActivate;
+	}
+
+	public override void OnDisconnection( ext_DisconnectMode RemoveMode, ref Array custom )
+	{
+		base.OnDisconnection( RemoveMode, ref custom );
+		application.WorkbookActivate -= Application_WorkbookActivate;
+		application.SheetActivate -= Application_SheetActivate;
+	}
+
+	private void Application_WorkbookActivate( MSExcel.Workbook wb )
+	{
+		workbookState = null;
+		ribbon.InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
+	}
+
+	private void Application_SheetActivate( object sheet )
+	{
+		workbookState = null;
+		ribbon.InvalidateControls( RibbonStatesToInvalidateOnSheetChange );
+	}
+
+	// Sample list of button ids that should be refresheds 'OnCalcEngineManagement'.
+	// Above, RibbonStatesToInvalidateOnWorkbookChange and RibbonStatesToInvalidateOnSheetChange
+	// are just arrays for more IDs to manage visible/enabled state when the context changes.
+	readonly string[] RibbonStatesToInvalidateOnCalcEngineManagement =
+		new[] { "downloadLatestCalcEngine", "checkInCalcEngine", "checkOutCalcEngine" };
+
+	public void KatDataStore_CheckInCalcEngine( IRibbonControl control )
+	{
+		// Omitted code that performs a 'Check In' of the current Spreadsheet, and when 
+		// successful, manually trigger a ribbon invalidate on the controls that care about
+		// 'checked in' state.
+
+		workbookState = null;
+		ribbon.InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
+	}
+
+	// Sample button click handler that manually refreshes the *ENTIRE* ribbon.
+	// This was useful when the ribbon was in a 'bad' state or the 'context' could have been
+	// updated without Excel being aware and needed to be refreshed.
+	public void RBLe_RefreshRibbon( IRibbonControl _ )
+	{
+		workbookState = null;
+		ribbon.Invalidate();
+	}
+}
+
+// Simple extension method to wrap Invalidating more than one control.
+public static class ExcelExtensions
+{
+	public static void InvalidateControls( this IRibbonUI ribbon, params string[] controlIds )
+	{
+		foreach ( var controlId in controlIds )
+		{
+			ribbon.InvalidateControl( controlId );
+		}
+	}
+}
+```
+
+Back to [Features listing](#features).
+
+### Custom Ribbon Image with Badge Count
+
+To help promote cleaner Spreadsheet development, we wanted to show a badge count on a ribbon image when there were errors in the workbook formulas as an indicator to the developers.  See [ExcelIntegration.RegisterUnhandledExceptionHandler](#excelintegrationregisterunhandledexceptionhandler) section for the sample code that demonstrates how to accomplish this via the ribbons `getContent` method.
+
+Back to [Features listing](#features).
+
+### Using Windows Form Dialogs
+
+Our addin makes use of Windows Form dialogs when information from the user is required to perform a task.  I've never looked into implementing custom Task Panes, but in terms of the 'problems' I face in VS Code, I don't think it matters.  At the time of writing, VS Code did not have a visual designer for Windows Forms.  There are two solutions to this.  First, you can manually code up all the controls by hand inside a 'designer' partial class, or you can use Visual Studio to create the form UI and then bring the files over to VS Code.  I chose the latter.
+
+After the form is created in Visual Studio, small tweaks to the UI can probably be accomplished fairly easily in VS Code.  But if major UI changes are required, I'll probably end up back in Visual Studio.
+
+You can look at the `SaveHistory.cs` file under the `Views` folder and the `ProcessSaveHistory` method to examine the code, but in general I use the following pattern.
+
+```csharp
+// Method that needs input from the user...
+private CalcEngineUploadInfo? ProcessSaveHistory( MSExcel.Workbook workbook )
+{
+	// Constructor to my forms take in 'models' they need to properly initialize themselves
+	// if there are differing 'modes' of the form.
+	using var saveHistory = new SaveHistory( workbook, WorkbookState );
+
+	// Then I expose a public method that will return an object that contains the 'information'
+	// gathered from the user/form along with an additional `DialogResult Result` property that
+	// indicates the users resopnse/intent to the dialog.
+	var saveHistoryInfo = saveHistory.GetHistoryInformation();
+
+	// Omitted code - perform the appropriate code (or not) based on the `Result` property.
+	if ( saveHistoryInfo.Result == DialogResult.Cancel )
+	{
+		return null;
+	}
+
+	// Peform action with information provided in saveHistoryInformation...
+}
+```
+
+Back to [Features listing](#features).

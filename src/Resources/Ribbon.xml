@@ -9,10 +9,11 @@
 				<group id="SpecSheet" keytip="ss" label="Configuration Exporting" imageMso="WorkspaceHtmlProperties" getVisible="Ribbon_GetVisible">
 					<button id="exportConfigurations" keytip="E" label="Export Configurations" imageMso="WorkspaceHtmlProperties" size="normal" onAction="Ribbon_OnAction" tag="SpecSheet_ExportConfigurations" getEnabled="Ribbon_GetEnabled"/>
 					<button id="processGlobalTables" keytip="G" label="Process Global Tables" imageMso="ExportMoreMenu" size="normal" onAction="Ribbon_OnAction" tag="SpecSheet_ProcessGlobalTables" getVisible="Ribbon_GetVisible" getEnabled="Ribbon_GetEnabled"/>
+					<button id="exportSheet" keytip="U" label="Export Current Sheet" imageMso="DefinePrintStyles" size="normal" onAction="Ribbon_OnAction" tag="SpecSheet_ExportSheet" getEnabled="Ribbon_GetEnabled"/>
 				</group>
 
 				<group id="KatDataStore" keytip="ss" label="KAT Store" imageMso="WorkspaceHtmlProperties">
-					<button id="getLatestCEVersion" keytip="N" label="Download Latest" imageMso="MarkForDownload" onAction="Ribbon_OnAction" tag="KatDataStore_GetCurrentCalcEngine" size="large" getEnabled="Ribbon_GetEnabled" getScreentip="Ribbon_GetScreentip" />
+					<button id="downloadLatestCalcEngine" keytip="N" label="Download Latest" imageMso="MarkForDownload" onAction="Ribbon_OnAction" tag="KatDataStore_DownloadLatestCalcEngine" size="large" getEnabled="Ribbon_GetEnabled" getScreentip="Ribbon_GetScreentip" />
 					<button id="checkInCalcEngine" keytip="C" label="Check In" imageMso="FileCheckIn" onAction="Ribbon_OnAction" tag="KatDataStore_CheckInCalcEngine" size="large" getEnabled="Ribbon_GetEnabled" getScreentip="Ribbon_GetScreentip"/>
 					<button id="checkOutCalcEngine" keytip="O" label="Check Out" imageMso="FileCheckOut" onAction="Ribbon_OnAction" tag="KatDataStore_CheckOutCalcEngine" size="large" getEnabled="Ribbon_GetEnabled" getScreentip="Ribbon_GetScreentip"/>
 					<button id="manageCalcEngine" keytip="M" label="Manage CalcEngine" screentip="Manage CalcEngine in KAT Management Site" imageMso="ExportHtmlDocument" onAction="Ribbon_OnAction" tag="KatDataStore_ManageCalcEngine" size="large" getEnabled="Ribbon_GetEnabled" />
@@ -20,20 +21,20 @@
 				</group>
 
 				<group id="Navigation" keytip="ss" label="Navigation" imageMso="WorkspaceHtmlProperties">
-					<button id="auditNavigateToTable" keytip="T" screentip="Navigate to Spec/RBLe Table" label="Navigate to Table..." imageMso="FileServerLinkTables" onAction="Ribbon_OnAction" tag="Navigation_NavigateToTable" getEnabled="Ribbon_GetEnabled" size="large" />
+					<button id="navigateToTable" keytip="T" screentip="Navigate to Spec/RBLe Table" label="Navigate to Table..." imageMso="FileServerLinkTables" onAction="Ribbon_OnAction" tag="Navigation_NavigateToTable" getEnabled="Ribbon_GetEnabled" size="large" />
 
 					<menu id="navigationExtras" keytip="V" label="Navigate To" imageMso="NavForward" size="large">
 						<button id="navigateToInputs" keytip="S" screentip="Navigate to start of first available Input tab ('StartData' named range)." label="Input Data" imageMso="InfopathExportForms" onAction="Ribbon_OnAction" tag="Navigation_GoToInputs" getEnabled="Ribbon_GetEnabled" getVisible="Ribbon_GetVisible" />
 
-						<button id="navigateToCalculationInputs" keytip="I" screentip="Navigate to Calculation Inputs ('CalculationInputs' named range) on first available Input tab." label="Calculation Inputs" imageMso="ExportLotus" onAction="Ribbon_OnAction" tag="Navigation_GoToCalculationInputs" getEnabled="Ribbon_GetEnabled" getVisible="Ribbon_GetVisible" />
 						<button id="navigateToInputData" keytip="D" screentip="Navigate to Profile Data ('xDSDataFields' named range) on first available Input tab." label="Profile Data" imageMso="XmlExport" onAction="Ribbon_OnAction" tag="Navigation_GoToInputData" getEnabled="Ribbon_GetEnabled" getVisible="Ribbon_GetVisible" />
+						<button id="navigateToCalculationInputs" keytip="I" screentip="Navigate to Calculation Inputs ('CalculationInputs' named range) on first available Input tab." label="Calculation Inputs" imageMso="ExportLotus" onAction="Ribbon_OnAction" tag="Navigation_GoToCalculationInputs" getEnabled="Ribbon_GetEnabled" getVisible="Ribbon_GetVisible" />
 						<button id="navigateToInputTables" keytip="T" screentip="Navigate to Input, Data, and Global Tables ('StartTables' named range) on first available Input tab." label="Input Tables" imageMso="GetPowerQueryMerge" onAction="Ribbon_OnAction" tag="Navigation_GoToInputTables" getEnabled="Ribbon_GetEnabled"/>
 						<button id="navigateToFrameworkInputs" keytip="F" screentip="Navigate to Framework Inputs ('FrameworkInputs' named range) on first available Input tab." label="Framework Inputs" imageMso="MailMergeExportRecipientList" onAction="Ribbon_OnAction" tag="Navigation_GoToFrameworkInputs" getEnabled="Ribbon_GetEnabled" getVisible="Ribbon_GetVisible" />
 
 						<menuSeparator id="sepNavigationExtras1"/>
 
-						<button id="auditGoToBTRCellAddressCell" keytip="C" screentip="Go to currently selected BTRCellAddress destination." label="Selected BTRCellAddress" imageMso="TableExportMenu" onAction="Ribbon_OnAction" tag="Navigation_GoToBTRCellAddress" getEnabled="Ribbon_GetEnabled" />
-						<button id="auditBackToMacroTab" keytip="M" screentip="Navigate back to Macro Tab" label="Back To RBLeMacro named range." imageMso="MergeOptions" onAction="Ribbon_OnAction" tag="Navigation_BackToRBLeMacro" getEnabled="Ribbon_GetEnabled" />
+						<button id="navigateToBTRCellAddressCell" keytip="C" screentip="Go to currently selected BTRCellAddress destination." label="Selected BTRCellAddress" imageMso="TableExportMenu" onAction="Ribbon_OnAction" tag="Navigation_GoToBTRCellAddress" getEnabled="Ribbon_GetEnabled" />
+						<button id="navigateToRBLeMacro" keytip="M" screentip="Navigate to RBLeMacro named range" label="Back To RBLeMacro named range." imageMso="MergeOptions" onAction="Ribbon_OnAction" tag="Navigation_BackToRBLeMacro" getEnabled="Ribbon_GetEnabled" />
 					</menu>
 				</group>
 
@@ -47,18 +48,18 @@
 
 						<menuSeparator id="sepUtilities1"/>
 
-						<button id="extraLocalBatch" keytip="B" label="Local Batch Calc" imageMso="GroupCreateClient" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_LocalBatchCalc" getEnabled="Ribbon_GetEnabled"/>
+						<button id="processLocalBatch" keytip="B" label="Local Batch Calc" imageMso="GroupCreateClient" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_LocalBatchCalc" getEnabled="Ribbon_GetEnabled"/>
 
 						<menuSeparator id="sepUtilities2"/>
 
-						<button id="getLatestGlobalTables" keytip="T" label="Download Global Tables File" imageMso="ExportMoreMenu" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_DownloadGlobalTables"/>
-						<button id="getLatestHelpersCalcEngine" keytip="H" label="Download Helpers CalcEngine" imageMso="DiagramChangeToCycleClassic" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_DownloadHelpersCalcEngine"/>
+						<button id="downloadLatestGlobalTables" keytip="T" label="Download Global Tables File" imageMso="ExportMoreMenu" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_DownloadGlobalTables"/>
+						<button id="downloadLatestHelpersCalcEngine" keytip="H" label="Download Helpers CalcEngine" imageMso="DiagramChangeToCycleClassic" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_DownloadHelpersCalcEngine"/>
 
 						<menuSeparator id="sepUtilities3"/>
 
 						<button id="convertToRBLe" keytip="R" label="Convert to RBLe Functions" imageMso="ControlWizards" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_ConvertToRBLe" getEnabled="Ribbon_GetEnabled"/>
 						<button id="importBrdSettings" keytip="S" label="Import BRD Settings" imageMso="MultiItemFormGallery" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_ImportBrdSettings" getEnabled="Ribbon_GetEnabled"/>
-						<button id="extraExcelLinkToAddIn" keytip="K" label="Link to Loaded Add-ins" imageMso="EditLinks" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_LinkToLoadedAddIns" getEnabled="Ribbon_GetEnabled"/>
+						<button id="linkToLoadedAddIns" keytip="K" label="Link to Loaded Add-ins" imageMso="EditLinks" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_LinkToLoadedAddIns" getEnabled="Ribbon_GetEnabled"/>
 					</menu>
 				</group>
 
@@ -69,7 +70,7 @@
 						<button id="exportJsonData" keytip="J" label="xDS Json Data..." imageMso="CustomizeXSLTMenu" onAction="Ribbon_OnAction" tag="DataExporting_ExportJsonData" getEnabled="Ribbon_GetEnabled"/>
 						<button id="exportResultJsonData" keytip="J" label="Result Json Data..." imageMso="CustomizeXSLTMenu" onAction="Ribbon_OnAction" tag="DataExporting_ExportResultJsonData" getEnabled="Ribbon_GetEnabled"/>
 						<menuSeparator id="sepDataExportingExtras1"/>
-						<button id="dataAuditxDSHeaders" keytip="X" label="Audit Data Export Sheet" imageMso="HeaderFooterLinkToPrevious" onAction="Ribbon_OnAction" tag="DataExporting_AuditDataExportHeaders" />
+						<button id="exportAuditxDSHeaders" keytip="X" label="Audit Data Export Sheet" imageMso="HeaderFooterLinkToPrevious" onAction="Ribbon_OnAction" tag="DataExporting_AuditDataExportHeaders" />
 						<button id="exportMappedxDSData" keytip="M" label="Mapped xDS Data..." imageMso="ExportBusinessDataCatalogModel" onAction="Ribbon_OnAction" tag="DataExporting_ExportMappedXmlData" getEnabled="Ribbon_GetEnabled"/>
 					</menu>
 				</group>
@@ -81,13 +82,13 @@
 					<menu id="auditExtras" keytip="3" label="Audit Tools" imageMso="SiteColumnActionsValidationSettings">
 						<button id="auditCellWithEmptyReferences" keytip="F" screentip="Highlight unreferenced cells in current selection" label="Non-Referenced Cells" imageMso="FormulaEvaluate" onAction="Ribbon_OnAction" tag="Audit_ShowEmptyCellReferences" />
 						<menuSeparator id="sepAuditExtras1"/>
-						<button id="auditCalcEngineSpecificInput" keytip="L" label="Search Local CalcEngines..." imageMso="MailMergeFindRecipient" onAction="Ribbon_OnAction" tag="Audit_SpecificToken" />
-						<button id="auditCalcEngineTab" keytip="A" label="Audit Input/Result Tabs" imageMso="EventOnAfterChange" onAction="Ribbon_OnAction" tag="Audit_CalcEngineTabs" getEnabled="Ribbon_GetEnabled"/>
+						<button id="auditLocalCalcEngines" keytip="L" label="Search Local CalcEngines..." imageMso="MailMergeFindRecipient" onAction="Ribbon_OnAction" tag="Audit_SpecificToken" />
+						<button id="auditCalcEngineTabs" keytip="A" label="Audit Input/Result Tabs" imageMso="EventOnAfterChange" onAction="Ribbon_OnAction" tag="Audit_CalcEngineTabs" getEnabled="Ribbon_GetEnabled"/>
 					</menu>
 				</group>
 
 				<group id="RBLe" label="RBLe">
-					<button id="extraEmailBlast" keytip="B" label="Email Blast Utility" imageMso="EmailMergeWizard" onAction="Ribbon_OnAction" tag="RBLe_BlastEmail" size="large"/>
+					<button id="emailBlast" keytip="B" label="Email Blast Utility" imageMso="EmailMergeWizard" onAction="Ribbon_OnAction" tag="RBLe_BlastEmail" size="large"/>
 					<button id="auditShowLog" keytip="L" screentip="Show Diagnostics Log" label="Show Log" getImage="Ribbon_GetImage" onAction="Ribbon_OnAction" tag="RBLe_ShowLog" size="large" />
 					<menu id="help" keytip="H" label="Help" imageMso="Help" size="large">
 						<button id="helpContents" keytip="C" label="Contents" onAction="Ribbon_OnAction" tag="RBLe_OpenHelp" />

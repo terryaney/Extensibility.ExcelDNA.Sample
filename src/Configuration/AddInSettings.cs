@@ -4,8 +4,10 @@ public class AddInSettings
 {
 	public bool ShowRibbon { get; init; }
 	public DataService[] DataServices { get; init; } = Array.Empty<DataService>();
-	public SaveHistory SaveHistory { get; init; } = new();
+	public string? SaveHistoryName { get; init; }
+	public CalcEngineManagement CalcEngineManagement { get; init; } = new();
 	public DataExport DataExport { get; init; } = new();
+	public Features Features { get; init; } = new();
 }
 
 public class DataService
@@ -21,11 +23,15 @@ public class DataExport
 
 }
 
-public class SaveHistory
+public class CalcEngineManagement
 {
-	public bool Enabled { get; init; } = true;
-	public string? Name { get; init; }
 	public string? Email { get; init; }
 	public string? Password { get; init; }
+}
 
+public class Features
+{
+	internal const string Salt = "0fbc569b-f5f9-4a72-8127-ea0a558af5dd";
+	public string? SpecSheet { get; init; }
+	public string? GlobalTables { get; init; }
 }

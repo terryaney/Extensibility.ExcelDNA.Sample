@@ -43,13 +43,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Reference Include="KAT.Camelot.RBLe.Lookups">
-			<HintPath>..\..\..\..\Camelot\Assemblies\KAT.Camelot.RBLe.Lookups.dll</HintPath>
-		</Reference>
-	</ItemGroup>
-
-	<ItemGroup>
 		<Content Include="appsettings.json">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+		<Content Include="appsettings.features.json">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>
