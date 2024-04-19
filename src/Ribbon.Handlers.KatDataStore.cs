@@ -14,7 +14,7 @@ public partial class Ribbon
 	{
 		await EnsureAddInCredentialsAsync();
 		// TODO: Can probably just update info of state instead of calling api to get updated info (checked in, etc.)
-		WorkbookState = await WorkbookState.GetCurrentAsync( application );
+		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
 		ribbon.InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
@@ -23,7 +23,7 @@ public partial class Ribbon
 	{
 		await EnsureAddInCredentialsAsync();
 		// TODO: Can probably just update info of state instead of calling api to get updated info (checked out, etc.)
-		WorkbookState = await WorkbookState.GetCurrentAsync( application );
+		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
 		ribbon.InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}

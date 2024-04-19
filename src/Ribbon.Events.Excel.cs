@@ -32,7 +32,7 @@ public partial class Ribbon
 		
 		if ( application.Workbooks.Count == 1 )
 		{
-			WorkbookState = new();
+			WorkbookState.ClearState();
 			ribbon.InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
 		}
 	}
@@ -47,7 +47,7 @@ public partial class Ribbon
 		cellsInError.Clear();
 		ExcelDna.Logging.LogDisplay.Clear();
 
-		WorkbookState = await WorkbookState.GetCurrentAsync( application );
+		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
 		ribbon.InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
 	}
 
@@ -107,9 +107,9 @@ public partial class Ribbon
 		}
 	}
 
-	private async void Application_SheetActivate( object sheet )
+	private void Application_SheetActivate( object sheet )
 	{
-		WorkbookState = await WorkbookState.GetCurrentAsync( application );
+		WorkbookState.UpdateSheet( ( application.ActiveWorkbook.ActiveSheet as MSExcel.Worksheet )! );
 		ribbon.InvalidateControls( RibbonStatesToInvalidateOnSheetChange );
 
 		// Used to add event handlers to all charts that helped with old 'Excel' chart export 
@@ -140,7 +140,7 @@ public partial class Ribbon
 		// calcEngineUploadInfo.UserName;
 		var encryptedPassword = await CalcEngineManagement.EncryptPasswordAsync( password );
 		// trigger Change() of appsettings.json file
-		WorkbookState = await WorkbookState.GetCurrentAsync( application );
+		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
 	}
 
 	private DialogResult AuditCalcEngineTabs( MSExcel.Workbook workbook )
@@ -263,7 +263,7 @@ public partial class Ribbon
 				application.StatusBar = "CalcEngine successfully uploaded to Management Site.";
 
 				// TODO: Can probably just update info of state instead of calling api to get updated info (latest version, etc.)
-				WorkbookState = await WorkbookState.GetCurrentAsync( application );
+				await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
 				ribbon.InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
 			}
 			catch ( Exception ex )

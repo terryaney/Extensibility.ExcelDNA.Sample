@@ -12,45 +12,83 @@ namespace KAT.Extensibility.Excel.AddIn;
 
 public class WorkbookState
 {
-	public bool IsGlobalTablesFile { get; init; }
-	public bool IsSpecSheetFile { get; init; }
-	public bool IsCalcEngine { get; init; }
-	public bool IsRTCFile { get; init; }
+	public bool IsGlobalTablesFile { get; private set; }
+	public bool IsSpecSheetFile { get; private set; }
+	public bool IsCalcEngine { get; private set; }
+	public bool IsRTCFile { get; private set; }
 
-	public bool ShowDeveloperExports { get; init; }
-	public bool ShowCalcEngineManagement { get; init; }
-	public bool ShowGlobalTables { get; init; }
+	public bool ShowDeveloperExports { get; private set; }
+	public bool ShowCalcEngineManagement { get; private set; }
+	public bool ShowGlobalTables { get; private set; }
 
-	public string ManagementName { get; init; } = null!;
-	public bool IsUploadable { get; init; }
-	public bool IsLatestVersion { get; init; }
+	public string ManagementName { get; private set; } = null!;
+	public bool IsUploadable { get; private set; }
+	public bool IsLatestVersion { get; private set; }
 
-	public string? UploadedVersion { get; init; }
-	public string? CheckedOutBy { get; init; }
+	public string? UploadedVersion { get; private set; }
+	public string? CheckedOutBy { get; private set; }
 
-	public bool HasxDSDataFields { get; init; }
-	public bool HasRBLeMacro { get; init; }
-	public bool HasLinks { get; init; }
+	public bool HasxDSDataFields { get; private set; }
+	public bool HasRBLeMacro { get; private set; }
+	public bool HasLinks { get; private set; }
 
-	public SheetState SheetState { get; init; } = new();
+	public SheetState SheetState { get; private set; } = new();
 
-	internal static async Task<WorkbookState> GetCurrentAsync( MSExcel.Application application )
+	private MSExcel.Name[] bookNames = Array.Empty<MSExcel.Name>();
+
+	public void UpdateSheet( MSExcel.Worksheet? activeSheet )
+	{
+		if ( activeSheet == null )
+		{
+			SheetState = new();
+			return;
+		}
+
+		var sheetNames = activeSheet.Names.Cast<MSExcel.Name>().ToArray();
+		var sheetType = activeSheet.RangeOrNull<string>( "SheetType" );
+
+		var isGlobalTableSheet = Constants.CalcEngines.GlobalTablesSheetTypes.Contains( sheetType );
+		var isXmlMappingSheet = ( sheetNames?.Count( n => n.Name.EndsWith( "!MappingLayouts" ) || n.Name.EndsWith( "!PathToProfileElement" ) || n.Name.EndsWith( "!AuthIdElement" ) ) ?? 0 ) == 3;
+		var isUserAccessSheet =
+			activeSheet != null &&
+			( new[] { "Site Access", "Site Access Delete", "Delete Site Access" }.Contains( activeSheet.Name ) || activeSheet.Name.StartsWith( "Code Tables" ) ) &&
+			( sheetNames?.Any( n => n.Name.EndsWith( "!SheetVersion" ) ) ?? false );
+		var isExcelJSSheet = ( sheetNames?.Count( n => n.Name.EndsWith( "!Constants" ) || n.Name.EndsWith( "!Inputs" ) || n.Name.EndsWith( "!OutputtedValues" ) ) ?? 0 ) == 3;
+
+		var rbleMacro = bookNames.FirstOrDefault( n => n.Name == "RBLeMacro" );
+
+		SheetState = new()
+		{
+			CanExport = ShowDeveloperExports && ( IsGlobalTablesFile || isUserAccessSheet || isExcelJSSheet ),
+			CanPreview = IsCalcEngine && Constants.CalcEngines.PreviewSheetTypes.Contains( sheetType ),
+
+			IsInputSheet = IsCalcEngine && sheetType == Constants.CalcEngines.InputSheetType,
+			IsResultSheet = IsCalcEngine && Constants.CalcEngines.ResultSheetTypes.Contains( sheetType ),
+
+			IsGlobalTableSheet = ShowDeveloperExports && isGlobalTableSheet,
+			IsXmlMappingSheet = ShowDeveloperExports && isXmlMappingSheet,
+			IsUserAccessSheet = ShowDeveloperExports && isUserAccessSheet,
+			IsExcelJsSheet = ShowDeveloperExports && isExcelJSSheet,
+			IsMacroSheet = HasRBLeMacro && rbleMacro!.RefersToRange.Worksheet.Name == activeSheet.Name,
+		};
+	}
+
+	public async Task UpdateWorkbookAsync( MSExcel.Workbook activeWorkbook )
 	{
 		// TODO: Need to check all callers and if only changing sheets, don't need to call api, probably need overload
 		// TODO: No more static 'total' create, make methods to initialize diff bits
-		var activeWorkbook = application.ActiveWorkbook;
 
 		if ( activeWorkbook == null )
 		{
-			return new();
+			ClearState();
+			return;
 		}
 
 		var showDeveloperExports = Convert.ToBase64String( SHA256.HashData( Encoding.UTF8.GetBytes( Features.Salt + "ShowDeveloperExports:Allow" ) ) ) == AddIn.Settings.Features.ShowDeveloperExports;
 		var showGlobalTables = Convert.ToBase64String( SHA256.HashData( Encoding.UTF8.GetBytes( Features.Salt + "GlobalTables:Allow" ) ) ) == AddIn.Settings.Features.GlobalTables;
 		var showCalcEngineManagement = Convert.ToBase64String( SHA256.HashData( Encoding.UTF8.GetBytes( Features.Salt + "CalcEngineManagement:Allow" ) ) ) == AddIn.Settings.Features.CalcEngineManagement;
 
-
-		var bookNames = activeWorkbook.Names.Cast<MSExcel.Name>().ToArray();
+		bookNames = activeWorkbook.Names.Cast<MSExcel.Name>().ToArray();
 		var isGlobalTablesFile = activeWorkbook.Name.StartsWith( Path.GetFileNameWithoutExtension( Constants.FileNames.GlobalTables ), StringComparison.InvariantCultureIgnoreCase );
 		var isRTCFile = activeWorkbook.Name.StartsWith( Path.GetFileNameWithoutExtension( Constants.FileNames.RTCData ), StringComparison.InvariantCultureIgnoreCase );
 
@@ -80,25 +118,12 @@ public class WorkbookState
 
 		var ( liveName, testName ) = GetManagementNames( activeWorkbook.Name );
 
-		var activeSheet = activeWorkbook.ActiveSheet as MSExcel.Worksheet;
-
 		var rbleMacro = bookNames.FirstOrDefault( n => n.Name == "RBLeMacro" );
 		var hasRBLeMacro =
 			isCalcEngine && rbleMacro != null &&
 			!( (string)rbleMacro.RefersTo ).Contains( "#REF" );
 
-		var sheetNames = activeSheet?.Names.Cast<MSExcel.Name>().ToArray();
-		var sheetType = activeSheet?.RangeOrNull<string>( "SheetType" );
-
-		var isGlobalTableSheet = Constants.CalcEngines.GlobalTablesSheetTypes.Contains( sheetType );
-		var isXmlMappingSheet = ( sheetNames?.Count( n => n.Name.EndsWith( "!MappingLayouts" ) || n.Name.EndsWith( "!PathToProfileElement" ) || n.Name.EndsWith( "!AuthIdElement" ) ) ?? 0 ) == 3;
-		var isUserAccessSheet =
-			activeSheet != null &&
-			( new[] { "Site Access", "Site Access Delete", "Delete Site Access" }.Contains( activeSheet.Name ) || activeSheet.Name.StartsWith( "Code Tables" ) ) &&
-			( sheetNames?.Any( n => n.Name.EndsWith( "!SheetVersion" ) ) ?? false );
-		var isExcelJSSheet = ( sheetNames?.Count( n => n.Name.EndsWith( "!Constants" ) || n.Name.EndsWith( "!Inputs" ) || n.Name.EndsWith( "!OutputtedValues" ) ) ?? 0 ) == 3;
-
-		var calcEngineInfo = await GetCalcEngineInfoAsync( liveName );
+		var calcEngineInfo = await GetCalcEngineInfoAsync();
 
 		var isCalcEngineUploadable =
 			calcEngineInfo != null &&
@@ -109,46 +134,30 @@ public class WorkbookState
 			double.TryParse( activeWorkbook.RangeOrNull<string>( "Version" ), out var currentVersion ) &&
 			currentVersion == calcEngineInfo.Version;
 
-		return new()
-		{
-			ManagementName = liveName,
-			CheckedOutBy = calcEngineInfo?.CheckedOutBy,
+		ManagementName = liveName;
+		CheckedOutBy = calcEngineInfo?.CheckedOutBy;
 
-			ShowDeveloperExports = showDeveloperExports,
-			ShowCalcEngineManagement = showCalcEngineManagement,
-			ShowGlobalTables = showGlobalTables,
+		ShowDeveloperExports = showDeveloperExports;
+		ShowCalcEngineManagement = showCalcEngineManagement;
+		ShowGlobalTables = showGlobalTables;
 
-			IsCalcEngine = isCalcEngine,
-			IsGlobalTablesFile = showGlobalTables && /* need showGlobalTables? */ isGlobalTablesFile,
-			IsSpecSheetFile = isSpecSheet,
-			IsRTCFile = showDeveloperExports && isRTCFile,
-			IsUploadable = showCalcEngineManagement && isCalcEngineUploadable,
-			IsLatestVersion = managementIsLatest,
+		IsCalcEngine = isCalcEngine;
+		IsGlobalTablesFile = showGlobalTables && /* need showGlobalTables? */ isGlobalTablesFile;
+		IsSpecSheetFile = isSpecSheet;
+		IsRTCFile = showDeveloperExports && isRTCFile;
+		IsUploadable = showCalcEngineManagement && isCalcEngineUploadable;
+		IsLatestVersion = managementIsLatest;
 
-			UploadedVersion = calcEngineInfo?.Version.ToString(),
+		UploadedVersion = calcEngineInfo?.Version.ToString();
 
-			HasxDSDataFields = hasxDSDataFields,
-			HasRBLeMacro = hasRBLeMacro && rbleMacro!.RefersToRange.Worksheet.Name != activeSheet?.Name,
-			HasLinks = hasLinks,
+		HasxDSDataFields = hasxDSDataFields;
+		HasRBLeMacro = hasRBLeMacro;
+		HasLinks = hasLinks;
 
-			SheetState = new()
-			{
-				CanExport = showDeveloperExports && ( isGlobalTablesFile || isUserAccessSheet || isExcelJSSheet ),
-				CanPreview = isCalcEngine && Constants.CalcEngines.PreviewSheetTypes.Contains( sheetType ),
-
-				IsInputSheet = isCalcEngine && sheetType == Constants.CalcEngines.InputSheetType,
-				IsResultSheet = isCalcEngine && Constants.CalcEngines.ResultSheetTypes.Contains( sheetType ),
-
-				IsGlobalTableSheet = showDeveloperExports && isGlobalTableSheet,
-				IsXmlMappingSheet = showDeveloperExports && isXmlMappingSheet,
-				IsUserAccessSheet = showDeveloperExports && isUserAccessSheet,
-				IsExcelJsSheet = showDeveloperExports && isExcelJSSheet,
-				IsMacroSheet = hasRBLeMacro && rbleMacro!.RefersToRange.Worksheet.Name == activeSheet?.Name,
-			}
-		};
+		UpdateSheet( ( activeWorkbook.ActiveSheet as MSExcel.Worksheet )! );
 	}
 
-	static (string LiveName, string TestName) GetManagementNames( string fileName )
+	private static (string LiveName, string TestName) GetManagementNames( string fileName )
 	{
 		var managementName =
 			Path.GetFileNameWithoutExtension( fileName )
@@ -173,21 +182,21 @@ public class WorkbookState
 		return (managementName, $"{Path.GetFileNameWithoutExtension( managementName )}_Test{Path.GetExtension( managementName )}");
 	}
 
-	private static async Task<CalcEngineInfo?> GetCalcEngineInfoAsync( string calcEngine )
+	private async Task<CalcEngineInfo?> GetCalcEngineInfoAsync()
 	{
 		if ( string.IsNullOrEmpty( AddIn.Settings.CalcEngineManagement.Password ) )
 		{
 			return null;
 		}
 
-		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.Get( Path.GetFileNameWithoutExtension( calcEngine ) )}";
+		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.Get( Path.GetFileNameWithoutExtension( ManagementName ) )}";
 
 		using var httpClient = new HttpClient();
 		using var request = new HttpRequestMessage( HttpMethod.Post, url ) 
 		{ 
 			Content = new StringContent( JsonSerializer.Serialize( 
 				new CalcEngineRequest { 
-					Name = calcEngine, 
+					Name = ManagementName, 
 					Email = AddIn.Settings.CalcEngineManagement.Email!, 
 					Password = AddIn.Settings.CalcEngineManagement.Password! 
 				} ), 
@@ -209,6 +218,28 @@ public class WorkbookState
 		{
 			throw new ApplicationException( $"Unable to get CalcEngine info from {url}.", ex );
 		}
+	}
+
+	public void ClearState()
+	{
+		IsGlobalTablesFile =
+		IsSpecSheetFile =
+		IsCalcEngine =
+		IsRTCFile =
+		ShowDeveloperExports =
+		ShowCalcEngineManagement =
+		ShowGlobalTables =
+		HasxDSDataFields =
+		HasRBLeMacro =
+		HasLinks =
+		IsUploadable =
+		IsLatestVersion = false;
+
+		ManagementName =
+		UploadedVersion =
+		CheckedOutBy = null!;
+
+		SheetState = new();
 	}
 }
 

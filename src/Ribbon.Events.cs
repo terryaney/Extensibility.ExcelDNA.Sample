@@ -93,7 +93,7 @@ public partial class Ribbon
 
 			"navigateToTable" => WorkbookState.IsCalcEngine || WorkbookState.IsSpecSheetFile,
 			"navigateToBTRCellAddressCell" => WorkbookState.SheetState.IsMacroSheet,
-			"navigateToRBLeMacro" => WorkbookState.HasRBLeMacro,
+			"navigateToRBLeMacro" => WorkbookState.HasRBLeMacro && !WorkbookState.SheetState.IsMacroSheet,
 			"linkToLoadedAddIns" => WorkbookState.HasLinks,
 
 			_ => true,

@@ -77,10 +77,7 @@ public partial class Ribbon : ExcelRibbon
 		showRibbon = AddIn.Settings.ShowRibbon;
 		AddEventHandlers();
 
-		if ( application.ActiveWorkbook != null )
-		{
-			WorkbookState = await WorkbookState.GetCurrentAsync( application );
-		}
+		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
 		ribbon.InvalidateControls( RibbonStatesToInvalidateOnFeatureChange );
 	}
 

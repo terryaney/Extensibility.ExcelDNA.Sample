@@ -28,7 +28,7 @@ public partial class Ribbon
 
 	public async Task RBLe_RefreshRibbon( IRibbonControl _ )
 	{
-		WorkbookState = await WorkbookState.GetCurrentAsync( application );
+		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
 		ribbon.Invalidate();
 	}
 
