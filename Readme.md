@@ -104,6 +104,7 @@ My add-in has a CustomUI ribbon and to enable intellisense in the `Ribbon.xml` f
 ## Features
 
 1. [Ribbon Organization](#ribbon-organization)
+1. [async/await Issues](#asyncawait-issues)
 1. [ExcelIntegration.RegisterUnhandledExceptionHandler](#excelintegrationregisterunhandledexceptionhandler)
 1. [appsettings.json Support](#appsettingsjson-support)
 1. [Fixing Workbook Links](#fixing-workbook-links)
@@ -158,7 +159,7 @@ Code Locations and Requirements
 
 | Method | Requirement | Strategy |
 | --- | --- | --- |
-|  |  |  |
+| `Ribbon_GetContent` | `Camelot.Api.Excel` | `.GetAwaiter().GetResult()` |
 
 
 Back to [Features listing](#features).

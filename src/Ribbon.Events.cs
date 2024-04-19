@@ -1,5 +1,6 @@
 ﻿using ExcelDna.Integration.CustomUI;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Responses;
+using Microsoft.Office.Interop.Excel;
 using System.Xml.Linq;
 
 namespace KAT.Extensibility.Excel.AddIn;
@@ -60,10 +61,12 @@ public partial class Ribbon
 
 	public string? Ribbon_GetScreentip( IRibbonControl control )
 	{
-		// TODO: Need to implement
 		return control.Id switch
 		{
 			"katDataStoreDownloadLatest" => $"Download latest version ({WorkbookState.UploadedVersion ?? "Latest"})",
+			"katDataStoreCheckOut" => string.IsNullOrEmpty( WorkbookState.CheckedOutBy )
+				? "Check Out CalcEngine"
+				: $"Check Out CalcEngine (checked out by: {WorkbookState.CheckedOutBy})",
 			_ => null,
 		};
 	}
@@ -129,18 +132,18 @@ public partial class Ribbon
 			{
 				using var ms = new MemoryStream( auditShowLogImage );
 
-				var img = System.Drawing.Image.FromStream( ms );
+				var img = Image.FromStream( ms );
 
 				if ( auditShowLogBadgeCount > 0 )
 				{
 					var flagGraphics = Graphics.FromImage( img );
 					flagGraphics.FillEllipse(
 						new SolidBrush( Color.FromArgb( 242, 60, 42 ) ),
-						new Rectangle( 11, 0, 19, 19 )
+						new System.Drawing.Rectangle( 11, 0, 19, 19 )
 					);
 					flagGraphics.DrawString(
 						auditShowLogBadgeCount.ToString(),
-						new Font( FontFamily.GenericSansSerif, 6, FontStyle.Bold ),
+						new System.Drawing.Font( FontFamily.GenericSansSerif, 6, FontStyle.Bold ),
 						Brushes.White,
 						x: auditShowLogBadgeCount < 10 ? 16 : 13,
 						y: 3

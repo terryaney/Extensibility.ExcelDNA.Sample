@@ -10,7 +10,7 @@
 
 				<group id="groupKatDataStore" keytip="ss" label="KAT Store" imageMso="WorkspaceHtmlProperties">
 					<button id="katDataStoreDownloadLatest" keytip="N" label="Download Latest" imageMso="MarkForDownload" onAction="Ribbon_OnAction" tag="KatDataStore_DownloadLatestCalcEngine" size="large" getEnabled="Ribbon_GetEnabled" getScreentip="Ribbon_GetScreentip" />
-					<button id="katDataStoreCheckIn" keytip="C" label="Check In" imageMso="FileCheckIn" onAction="Ribbon_OnAction" tag="KatDataStore_CheckInCalcEngine" size="large" getVisible="Ribbon_GetVisible" getScreentip="Ribbon_GetScreentip" />
+					<button id="katDataStoreCheckIn" keytip="C" label="Check In" imageMso="FileCheckIn" onAction="Ribbon_OnAction" tag="KatDataStore_CheckInCalcEngine" size="large" getVisible="Ribbon_GetVisible" />
 					<button id="katDataStoreCheckOut" keytip="O" label="Check Out" imageMso="FileCheckOut" onAction="Ribbon_OnAction" tag="KatDataStore_CheckOutCalcEngine" size="large" getVisible="Ribbon_GetVisible" getScreentip="Ribbon_GetScreentip" />
 					<button id="katDataStoreManage" keytip="M" label="Manage CalcEngine" screentip="Manage CalcEngine in KAT Management Site" imageMso="ExportHtmlDocument" onAction="Ribbon_OnAction" tag="KatDataStore_ManageCalcEngine" size="large" getEnabled="Ribbon_GetEnabled" />
 					<dynamicMenu id="katDataStoreDebugCalcEnginesMenu" keytip="F" label="Debug Files" imageMso="PageSettings" size="large" getContent="Ribbon_GetContent" invalidateContentOnDrop="true" getEnabled="Ribbon_GetEnabled"/>
