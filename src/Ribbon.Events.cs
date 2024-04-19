@@ -6,46 +6,6 @@ namespace KAT.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
-	/*
-	private static string[] RibbonStatesToInvalidateOnFeatureChange => new string[] {
-		"tabKat", "groupConfigurationExporting", "configurationExportingGlobalTables", "katDataStoreCheckIn", "katDataStoreCheckOut"
-	}; 
-
-	string[] RibbonStatesToInvalidateOnWorkbookChange =>
-		new[] {
-			"configurationExportingWorkbook", "configurationExportingGlobalTables",
-
-			"katDataStoreManage", "katDataStoreDebugCalcEnginesMenu",
-
-			"navigationTable", "navigationInputs", "navigationInputData", "navigationCalculationInputs", "navigationInputTables", "navigationFrameworkInputs",
-
-			"calcEngineUtilitiesProcessWorkbook", "calcEngineUtilitiesLocalBatch", "calcEngineUtilitiesConvertToRBLe", 
-
-			"dataExportingExtras", "dataExportingxDS", "dataExportingAuditHeaders", "dataExportingMappedxDSData",
-
-			"auditShowDependencies", "auditHideDependencies", "auditInputResultTabs", "auditNonReferencedCells"
-		}
-		.Concat( RibbonStatesToInvalidateOnFeatureChange )
-		.Concat( RibbonStatesToInvalidateOnSheetChange )
-		.Concat( RibbonStatesToInvalidateOnCalcEngineManagement )
-		.ToArray();
-	
-	readonly string[] RibbonStatesToInvalidateOnCalcEngineManagement =
-		new[] {
-			"katDataStoreDownloadLatest", "katDataStoreCheckIn", "katDataStoreCheckOut"
-		};
-	readonly string[] RibbonStatesToInvalidateOnSheetChange =
-		new[] {
-			"configurationExportingSheet",
-
-			"navigationToBTRCellAddressDestination", "navigationToRBLeMacro",
-
-			"calcEngineUtilitiesLoadData", "calcEngineUtilitiesPreviewResults", "calcEngineUtilitiesHighcharts", "calcEngineUtilitiesImportBRD",
-
-			"dataExportingDocGenXml", "dataExportingJsonResultData"
-		};
-	*/
-	
 	public bool Ribbon_GetVisible( IRibbonControl control )
 	{
 		return control.Id switch
