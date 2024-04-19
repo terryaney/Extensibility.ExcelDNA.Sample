@@ -4,35 +4,35 @@ namespace KAT.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
-	public void RBLe_BlastEmail( IRibbonControl control )
+	public void Kat_BlastEmail( IRibbonControl control )
 	{
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public void RBLe_ShowLog( IRibbonControl? _ )
+	public void Kat_ShowLog( IRibbonControl? _ )
 	{
 		ExcelDna.Logging.LogDisplay.Show();
 		auditShowLogBadgeCount = 0;
-		ribbon.InvalidateControl( "auditShowLog" );
+		ribbon.InvalidateControl( "katShowDiagnosticLog" );
 	}
 
-	public void RBLe_OpenHelp( IRibbonControl control )
+	public void Kat_OpenHelp( IRibbonControl control )
 	{
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public void RBLe_OpenTemplate( IRibbonControl control )
+	public void Kat_OpenTemplate( IRibbonControl control )
 	{
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public async Task RBLe_RefreshRibbon( IRibbonControl _ )
+	public async Task Kat_RefreshRibbon( IRibbonControl _ )
 	{
 		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
 		ribbon.Invalidate();
 	}
 
-	public void RBLe_HelpAbout( IRibbonControl control )
+	public void Kat_HelpAbout( IRibbonControl control )
 	{
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}

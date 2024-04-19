@@ -250,7 +250,7 @@ public void LogFunctionError( ExcelReference caller, object exception )
 		ExcelDna.Logging.LogDisplay.RecordLine( message );
 
 		auditShowLogBadgeCount++;
-		ribbon.InvalidateControl( "auditShowLog" );
+		ribbon.InvalidateControl( "katShowDiagnosticLog" );
 	}		
 }
 
@@ -258,7 +258,7 @@ public void RBLe_ShowLog( IRibbonControl? _ )
 {
 	ExcelDna.Logging.LogDisplay.Show();
 	auditShowLogBadgeCount = 0;
-	ribbon.InvalidateControl( "auditShowLog" );
+	ribbon.InvalidateControl( "katShowDiagnosticLog" );
 }
 
 private int auditShowLogBadgeCount;
@@ -266,7 +266,7 @@ public Bitmap Ribbon_GetImage( IRibbonControl control )
 {
 	switch ( control.Id )
 	{
-		case "auditShowLog":
+		case "katShowDiagnosticLog":
 		{
 			using var ms = new MemoryStream( auditShowLogImage );
 
@@ -466,7 +466,7 @@ To access the settings, simply use `AddIn.Settings.*` properties when needed.  H
 <customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="Ribbon_OnLoad">
 	<ribbon startFromScratch="false">
 		<tabs>
-			<tab id="btrRBLe" keytip="K" label="KAT Tools" getVisible="Ribbon_GetVisible">
+			<tab id="tabKat" keytip="K" label="KAT Tools" getVisible="Ribbon_GetVisible">
 				
 				<!-- All the group elements making up my ribbon omitted for brevity -->
 
@@ -493,14 +493,14 @@ public partial class Ribbon : ExcelRibbon
 	{
 		// Store new setting and invalidate the ribbon
 		showRibbon = AddIn.Settings.ShowRibbon;
-		ribbon.InvalidateControl( "btrRBLe" );
+		ribbon.InvalidateControl( "tabKat" );
 	}
 
 	public bool Ribbon_GetVisible( IRibbonControl control )
 	{
 		return control.Id switch
 		{
-			"btrRBLe" => showRibbon,
+			"tabKat" => showRibbon,
 			_ => true,
 		};
 	}
@@ -591,9 +591,9 @@ Part of our ribbon.xml file showing the `onLoad` specified on `customUI` element
 <customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="Ribbon_OnLoad">
 	<ribbon startFromScratch="false">
 		<tabs>
-			<tab id="btrRBLe" keytip="K" label="KAT Tools">
-				<group id="SpecSheet" keytip="ss" label="Configuration Exporting" imageMso="WorkspaceHtmlProperties">
-					<button id="processGlobalTables" keytip="G" label="Process Global Tables" imageMso="ExportMoreMenu" size="normal" onAction="Ribbon_OnAction" tag="SpecSheet_ProcessGlobalTables" getVisible="Ribbon_GetVisible" getEnabled="Ribbon_GetEnabled"/>
+			<tab id="tabKat" keytip="K" label="KAT Tools">
+				<group id="groupConfigurationExporting" keytip="ss" label="Configuration Exporting" imageMso="WorkspaceHtmlProperties">
+					<button id="configurationExportingGlobalTables" keytip="G" label="Process Global Tables" imageMso="ExportMoreMenu" size="normal" onAction="Ribbon_OnAction" tag="ConfigurationExporting_ProcessGlobalTables" getVisible="Ribbon_GetVisible" getEnabled="Ribbon_GetEnabled"/>
 				</group>
 			</tab>
 		</tabs>
@@ -691,7 +691,7 @@ public partial class Ribbon : ExcelRibbon
 	// Above, RibbonStatesToInvalidateOnWorkbookChange and RibbonStatesToInvalidateOnSheetChange
 	// are just arrays for more IDs to manage visible/enabled state when the context changes.
 	readonly string[] RibbonStatesToInvalidateOnCalcEngineManagement =
-		new[] { "downloadLatestCalcEngine", "checkInCalcEngine", "checkOutCalcEngine" };
+		new[] { "katDataStoreDownloadLatest", "katDataStoreCheckIn", "katDataStoreCheckOut" };
 
 	public void KatDataStore_CheckInCalcEngine( IRibbonControl control )
 	{

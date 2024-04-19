@@ -1,5 +1,4 @@
-﻿using ExcelDna.Integration;
-using MSExcel = Microsoft.Office.Interop.Excel;
+﻿using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Extensibility.Excel.AddIn;
 
@@ -30,15 +29,6 @@ public partial class Ribbon
 		}
 		*/
 		
-		if ( application.Workbooks.Count == 1 )
-		{
-			WorkbookState.ClearState();
-			ribbon.InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
-		}
-	}
-	
-	private async void Application_WorkbookActivate( MSExcel.Workbook wb )
-	{
 		// Clear error info whenever a new workbook is opened.  Currenly, only show any 
 		// errors after a cell is calculated.  Could call application.Calculate() to force everything
 		// to re-evaluate, but that could be expensive, so for now, not doing it, the function log display
@@ -47,8 +37,18 @@ public partial class Ribbon
 		cellsInError.Clear();
 		ExcelDna.Logging.LogDisplay.Clear();
 
+		if ( application.Workbooks.Count == 1 )
+		{
+			WorkbookState.ClearState();
+			// Don't need invalidate if > 1 because WorkbookActivate will be called and trigger invalidate
+			ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
+		}
+	}
+	
+	private async void Application_WorkbookActivate( MSExcel.Workbook wb )
+	{
 		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
-		ribbon.InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
+		ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
 	}
 
 	private void Application_WorkbookBeforeSave( MSExcel.Workbook wb, bool SaveAsUI, ref bool Cancel )
@@ -59,7 +59,7 @@ public partial class Ribbon
 
 			if ( auditShowLogBadgeCount > 0 )
 			{
-				RBLe_ShowLog( null );
+				Kat_ShowLog( null );
 				Cancel = true;
 				return;
 			}
@@ -92,7 +92,7 @@ public partial class Ribbon
 	{
 		try
 		{
-			ribbon.InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
+			ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
 
 			Console.WriteLine( $"AfterSave Start: {DateTime.Now}" );
 			await UploadCalcEngineToManagementSiteAsync();
@@ -110,7 +110,7 @@ public partial class Ribbon
 	private void Application_SheetActivate( object sheet )
 	{
 		WorkbookState.UpdateSheet( ( application.ActiveWorkbook.ActiveSheet as MSExcel.Worksheet )! );
-		ribbon.InvalidateControls( RibbonStatesToInvalidateOnSheetChange );
+		ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnSheetChange );
 
 		// Used to add event handlers to all charts that helped with old 'Excel' chart export 
 		// functionality, but SSG does not support that so only use Highcharts/Apex now.
@@ -262,9 +262,8 @@ public partial class Ribbon
 
 				application.StatusBar = "CalcEngine successfully uploaded to Management Site.";
 
-				// TODO: Can probably just update info of state instead of calling api to get updated info (latest version, etc.)
-				await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
-				ribbon.InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
+				WorkbookState.UpdateVersion( application.ActiveWorkbook );
+				ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
 			}
 			catch ( Exception ex )
 			{

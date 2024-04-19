@@ -4,18 +4,18 @@ namespace KAT.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
-	public void SpecSheet_ExportConfigurations( IRibbonControl control )
+	public void ConfigurationExporting_ExportWorkbook( IRibbonControl control )
 	{
 		skipHistoryUpdateOnMoveSpecFromDownloads = true;
 		throw new NotImplementedException( "// TODO: Process " + control.Id );
 	}
 
-	public void SpecSheet_ProcessGlobalTables( IRibbonControl control )
+	public void ConfigurationExporting_ProcessGlobalTables( IRibbonControl control )
 	{
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public void SpecSheet_ExportSheet( IRibbonControl control )
+	public void ConfigurationExporting_ExportSheet( IRibbonControl control )
 	{
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}

@@ -31,7 +31,7 @@ public partial class Ribbon : ExcelRibbon
 
 	public static Ribbon CurrentRibbon { get; private set; } = null!;
 
-	private WorkbookState WorkbookState = new();
+	private readonly WorkbookState WorkbookState = new();
 
 	public Ribbon()
 	{
@@ -71,14 +71,14 @@ public partial class Ribbon : ExcelRibbon
 		RemoveEventHandlers();
 	}
 
-	public async Task InvalidateSettingsAsync()
+	public void InvalidateFeatures()
 	{
 		RemoveEventHandlers();
 		showRibbon = AddIn.Settings.ShowRibbon;
 		AddEventHandlers();
 
-		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
-		ribbon.InvalidateControls( RibbonStatesToInvalidateOnFeatureChange );
+		WorkbookState.UpdateFeatures();
+		ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnFeatureChange );
 	}
 
 	private void AddEventHandlers()
@@ -90,7 +90,6 @@ public partial class Ribbon : ExcelRibbon
 			application.WorkbookAfterSave += Application_WorkbookAfterSave;
 			application.WorkbookActivate += Application_WorkbookActivate;
 			application.WorkbookDeactivate += Application_WorkbookDeactivate;
-
 			application.SheetActivate += Application_SheetActivate;
 
 			// Used to remove event handlers to all charts that helped with old 'Excel' chart export 
@@ -191,7 +190,7 @@ public partial class Ribbon : ExcelRibbon
 			ExcelDna.Logging.LogDisplay.RecordLine( message );
 
 			auditShowLogBadgeCount++;
-			ribbon.InvalidateControl( "auditShowLog" );
+			ribbon.InvalidateControl( "katShowDiagnosticLog" );
 		}		
 	}
 }

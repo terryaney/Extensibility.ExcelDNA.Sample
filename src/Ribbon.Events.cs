@@ -1,5 +1,4 @@
-﻿using ExcelDna.Integration;
-using ExcelDna.Integration.CustomUI;
+﻿using ExcelDna.Integration.CustomUI;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Responses;
 using System.Xml.Linq;
 
@@ -7,23 +6,24 @@ namespace KAT.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
-	string[] RibbonStatesToInvalidateOnFeatureChange => new string[] {
-		"btrRBLe", "SpecSheet", "processGlobalTables", "checkInCalcEngine", "checkOutCalcEngine"
+	/*
+	private static string[] RibbonStatesToInvalidateOnFeatureChange => new string[] {
+		"tabKat", "groupConfigurationExporting", "configurationExportingGlobalTables", "katDataStoreCheckIn", "katDataStoreCheckOut"
 	}; 
 
 	string[] RibbonStatesToInvalidateOnWorkbookChange =>
 		new[] {
-			"exportConfigurations", "processGlobalTables",
+			"configurationExportingWorkbook", "configurationExportingGlobalTables",
 
-			"manageCalcEngine", "debugCalcEngines",
+			"katDataStoreManage", "katDataStoreDebugCalcEnginesMenu",
 
-			"navigateToTable", "navigateToInputs", "navigateToInputData", "navigateToCalculationInputs", "navigateToInputTables", "navigateToFrameworkInputs",
+			"navigationTable", "navigationInputs", "navigationInputData", "navigationCalculationInputs", "navigationInputTables", "navigationFrameworkInputs",
 
-			"processWorkbook", "processLocalBatch", "convertToRBLe", 
+			"calcEngineUtilitiesProcessWorkbook", "calcEngineUtilitiesLocalBatch", "calcEngineUtilitiesConvertToRBLe", 
 
-			"dataExportingExtras", "exportxDSData", "exportAuditxDSHeaders", "exportMappedxDSData",
+			"dataExportingExtras", "dataExportingxDS", "dataExportingAuditHeaders", "dataExportingMappedxDSData",
 
-			"auditExcelCellDepShow", "auditExcelCellDepHide", "auditCalcEngineTabs", "auditCellWithEmptyReferences"
+			"auditShowDependencies", "auditHideDependencies", "auditInputResultTabs", "auditNonReferencedCells"
 		}
 		.Concat( RibbonStatesToInvalidateOnFeatureChange )
 		.Concat( RibbonStatesToInvalidateOnSheetChange )
@@ -32,35 +32,34 @@ public partial class Ribbon
 	
 	readonly string[] RibbonStatesToInvalidateOnCalcEngineManagement =
 		new[] {
-			"downloadLatestCalcEngine", "checkInCalcEngine", "checkOutCalcEngine"
+			"katDataStoreDownloadLatest", "katDataStoreCheckIn", "katDataStoreCheckOut"
 		};
 	readonly string[] RibbonStatesToInvalidateOnSheetChange =
 		new[] {
-			"exportSheet",
+			"configurationExportingSheet",
 
-			"navigateToBTRCellAddressCell", "navigateToRBLeMacro",
+			"navigationToBTRCellAddressDestination", "navigationToRBLeMacro",
 
-			"loadDataIntoInput", "previewResults", "configureHighCharts", "importBrdSettings",
+			"calcEngineUtilitiesLoadData", "calcEngineUtilitiesPreviewResults", "calcEngineUtilitiesHighcharts", "calcEngineUtilitiesImportBRD",
 
-			"exportRBLDocGen", "exportResultJsonData"
+			"dataExportingDocGenXml", "dataExportingJsonResultData"
 		};
-
+	*/
+	
 	public bool Ribbon_GetVisible( IRibbonControl control )
 	{
 		return control.Id switch
 		{
-			"btrRBLe" => showRibbon,
+			"tabKat" => showRibbon,
+			"groupConfigurationExporting" => WorkbookState.ShowDeveloperExports || WorkbookState.ShowGlobalTables,
+			"configurationExportingGlobalTables" => WorkbookState.ShowGlobalTables,
 
-			"debugCalcEngines" => !string.IsNullOrEmpty( WorkbookState.ManagementName ),
+			"katDataStoreDebugCalcEnginesMenu" => !string.IsNullOrEmpty( WorkbookState.ManagementName ),
+			"katDataStoreCheckOut" => WorkbookState.ShowCalcEngineManagement && WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( AddIn.Settings.CalcEngineManagement.Email ) && string.Compare( WorkbookState.CheckedOutBy, AddIn.Settings.CalcEngineManagement.Email, true ) != 0 && !string.IsNullOrEmpty( WorkbookState.UploadedVersion ),
+			"katDataStoreCheckIn" => WorkbookState.ShowCalcEngineManagement && WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( AddIn.Settings.CalcEngineManagement.Email ) && string.Compare( WorkbookState.CheckedOutBy, AddIn.Settings.CalcEngineManagement.Email, true ) == 0,
 
-			"SpecSheet" => WorkbookState.ShowDeveloperExports || WorkbookState.ShowGlobalTables,
-			"processGlobalTables" => WorkbookState.ShowGlobalTables,
-			"navigateToInputs" => !WorkbookState.HasxDSDataFields,
-
-			"navigateToInputData" or "navigateToCalculationInputs" or "navigateToFrameworkInputs" => WorkbookState.HasxDSDataFields,
-
-			"checkOutCalcEngine" => WorkbookState.ShowCalcEngineManagement && ( string.IsNullOrEmpty( WorkbookState.ManagementName ) || ( WorkbookState.IsCalcEngine && string.Compare( WorkbookState.CheckedOutBy, AddIn.Settings.CalcEngineManagement.Email, true ) != 0 && !string.IsNullOrEmpty( WorkbookState.UploadedVersion ) ) ),
-			"checkInCalcEngine" => WorkbookState.ShowCalcEngineManagement && WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( WorkbookState.CheckedOutBy ) && string.Compare( WorkbookState.CheckedOutBy, AddIn.Settings.CalcEngineManagement.Email, true ) == 0,
+			"navigationInputs" => !WorkbookState.HasxDSDataFields,
+			"navigationInputData" or "navigationCalculationInputs" or "navigationFrameworkInputs" => WorkbookState.HasxDSDataFields,
 
 			_ => true,
 		};
@@ -70,31 +69,30 @@ public partial class Ribbon
 	{
 		return control.Id switch
 		{
-			// Change when sheet/book changes
-			"exportSheet" => WorkbookState.SheetState.CanExport,
-			"loadDataIntoInput" => WorkbookState.SheetState.IsInputSheet,
-			"exportRBLDocGen" or "exportResultJsonData" or "importBrdSettings" => WorkbookState.SheetState.IsResultSheet,
-			"configureHighCharts" or "previewResults" => WorkbookState.SheetState.CanPreview,
-			"exportConfigurations" => WorkbookState.IsSpecSheetFile || WorkbookState.IsGlobalTablesFile || WorkbookState.IsRTCFile,
-			"processGlobalTables" => WorkbookState.IsGlobalTablesFile,
-			"exportMappedxDSData" => WorkbookState.SheetState.IsXmlMappingSheet,
-			"dataExportingExtras" or "exportxDSData" or "exportJsonData" => application.ActiveWorkbook != null && !WorkbookState.IsSpecSheetFile && !WorkbookState.IsGlobalTablesFile && !WorkbookState.IsRTCFile && !WorkbookState.IsCalcEngine,
+			"configurationExportingSheet" => WorkbookState.SheetState.CanExport,
+			"configurationExportingWorkbook" => WorkbookState.IsSpecSheetFile || WorkbookState.IsGlobalTablesFile || WorkbookState.IsRTCFile,
+			"configurationExportingGlobalTables" => !WorkbookState.IsGlobalTablesFile,
 
-			"auditCalcEngineTabs" => WorkbookState.IsCalcEngine,
-			"auditExcelCellDepShow" or "auditExcelCellDepHide" or "auditCellWithEmptyReferences" => application.ActiveWorkbook != null,
+			"katDataStoreManage" => WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( WorkbookState.UploadedVersion ),
+			"katDataStoreDownloadLatest" => WorkbookState.IsCalcEngine && !WorkbookState.IsLatestVersion,
+			"katDataStoreDebugCalcEnginesMenu" => WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( AddIn.Settings.SaveHistoryName ) && !string.IsNullOrEmpty( WorkbookState.UploadedVersion ),
 
-			"convertToRBLe" or "navigateToInputs" or "navigateToInputData"or "navigateToCalculationInputs" or "navigateToFrameworkInputs" 
-				or "navigateToInputTables" or "processWorkbook" or "auditCalcEngine" or "auditCalcEngineTab" or "processLocalBatch" => WorkbookState.IsCalcEngine,
+			"dataExportingDocGenXml" or "dataExportingJsonResultData" or "calcEngineUtilitiesImportBRD" => WorkbookState.SheetState.IsResultSheet,
+			"dataExportingExtras" or "dataExportingxDS" or "dataExportingJsonData" => application.ActiveWorkbook != null && !WorkbookState.IsSpecSheetFile && !WorkbookState.IsGlobalTablesFile && !WorkbookState.IsRTCFile && !WorkbookState.IsCalcEngine,
+			"dataExportingMappedxDSData" => WorkbookState.ShowDeveloperExports && WorkbookState.SheetState.IsXmlMappingSheet,
 
-			"manageCalcEngine" => WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( WorkbookState.UploadedVersion ),
-			"downloadLatestCalcEngine" => WorkbookState.IsCalcEngine && !WorkbookState.IsLatestVersion,
+			"calcEngineUtilitiesLoadData" => WorkbookState.SheetState.IsInputSheet,
+			"calcEngineUtilitiesHighcharts" or "calcEngineUtilitiesPreviewResults" => WorkbookState.SheetState.CanPreview,
+			"calcEngineUtilitiesConvertToRBLe" or "calcEngineUtilitiesProcessWorkbook" or "calcEngineUtilitiesLocalBatch" => WorkbookState.IsCalcEngine,
+			"calcEngineUtilitiesLinkToLoadedAddIns" => WorkbookState.HasLinks,
 
-			"debugCalcEngines" => WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( AddIn.Settings.SaveHistoryName ) && !string.IsNullOrEmpty( WorkbookState.UploadedVersion ),
+			"auditShowDependencies" or "auditHideDependencies" or "auditNonReferencedCells" => application.ActiveWorkbook != null,
+			"auditCalcEngine" or "auditCalcEngineTab" or "auditInputResultTabs" => WorkbookState.IsCalcEngine,
 
-			"navigateToTable" => WorkbookState.IsCalcEngine || WorkbookState.IsSpecSheetFile,
-			"navigateToBTRCellAddressCell" => WorkbookState.SheetState.IsMacroSheet,
-			"navigateToRBLeMacro" => WorkbookState.HasRBLeMacro && !WorkbookState.SheetState.IsMacroSheet,
-			"linkToLoadedAddIns" => WorkbookState.HasLinks,
+			"navigationTable" => WorkbookState.IsCalcEngine || WorkbookState.IsSpecSheetFile,
+			"navigationToBTRCellAddressDestination" => WorkbookState.SheetState.IsMacroSheet,
+			"navigationToRBLeMacro" => WorkbookState.HasRBLeMacro && !WorkbookState.SheetState.IsMacroSheet,
+			"navigationInputs" or "navigationInputData"or "navigationCalculationInputs" or "navigationFrameworkInputs" or "navigationInputTables" => WorkbookState.IsCalcEngine,
 
 			_ => true,
 		};
@@ -105,7 +103,7 @@ public partial class Ribbon
 		// TODO: Need to implement
 		return control.Id switch
 		{
-			"downloadLatestCalcEngine" => $"Download latest version ({WorkbookState.UploadedVersion ?? "Latest"})",
+			"katDataStoreDownloadLatest" => $"Download latest version ({WorkbookState.UploadedVersion ?? "Latest"})",
 			_ => null,
 		};
 	}
@@ -114,7 +112,7 @@ public partial class Ribbon
 	{
 		switch ( control.Id )
 		{
-			case "debugCalcEngines":
+			case "katDataStoreDebugCalcEnginesMenu":
 			{
 				string? content = null;
 				
@@ -167,7 +165,7 @@ public partial class Ribbon
 	{
 		switch ( control.Id )
 		{
-			case "auditShowLog":
+			case "katShowDiagnosticLog":
 			{
 				using var ms = new MemoryStream( auditShowLogImage );
 

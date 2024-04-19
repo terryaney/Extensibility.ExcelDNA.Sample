@@ -59,13 +59,7 @@ public class AddIn : IExcelAddIn
 
 				// https://groups.google.com/g/exceldna/c/ILgL-dW47A4/m/9HrOyClJAQAJ
 				// Excel process not shutting down properly if I didn't wrap this in QueueAsMacro.
-				ExcelAsyncUtil.QueueAsMacro( async () => {
-					if ( Ribbon.CurrentRibbon == null )
-					{
-						return;
-					}
-					await Ribbon.CurrentRibbon.InvalidateSettingsAsync();
-				} );
+				ExcelAsyncUtil.QueueAsMacro( () => Ribbon.CurrentRibbon?.InvalidateFeatures() );
 			} 
 		);
 

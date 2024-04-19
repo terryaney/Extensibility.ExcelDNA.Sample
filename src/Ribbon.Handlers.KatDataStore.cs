@@ -13,18 +13,16 @@ public partial class Ribbon
 	public async Task KatDataStore_CheckInCalcEngine( IRibbonControl control )
 	{
 		await EnsureAddInCredentialsAsync();
-		// TODO: Can probably just update info of state instead of calling api to get updated info (checked in, etc.)
-		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
-		ribbon.InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
+		WorkbookState.CheckInCalcEngine();
+		ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
 	public async Task KatDataStore_CheckOutCalcEngine( IRibbonControl control )
 	{
 		await EnsureAddInCredentialsAsync();
-		// TODO: Can probably just update info of state instead of calling api to get updated info (checked out, etc.)
-		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
-		ribbon.InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
+		WorkbookState.CheckOutCalcEngine();
+		ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 

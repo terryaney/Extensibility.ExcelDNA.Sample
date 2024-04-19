@@ -12,19 +12,26 @@ namespace KAT.Extensibility.Excel.AddIn;
 
 public class WorkbookState
 {
-	public bool IsGlobalTablesFile { get; private set; }
+	private bool isGlobalTablesFile;
+	public bool IsGlobalTablesFile => ShowGlobalTables && isGlobalTablesFile;
 	public bool IsSpecSheetFile { get; private set; }
 	public bool IsCalcEngine { get; private set; }
-	public bool IsRTCFile { get; private set; }
+	private bool isRTCFile;
+	public bool IsRTCFile => ShowDeveloperExports && isRTCFile;
 
 	public bool ShowDeveloperExports { get; private set; }
 	public bool ShowCalcEngineManagement { get; private set; }
 	public bool ShowGlobalTables { get; private set; }
 
 	public string ManagementName { get; private set; } = null!;
-	public bool IsUploadable { get; private set; }
-	public bool IsLatestVersion { get; private set; }
+	private bool isUploadable;
+	public bool IsUploadable => ShowCalcEngineManagement && isUploadable;
+	public bool IsLatestVersion => 
+		!string.IsNullOrEmpty( UploadedVersion ) && !string.IsNullOrEmpty( currentVersion ) &&
+		double.TryParse( currentVersion, out var version ) &&
+		version == double.Parse( UploadedVersion );
 
+	public string? currentVersion { get; private set; }
 	public string? UploadedVersion { get; private set; }
 	public string? CheckedOutBy { get; private set; }
 
@@ -32,45 +39,13 @@ public class WorkbookState
 	public bool HasRBLeMacro { get; private set; }
 	public bool HasLinks { get; private set; }
 
-	public SheetState SheetState { get; private set; } = new();
+	public SheetState SheetState { get; private set; }
 
-	private MSExcel.Name[] bookNames = Array.Empty<MSExcel.Name>();
+	internal MSExcel.Name[] bookNames = Array.Empty<MSExcel.Name>();
 
-	public void UpdateSheet( MSExcel.Worksheet? activeSheet )
+	public WorkbookState()
 	{
-		if ( activeSheet == null )
-		{
-			SheetState = new();
-			return;
-		}
-
-		var sheetNames = activeSheet.Names.Cast<MSExcel.Name>().ToArray();
-		var sheetType = activeSheet.RangeOrNull<string>( "SheetType" );
-
-		var isGlobalTableSheet = Constants.CalcEngines.GlobalTablesSheetTypes.Contains( sheetType );
-		var isXmlMappingSheet = ( sheetNames?.Count( n => n.Name.EndsWith( "!MappingLayouts" ) || n.Name.EndsWith( "!PathToProfileElement" ) || n.Name.EndsWith( "!AuthIdElement" ) ) ?? 0 ) == 3;
-		var isUserAccessSheet =
-			activeSheet != null &&
-			( new[] { "Site Access", "Site Access Delete", "Delete Site Access" }.Contains( activeSheet.Name ) || activeSheet.Name.StartsWith( "Code Tables" ) ) &&
-			( sheetNames?.Any( n => n.Name.EndsWith( "!SheetVersion" ) ) ?? false );
-		var isExcelJSSheet = ( sheetNames?.Count( n => n.Name.EndsWith( "!Constants" ) || n.Name.EndsWith( "!Inputs" ) || n.Name.EndsWith( "!OutputtedValues" ) ) ?? 0 ) == 3;
-
-		var rbleMacro = bookNames.FirstOrDefault( n => n.Name == "RBLeMacro" );
-
-		SheetState = new()
-		{
-			CanExport = ShowDeveloperExports && ( IsGlobalTablesFile || isUserAccessSheet || isExcelJSSheet ),
-			CanPreview = IsCalcEngine && Constants.CalcEngines.PreviewSheetTypes.Contains( sheetType ),
-
-			IsInputSheet = IsCalcEngine && sheetType == Constants.CalcEngines.InputSheetType,
-			IsResultSheet = IsCalcEngine && Constants.CalcEngines.ResultSheetTypes.Contains( sheetType ),
-
-			IsGlobalTableSheet = ShowDeveloperExports && isGlobalTableSheet,
-			IsXmlMappingSheet = ShowDeveloperExports && isXmlMappingSheet,
-			IsUserAccessSheet = ShowDeveloperExports && isUserAccessSheet,
-			IsExcelJsSheet = ShowDeveloperExports && isExcelJSSheet,
-			IsMacroSheet = HasRBLeMacro && rbleMacro!.RefersToRange.Worksheet.Name == activeSheet.Name,
-		};
+		SheetState = new( this, null );
 	}
 
 	public async Task UpdateWorkbookAsync( MSExcel.Workbook activeWorkbook )
@@ -84,13 +59,9 @@ public class WorkbookState
 			return;
 		}
 
-		var showDeveloperExports = Convert.ToBase64String( SHA256.HashData( Encoding.UTF8.GetBytes( Features.Salt + "ShowDeveloperExports:Allow" ) ) ) == AddIn.Settings.Features.ShowDeveloperExports;
-		var showGlobalTables = Convert.ToBase64String( SHA256.HashData( Encoding.UTF8.GetBytes( Features.Salt + "GlobalTables:Allow" ) ) ) == AddIn.Settings.Features.GlobalTables;
-		var showCalcEngineManagement = Convert.ToBase64String( SHA256.HashData( Encoding.UTF8.GetBytes( Features.Salt + "CalcEngineManagement:Allow" ) ) ) == AddIn.Settings.Features.CalcEngineManagement;
-
 		bookNames = activeWorkbook.Names.Cast<MSExcel.Name>().ToArray();
-		var isGlobalTablesFile = activeWorkbook.Name.StartsWith( Path.GetFileNameWithoutExtension( Constants.FileNames.GlobalTables ), StringComparison.InvariantCultureIgnoreCase );
-		var isRTCFile = activeWorkbook.Name.StartsWith( Path.GetFileNameWithoutExtension( Constants.FileNames.RTCData ), StringComparison.InvariantCultureIgnoreCase );
+		isGlobalTablesFile = activeWorkbook.Name.StartsWith( Path.GetFileNameWithoutExtension( Constants.FileNames.GlobalTables ), StringComparison.InvariantCultureIgnoreCase );
+		isRTCFile = activeWorkbook.Name.StartsWith( Path.GetFileNameWithoutExtension( Constants.FileNames.RTCData ), StringComparison.InvariantCultureIgnoreCase );
 
 		var planInfo = !isGlobalTablesFile
 			? activeWorkbook
@@ -123,39 +94,39 @@ public class WorkbookState
 			isCalcEngine && rbleMacro != null &&
 			!( (string)rbleMacro.RefersTo ).Contains( "#REF" );
 
-		var calcEngineInfo = await GetCalcEngineInfoAsync();
-
-		var isCalcEngineUploadable =
-			calcEngineInfo != null &&
-			( string.Compare( liveName, activeWorkbook.Name, true ) == 0 || string.Compare( testName, activeWorkbook.Name, true ) == 0 );
-
-		var managementIsLatest =
-			calcEngineInfo != null &&
-			double.TryParse( activeWorkbook.RangeOrNull<string>( "Version" ), out var currentVersion ) &&
-			currentVersion == calcEngineInfo.Version;
-
-		ManagementName = liveName;
-		CheckedOutBy = calcEngineInfo?.CheckedOutBy;
-
-		ShowDeveloperExports = showDeveloperExports;
-		ShowCalcEngineManagement = showCalcEngineManagement;
-		ShowGlobalTables = showGlobalTables;
-
+		ManagementName = liveName; // This must be set before calling GetCalcEngineInfoAsync
 		IsCalcEngine = isCalcEngine;
-		IsGlobalTablesFile = showGlobalTables && /* need showGlobalTables? */ isGlobalTablesFile;
 		IsSpecSheetFile = isSpecSheet;
-		IsRTCFile = showDeveloperExports && isRTCFile;
-		IsUploadable = showCalcEngineManagement && isCalcEngineUploadable;
-		IsLatestVersion = managementIsLatest;
-
-		UploadedVersion = calcEngineInfo?.Version.ToString();
-
 		HasxDSDataFields = hasxDSDataFields;
 		HasRBLeMacro = hasRBLeMacro;
 		HasLinks = hasLinks;
 
+		var calcEngineInfo = await GetCalcEngineInfoAsync();
+
+		isUploadable =
+			calcEngineInfo != null &&
+			( string.Compare( liveName, activeWorkbook.Name, true ) == 0 || string.Compare( testName, activeWorkbook.Name, true ) == 0 );
+
+		CheckedOutBy = calcEngineInfo?.CheckedOutBy;
+		UploadedVersion = calcEngineInfo?.Version.ToString();
+		currentVersion = activeWorkbook.RangeOrNull<string>( "Version" );
+
+		UpdateFeatures();
 		UpdateSheet( ( activeWorkbook.ActiveSheet as MSExcel.Worksheet )! );
 	}
+
+	public void UpdateVersion( MSExcel.Workbook activeWorkbook ) => UploadedVersion = activeWorkbook.RangeOrNull<string>( "Version" );
+	public void CheckInCalcEngine() => CheckedOutBy = null;
+	public void CheckOutCalcEngine() => CheckedOutBy = AddIn.Settings.CalcEngineManagement.Email!;
+
+	public void UpdateFeatures()
+	{
+		ShowDeveloperExports = Convert.ToBase64String( SHA256.HashData( Encoding.UTF8.GetBytes( Features.Salt + "ShowDeveloperExports:Allow" ) ) ) == AddIn.Settings.Features.ShowDeveloperExports;
+		ShowGlobalTables = Convert.ToBase64String( SHA256.HashData( Encoding.UTF8.GetBytes( Features.Salt + "GlobalTables:Allow" ) ) ) == AddIn.Settings.Features.GlobalTables;
+		ShowCalcEngineManagement = Convert.ToBase64String( SHA256.HashData( Encoding.UTF8.GetBytes( Features.Salt + "CalcEngineManagement:Allow" ) ) ) == AddIn.Settings.Features.CalcEngineManagement;
+	}
+
+	public void UpdateSheet( MSExcel.Worksheet? activeSheet ) => SheetState = new( this, activeSheet );
 
 	private static (string LiveName, string TestName) GetManagementNames( string fileName )
 	{
@@ -222,38 +193,73 @@ public class WorkbookState
 
 	public void ClearState()
 	{
-		IsGlobalTablesFile =
+		isGlobalTablesFile =
 		IsSpecSheetFile =
 		IsCalcEngine =
-		IsRTCFile =
-		ShowDeveloperExports =
-		ShowCalcEngineManagement =
-		ShowGlobalTables =
+		isRTCFile =
 		HasxDSDataFields =
 		HasRBLeMacro =
 		HasLinks =
-		IsUploadable =
-		IsLatestVersion = false;
+		isUploadable = false;
 
 		ManagementName =
 		UploadedVersion =
+		currentVersion =
 		CheckedOutBy = null!;
 
-		SheetState = new();
+		SheetState = new( this, null );
 	}
 }
 
 public class SheetState
 {
+	private readonly WorkbookState workbookState;
+
 	public bool IsResultSheet { get; init; }
 	public bool IsInputSheet { get; init; }
 	
 	public bool CanPreview { get; init; }
-	public bool CanExport { get; init; }
+	private readonly bool canExport;
+	public bool CanExport => ( workbookState?.ShowDeveloperExports ?? false ) && ( workbookState.IsGlobalTablesFile || canExport );
 
 	public bool IsGlobalTableSheet { get; init; }
 	public bool IsXmlMappingSheet { get; init; }
 	public bool IsUserAccessSheet { get; init; }
 	public bool IsExcelJsSheet { get; init; }
 	public bool IsMacroSheet { get; init; }
+
+	public SheetState( WorkbookState workbookState, MSExcel.Worksheet? activeSheet )
+	{
+		this.workbookState = workbookState;
+
+		if ( activeSheet == null )
+		{
+			return;
+		}
+
+		var sheetNames = activeSheet.Names.Cast<MSExcel.Name>().ToArray();
+		var sheetType = activeSheet.RangeOrNull<string>( "SheetType" );
+
+		var isGlobalTableSheet = Constants.CalcEngines.GlobalTablesSheetTypes.Contains( sheetType );
+		var isXmlMappingSheet = ( sheetNames?.Count( n => n.Name.EndsWith( "!MappingLayouts" ) || n.Name.EndsWith( "!PathToProfileElement" ) || n.Name.EndsWith( "!AuthIdElement" ) ) ?? 0 ) == 3;
+		var isUserAccessSheet =
+			activeSheet != null &&
+			( new[] { "Site Access", "Site Access Delete", "Delete Site Access" }.Contains( activeSheet.Name ) || activeSheet.Name.StartsWith( "Code Tables" ) ) &&
+			( sheetNames?.Any( n => n.Name.EndsWith( "!SheetVersion" ) ) ?? false );
+		var isExcelJSSheet = ( sheetNames?.Count( n => n.Name.EndsWith( "!Constants" ) || n.Name.EndsWith( "!Inputs" ) || n.Name.EndsWith( "!OutputtedValues" ) ) ?? 0 ) == 3;
+
+		var rbleMacro = workbookState.bookNames.FirstOrDefault( n => n.Name == "RBLeMacro" );
+
+		canExport = isUserAccessSheet || isExcelJSSheet;
+		CanPreview = Constants.CalcEngines.PreviewSheetTypes.Contains( sheetType );
+		IsInputSheet = sheetType == Constants.CalcEngines.InputSheetType;
+		IsResultSheet = Constants.CalcEngines.ResultSheetTypes.Contains( sheetType );
+
+		IsGlobalTableSheet = isGlobalTableSheet;
+		IsUserAccessSheet = isUserAccessSheet;
+		IsXmlMappingSheet = isXmlMappingSheet;
+
+		IsExcelJsSheet = isExcelJSSheet;
+		IsMacroSheet = workbookState.HasRBLeMacro && rbleMacro!.RefersToRange.Worksheet.Name == activeSheet!.Name;
+	}
 }
