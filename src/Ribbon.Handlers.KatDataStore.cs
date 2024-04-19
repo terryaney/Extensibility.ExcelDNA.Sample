@@ -4,21 +4,26 @@ namespace KAT.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
-	public void KatDataStore_DownloadLatestCalcEngine( IRibbonControl control )
+	public async Task KatDataStore_DownloadLatestCalcEngine( IRibbonControl control )
 	{
+		await EnsureAddInCredentialsAsync();
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public void KatDataStore_CheckInCalcEngine( IRibbonControl control )
+	public async Task KatDataStore_CheckInCalcEngine( IRibbonControl control )
 	{
-		workbookState = null;
+		await EnsureAddInCredentialsAsync();
+		// TODO: Can probably just update info of state instead of calling api to get updated info (checked in, etc.)
+		WorkbookState = await WorkbookState.GetCurrentAsync( application );
 		ribbon.InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public void KatDataStore_CheckOutCalcEngine( IRibbonControl control )
+	public async Task KatDataStore_CheckOutCalcEngine( IRibbonControl control )
 	{
-		workbookState = null;
+		await EnsureAddInCredentialsAsync();
+		// TODO: Can probably just update info of state instead of calling api to get updated info (checked out, etc.)
+		WorkbookState = await WorkbookState.GetCurrentAsync( application );
 		ribbon.InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
@@ -28,8 +33,9 @@ public partial class Ribbon
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public void KatDataStore_DownloadDebugFile( IRibbonControl control )
+	public async Task KatDataStore_DownloadDebugFile( IRibbonControl control, string versionKey )
 	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
+		await EnsureAddInCredentialsAsync();
+		MessageBox.Show( "// TODO: Process " + control.Id + ", " + versionKey );
 	}
 }

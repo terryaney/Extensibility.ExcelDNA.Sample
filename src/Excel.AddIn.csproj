@@ -33,21 +33,32 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="7.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
+
 		<PackageReference Include="ExcelDna.AddIn" Version="1.8.0-alpha2" />
 		<PackageReference Include="ExcelDna.IntelliSense" Version="1.8.0-alpha2" />
 		<PackageReference Include="ExcelDna.Interop" Version="15.0.1" />
 		<PackageReference Include="ExcelDna.Registration" Version="1.8.0-alpha2" />
-		<PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="7.0.0" />
-		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\..\..\Core\Domain\src\Camelot.Domain.csproj" />
+		<ProjectReference Include="..\..\..\RBLe\Core\src\Camelot.RBLe.Core.csproj" />
+		<ProjectReference Include="..\..\..\Abstractions\Api.Contracts\Excel\src\Camelot.Abstractions.Api.Contracts.Excel.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<Content Include="appsettings.json">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
-		<Content Include="appsettings.features.json">
+		<Content Include="appsettings.secrets.json">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+		<Exec Command="powershell -Command &quot;Get-ChildItem -Path '$(TargetFrameworkDirectory)' -Filter 'Microsoft.Extensions.Configuration*.dll' | ForEach-Object { Copy-Item -Path $_.FullName -Destination '$(OutDir)' }&quot;" />
+	</Target>	
 </Project>

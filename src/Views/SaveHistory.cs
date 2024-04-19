@@ -1,13 +1,11 @@
-﻿using Microsoft.Office.Interop.Excel;
-using System.ComponentModel;
-using MSExcel = Microsoft.Office.Interop.Excel;
+﻿using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Extensibility.Excel.AddIn;
 
 internal partial class SaveHistory : Form
 {
 	private string currentVersion = null!;
-	private readonly Workbook workbook;
+	private readonly MSExcel.Workbook workbook;
 	private readonly WorkbookState workbookState;
 
 	public SaveHistory( MSExcel.Workbook workbook, WorkbookState workbookState )
@@ -31,7 +29,7 @@ internal partial class SaveHistory : Form
 	/// If an Excel file has 'RBLInfo' history log, this prompts the user to enter information about the changes they are making and allows uploading to Management Site if it is a CalcEngine.
 	/// </summary>
 	/// <returns>Returns action to perform when saving Excel file that has 'RBLInfo' history log.  Ignore - do nothing, simply allow save to occur.  OK - Update history log.  Continue - Update history log and upload to Management Site.  Retry - Do not update history log, just attempt to re-upload to Management Site.</returns>
-	public SaveHistoryInfo GetHistoryInformation()
+	public async Task<SaveHistoryInfo> GetHistoryInformationAsync()
 	{
 		var sheets = workbook.Worksheets.Cast<MSExcel.Worksheet>();
 		var historySheet =
@@ -82,18 +80,17 @@ internal partial class SaveHistory : Form
 
 		author.Text = AddIn.Settings.SaveHistoryName;
 		version.Text = proposedVersion;
-
-		tUserName.Text = AddIn.Settings.CalcEngineManagement.Email;
-		tPassword.Text = AddIn.Settings.CalcEngineManagement.Password;
-
 		lManagementSite.Text += $" (Current Version: {workbookState.UploadedVersion})";
 
-		if ( !workbookState.IsCalcEngine )
+		tUserName.Text = AddIn.Settings.CalcEngineManagement.Email;
+		tPassword.Text = await AddIn.Settings.CalcEngineManagement.GetClearPasswordAsync();
+
+		if ( !workbookState.ShowCalcEngineManagement || !workbookState.IsCalcEngine )
 		{
 			ok.Text = "A&pply";
 			lManagementSite.Visible = lUserName.Visible = lPassword.Visible = tUserName.Visible = tPassword.Visible = forceUpload.Visible = false;
 			description.Height = ok.Top - description.Top - 20;
-			MinimumSize = new System.Drawing.Size( MinimumSize.Width, 235 );
+			MinimumSize = new Size( MinimumSize.Width, 235 );
 			Height = 235;
 		}
 		else if ( string.Compare( workbookState.CheckedOutBy, AddIn.Settings.CalcEngineManagement.Email, true ) != 0 )

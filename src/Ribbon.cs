@@ -31,8 +31,7 @@ public partial class Ribbon : ExcelRibbon
 
 	public static Ribbon CurrentRibbon { get; private set; } = null!;
 
-	private WorkbookState? workbookState = null;
-	public WorkbookState WorkbookState => workbookState ??= WorkbookState.Current( application ) ;
+	private WorkbookState WorkbookState = new();
 
 	public Ribbon()
 	{
@@ -72,12 +71,17 @@ public partial class Ribbon : ExcelRibbon
 		RemoveEventHandlers();
 	}
 
-	public void InvalidateSettings()
+	public async Task InvalidateSettingsAsync()
 	{
 		RemoveEventHandlers();
 		showRibbon = AddIn.Settings.ShowRibbon;
 		AddEventHandlers();
-		ribbon.InvalidateControls( "btrRBLe", "SpecSheet", "processGlobalTables" );
+
+		if ( application.ActiveWorkbook != null )
+		{
+			WorkbookState = await WorkbookState.GetCurrentAsync( application );
+		}
+		ribbon.InvalidateControls( RibbonStatesToInvalidateOnFeatureChange );
 	}
 
 	private void AddEventHandlers()
@@ -88,13 +92,7 @@ public partial class Ribbon : ExcelRibbon
 			application.WorkbookBeforeSave += Application_WorkbookBeforeSave;
 			application.WorkbookAfterSave += Application_WorkbookAfterSave;
 			application.WorkbookActivate += Application_WorkbookActivate;
-
-			// Used to simply trigger a SheetDeactivate if ActiveSheet != null
-			// if ( Wb.ActiveSheet != null )
-			// {
-			// 	Application_SheetDeactivate( Wb.ActiveSheet );
-			// }
-			// application.WorkbookDeactivate += Application_WorkbookDeactivate;
+			application.WorkbookDeactivate += Application_WorkbookDeactivate;
 
 			application.SheetActivate += Application_SheetActivate;
 
@@ -105,11 +103,6 @@ public partial class Ribbon : ExcelRibbon
 			// Used to update 'validation lists' in Tahiti spec sheets when any cell values changed, but no longer use Tahiti, 
 			// so disabling for now, but may bring back if 'improve' evolution spec sheet functionality.
 			// application.SheetChange += Application_SheetChange;
-
-			if ( application.ActiveWorkbook != null )
-			{
-				workbookState = null;
-			}
 		}
 	}
 
@@ -121,7 +114,7 @@ public partial class Ribbon : ExcelRibbon
 			application.WorkbookBeforeSave -= Application_WorkbookBeforeSave;
 			application.WorkbookAfterSave -= Application_WorkbookAfterSave;
 			application.WorkbookActivate -= Application_WorkbookActivate;
-			// application.WorkbookDeactivate -= Application_WorkbookDeactivate;
+			application.WorkbookDeactivate -= Application_WorkbookDeactivate;
 			application.SheetActivate -= Application_SheetActivate;
 			// application.SheetDeactivate -= Application_SheetDeactivate;
 			// application.SheetChange -= Application_SheetChange;
@@ -152,7 +145,8 @@ public partial class Ribbon : ExcelRibbon
 		{
 			try
 			{
-				typeof( Ribbon ).GetMethod( actionParts[ 0 ] )!.Invoke( this, new object[] { control } );
+				var mi = typeof( Ribbon ).GetMethod( actionParts[ 0 ] )!;
+				mi.Invoke( this, new object[] { control }.Concat( actionParts.Skip( 1 ) ).ToArray() );
 			}
 			catch ( Exception ex )
 			{

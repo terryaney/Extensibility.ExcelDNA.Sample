@@ -1,4 +1,5 @@
-﻿using MSExcel = Microsoft.Office.Interop.Excel;
+﻿using ExcelDna.Integration;
+using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Extensibility.Excel.AddIn;
 
@@ -19,7 +20,24 @@ public partial class Ribbon
 		}
 	}
 
-	private void Application_WorkbookActivate( MSExcel.Workbook wb )
+	private void Application_WorkbookDeactivate( MSExcel.Workbook Wb ) 
+	{
+		// Used to simply trigger a SheetDeactivate if ActiveSheet != null
+		/*
+		if ( Wb.ActiveSheet != null )
+		{
+			Application_SheetDeactivate( Wb.ActiveSheet );
+		}
+		*/
+		
+		if ( application.Workbooks.Count == 1 )
+		{
+			WorkbookState = new();
+			ribbon.InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
+		}
+	}
+	
+	private async void Application_WorkbookActivate( MSExcel.Workbook wb )
 	{
 		// Clear error info whenever a new workbook is opened.  Currenly, only show any 
 		// errors after a cell is calculated.  Could call application.Calculate() to force everything
@@ -29,7 +47,7 @@ public partial class Ribbon
 		cellsInError.Clear();
 		ExcelDna.Logging.LogDisplay.Clear();
 
-		workbookState = null;
+		WorkbookState = await WorkbookState.GetCurrentAsync( application );
 		ribbon.InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
 	}
 
@@ -61,7 +79,8 @@ public partial class Ribbon
 				return;
 			}
 
-			calcEngineUploadInfo = ProcessSaveHistory( wb );
+			// TODO: Is this acceptable?  Excel seems to close successfully even without QueueAsMacro but can't make task async due to ref.
+			calcEngineUploadInfo = ProcessSaveHistoryAsync( wb ).GetAwaiter().GetResult();
 		}
 		catch ( Exception ex )
 		{
@@ -75,6 +94,7 @@ public partial class Ribbon
 		{
 			ribbon.InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
 
+			Console.WriteLine( $"AfterSave Start: {DateTime.Now}" );
 			await UploadCalcEngineToManagementSiteAsync();
 		}
 		catch ( Exception ex )
@@ -87,15 +107,40 @@ public partial class Ribbon
 		}
 	}
 
-	private void Application_SheetActivate( object sheet )
+	private async void Application_SheetActivate( object sheet )
 	{
-		workbookState = null;
+		WorkbookState = await WorkbookState.GetCurrentAsync( application );
 		ribbon.InvalidateControls( RibbonStatesToInvalidateOnSheetChange );
 
 		// Used to add event handlers to all charts that helped with old 'Excel' chart export 
 		// functionality, but SSG does not support that so only use Highcharts/Apex now.
 
 		// Used to update 'validation lists' in Tahiti spec sheets, but no longer use Tahiti.
+	}
+
+	private async Task EnsureAddInCredentialsAsync()
+	{
+		await Task.Delay( 2000 ); // TODO: Remove
+		if ( WorkbookState.ShowCalcEngineManagement && ( string.IsNullOrEmpty( AddIn.Settings.CalcEngineManagement.Email ) || string.IsNullOrEmpty( AddIn.Settings.CalcEngineManagement.Password ) ) )
+		{
+			// TODO: Implement Credentials dialog
+			// var credentials = new Credentials( AddIn.Settings.CalcEngineManagement.Email, AddIn.Settings.CalcEngineManagement.Password );
+			// credentials.ShowDialog();
+
+			// If updated...
+			// await UpdateAddInCredentialsAsync( "terry.aney@conduent.com", "password" );
+		}
+	}
+
+	private async Task UpdateAddInCredentialsAsync( string userName, string password )
+	{
+		application.StatusBar = "Saving CalcEngine Management credentials...";
+		// TODO: Save new settings in appsettings.json and appsettings.secrets.json
+		// Disable edit notifications...
+		// calcEngineUploadInfo.UserName;
+		var encryptedPassword = await CalcEngineManagement.EncryptPasswordAsync( password );
+		// trigger Change() of appsettings.json file
+		WorkbookState = await WorkbookState.GetCurrentAsync( application );
 	}
 
 	private DialogResult AuditCalcEngineTabs( MSExcel.Workbook workbook )
@@ -136,13 +181,13 @@ public partial class Ribbon
 		return DialogResult.Yes;
 	}
 
-	private CalcEngineUploadInfo? ProcessSaveHistory( MSExcel.Workbook workbook )
+	private async Task<CalcEngineUploadInfo?> ProcessSaveHistoryAsync( MSExcel.Workbook workbook )
 	{
 		if ( !string.IsNullOrEmpty( AddIn.Settings.SaveHistoryName ) && !skipHistoryUpdateOnMoveSpecFromDownloads )
 		{
 			using var saveHistory = new SaveHistory( workbook, WorkbookState );
 
-			var saveHistoryInfo = saveHistory.GetHistoryInformation();
+			var saveHistoryInfo = await saveHistory.GetHistoryInformationAsync();
 
 			if ( saveHistoryInfo.Result == DialogResult.Ignore )
 			{
@@ -164,7 +209,7 @@ public partial class Ribbon
 				var historyRange = saveHistoryInfo.HistoryRange.Offset[ 2, 0 ];
 				var historySheet = historyRange.Worksheet;
 
-				for (int i = 0; i < descriptions.Length; i++)
+				for (var i = 0; i < descriptions.Length; i++)
 				{
 					historyRange.Offset[ 1, 0 ].EntireRow.Insert( MSExcel.XlInsertShiftDirection.xlShiftDown );
 					historySheet.Range[ historyRange, historyRange.Offset[ 0, 3 ] ].Copy( historyRange.Offset[ 1, 0 ] );
@@ -204,18 +249,27 @@ public partial class Ribbon
 		{
 			try
 			{
+				if ( calcEngineUploadInfo.UserName != AddIn.Settings.CalcEngineManagement.Email || calcEngineUploadInfo.Password != await AddIn.Settings.CalcEngineManagement.GetClearPasswordAsync() )
+				{
+					await UpdateAddInCredentialsAsync( calcEngineUploadInfo.UserName, calcEngineUploadInfo.Password );
+				}
+
 				application.StatusBar = "Uploading CalcEngine to Management Site...";
 
 				var ceContent = await File.ReadAllBytesAsync( application.ActiveWorkbook.FullName );
 
 				// TODO: Upload ceContent, need to pass userName, password, expectedVersion, forceUpload (boolean) and confirm it can be done
 
-				workbookState = null;
+				application.StatusBar = "CalcEngine successfully uploaded to Management Site.";
+
+				// TODO: Can probably just update info of state instead of calling api to get updated info (latest version, etc.)
+				WorkbookState = await WorkbookState.GetCurrentAsync( application );
 				ribbon.InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
 			}
 			catch ( Exception ex )
 			{
-				application.StatusBar = "Uploading CalcEngine to Management Site FAILED. " + ex.Message;
+				application.StatusBar = "";
+				MessageBox.Show( "Uploading CalcEngine to Management Site FAILED. " + ex.Message, "Upload Failed", MessageBoxButtons.OK, MessageBoxIcon.Error );
 				throw;
 			}
 		}

@@ -23,10 +23,16 @@ public class AddIn : IExcelAddIn
 	}
 
 	internal static AddInSettings Settings = new();
+
+	internal static AddIn CurrentAddin { get; private set; } = null!;
+
 	private FileWatcherNotification settingsProcessor = null!;
+
 
 	public void AutoOpen()
 	{
+		CurrentAddin = this;
+
 		// Store this for access from anywhere in my workflows: https://groups.google.com/g/exceldna/c/1rScvDdeVOk/m/euij1L-VihoJ
 		XllPath = Path.GetDirectoryName( (string)XlCall.Excel( XlCall.xlGetName ) )!;
 
@@ -39,10 +45,10 @@ public class AddIn : IExcelAddIn
 				{
 					IConfiguration configuration = new ConfigurationBuilder()
 						.AddJsonFile( Path.Combine( XllPath, "appsettings.json" ), optional: true )
-						.AddJsonFile( Path.Combine( XllPath, "appsettings.features.json" ), optional: true )
+						.AddJsonFile( Path.Combine( XllPath, "appsettings.secrets.json" ), optional: true )
 						.Build();
 
-					Settings = configuration.GetSection( "AddInSettings" ).Get<AddInSettings>() ?? new();
+					Settings = configuration.GetSection( "addInSettings" ).Get<AddInSettings>() ?? new();
 				}
 				catch ( Exception ex )
 				{
@@ -53,7 +59,13 @@ public class AddIn : IExcelAddIn
 
 				// https://groups.google.com/g/exceldna/c/ILgL-dW47A4/m/9HrOyClJAQAJ
 				// Excel process not shutting down properly if I didn't wrap this in QueueAsMacro.
-				ExcelAsyncUtil.QueueAsMacro( () => Ribbon.CurrentRibbon?.InvalidateSettings() );
+				ExcelAsyncUtil.QueueAsMacro( async () => {
+					if ( Ribbon.CurrentRibbon == null )
+					{
+						return;
+					}
+					await Ribbon.CurrentRibbon.InvalidateSettingsAsync();
+				} );
 			} 
 		);
 

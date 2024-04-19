@@ -1,7 +1,3 @@
-<!-- 
-	CustomUI Reference: https://learn.microsoft.com/en-us/openspecs/office_standards/ms-customui/31f152d6-2a5d-4b50-a867-9dbc6d01aa43
-	imageMso Reference: https://codekabinett.com/download/Microsoft-Office-2016_365-imageMso-Gallery.pdf
--->
 <customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="Ribbon_OnLoad">
 	<ribbon startFromScratch="false">
 		<tabs>
@@ -14,8 +10,8 @@
 
 				<group id="KatDataStore" keytip="ss" label="KAT Store" imageMso="WorkspaceHtmlProperties">
 					<button id="downloadLatestCalcEngine" keytip="N" label="Download Latest" imageMso="MarkForDownload" onAction="Ribbon_OnAction" tag="KatDataStore_DownloadLatestCalcEngine" size="large" getEnabled="Ribbon_GetEnabled" getScreentip="Ribbon_GetScreentip" />
-					<button id="checkInCalcEngine" keytip="C" label="Check In" imageMso="FileCheckIn" onAction="Ribbon_OnAction" tag="KatDataStore_CheckInCalcEngine" size="large" getEnabled="Ribbon_GetEnabled" getScreentip="Ribbon_GetScreentip"/>
-					<button id="checkOutCalcEngine" keytip="O" label="Check Out" imageMso="FileCheckOut" onAction="Ribbon_OnAction" tag="KatDataStore_CheckOutCalcEngine" size="large" getEnabled="Ribbon_GetEnabled" getScreentip="Ribbon_GetScreentip"/>
+					<button id="checkInCalcEngine" keytip="C" label="Check In" imageMso="FileCheckIn" onAction="Ribbon_OnAction" tag="KatDataStore_CheckInCalcEngine" size="large" getVisible="Ribbon_GetVisible" getScreentip="Ribbon_GetScreentip" />
+					<button id="checkOutCalcEngine" keytip="O" label="Check Out" imageMso="FileCheckOut" onAction="Ribbon_OnAction" tag="KatDataStore_CheckOutCalcEngine" size="large" getVisible="Ribbon_GetVisible" getScreentip="Ribbon_GetScreentip" />
 					<button id="manageCalcEngine" keytip="M" label="Manage CalcEngine" screentip="Manage CalcEngine in KAT Management Site" imageMso="ExportHtmlDocument" onAction="Ribbon_OnAction" tag="KatDataStore_ManageCalcEngine" size="large" getEnabled="Ribbon_GetEnabled" />
 					<dynamicMenu id="debugCalcEngines" keytip="F" label="Debug Files" imageMso="PageSettings" size="large" getContent="Ribbon_GetContent" invalidateContentOnDrop="true" getEnabled="Ribbon_GetEnabled"/>
 				</group>
@@ -66,8 +62,8 @@
 				<group id="DataExporting" keytip="xx" label="Data Exporting" imageMso="ExportXmlFile">
 					<button id="exportxDSData" keytip="X" label="xDS Xml Data..." imageMso="ExportXmlFile" size="large" onAction="Ribbon_OnAction" tag="DataExporting_ExportXmlData" getEnabled="Ribbon_GetEnabled"/>
 					<button id="exportRBLDocGen" keytip="R" label="Result Xml" imageMso="ExportWord" size="large" onAction="Ribbon_OnAction" tag="DataExporting_ExportResultDocGenXml" getEnabled="Ribbon_GetEnabled"/>
-					<menu id="dataExportingExtras" keytip="1" label="Export Tools" imageMso="PageSettings" size="large">
-						<button id="exportJsonData" keytip="J" label="xDS Json Data..." imageMso="CustomizeXSLTMenu" onAction="Ribbon_OnAction" tag="DataExporting_ExportJsonData" getEnabled="Ribbon_GetEnabled"/>
+					<menu id="dataExportingExtras" keytip="1" label="Export Tools" imageMso="PageSettings" size="large" getEnabled="Ribbon_GetEnabled">
+						<button id="exportJsonData" keytip="J" label="xDS Json Data..." imageMso="CustomizeXSLTMenu" onAction="Ribbon_OnAction" tag="DataExporting_ExportJsonData"/>
 						<button id="exportResultJsonData" keytip="J" label="Result Json Data..." imageMso="CustomizeXSLTMenu" onAction="Ribbon_OnAction" tag="DataExporting_ExportResultJsonData" getEnabled="Ribbon_GetEnabled"/>
 						<menuSeparator id="sepDataExportingExtras1"/>
 						<button id="exportAuditxDSHeaders" keytip="X" label="Audit Data Export Sheet" imageMso="HeaderFooterLinkToPrevious" onAction="Ribbon_OnAction" tag="DataExporting_AuditDataExportHeaders" />
@@ -76,11 +72,11 @@
 				</group>
 
 				<group id="Audit" keytip="uu" label="Audit" imageMso="ErrorChecking">
-					<button id="auditExcelCellDepShow" keytip="S" screentip="Show Dependencies for Current Selection" label="Show Dependencies" imageMso="TraceDependentCells" onAction="Ribbon_OnAction" tag="Audit_ShowDependencies" />
-					<button id="auditExcelCellDepHide" keytip="I" screentip="Hide Dependencies for Current Selection" label="Hide Dependencies" imageMso="TraceDependentRemoveArrows" onAction="Ribbon_OnAction" tag="Audit_HideDependencies" />
+					<button id="auditExcelCellDepShow" keytip="S" screentip="Show Dependencies for Current Selection" label="Show Dependencies" imageMso="TraceDependentCells" onAction="Ribbon_OnAction" tag="Audit_ShowDependencies" getEnabled="Ribbon_GetEnabled" />
+					<button id="auditExcelCellDepHide" keytip="I" screentip="Hide Dependencies for Current Selection" label="Hide Dependencies" imageMso="TraceDependentRemoveArrows" onAction="Ribbon_OnAction" tag="Audit_HideDependencies" getEnabled="Ribbon_GetEnabled" />
 
 					<menu id="auditExtras" keytip="3" label="Audit Tools" imageMso="SiteColumnActionsValidationSettings">
-						<button id="auditCellWithEmptyReferences" keytip="F" screentip="Highlight unreferenced cells in current selection" label="Non-Referenced Cells" imageMso="FormulaEvaluate" onAction="Ribbon_OnAction" tag="Audit_ShowEmptyCellReferences" />
+						<button id="auditCellWithEmptyReferences" keytip="F" screentip="Highlight unreferenced cells in current selection" label="Non-Referenced Cells" imageMso="FormulaEvaluate" onAction="Ribbon_OnAction" tag="Audit_ShowEmptyCellReferences" getEnabled="Ribbon_GetEnabled" />
 						<menuSeparator id="sepAuditExtras1"/>
 						<button id="auditLocalCalcEngines" keytip="L" label="Search Local CalcEngines..." imageMso="MailMergeFindRecipient" onAction="Ribbon_OnAction" tag="Audit_SpecificToken" />
 						<button id="auditCalcEngineTabs" keytip="A" label="Audit Input/Result Tabs" imageMso="EventOnAfterChange" onAction="Ribbon_OnAction" tag="Audit_CalcEngineTabs" getEnabled="Ribbon_GetEnabled"/>

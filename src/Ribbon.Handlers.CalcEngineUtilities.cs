@@ -82,7 +82,7 @@ public partial class Ribbon
 			var fullName = addin.FullName;
 			var name = Path.GetFileName( fullName );
 
-			foreach ( object o in linkSources )
+			foreach ( var o in linkSources )
 			{
 				var link = (string)o;
 				var linkName = Path.GetFileName( link );

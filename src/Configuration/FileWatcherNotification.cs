@@ -38,7 +38,6 @@ public class FileWatcherNotification
 			p =>
 			{
 				var t = new System.Timers.Timer( notificationDelay );
-				// new FileWatcherNotification( folderConfiguration, e, fileNotification )
 
 				t.Elapsed += ( sender, args ) =>
 				{
@@ -54,5 +53,12 @@ public class FileWatcherNotification
 		timer.Start();
 	}
 
-	public void Changed( string name ) => Watcher_Changed( this, new FileSystemEventArgs( WatcherChangeTypes.Changed, path, name ) );	
+	public void Disable() => watcher.EnableRaisingEvents = false;
+	public void Enable() => watcher.EnableRaisingEvents = true;
+
+	public void Changed( string name )
+	{
+		Enable();
+		Watcher_Changed( this, new FileSystemEventArgs( WatcherChangeTypes.Changed, path, name ) );
+	}
 }

@@ -26,9 +26,9 @@ public partial class Ribbon
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public void RBLe_RefreshRibbon( IRibbonControl _ )
+	public async Task RBLe_RefreshRibbon( IRibbonControl _ )
 	{
-		workbookState = null;
+		WorkbookState = await WorkbookState.GetCurrentAsync( application );
 		ribbon.Invalidate();
 	}
 

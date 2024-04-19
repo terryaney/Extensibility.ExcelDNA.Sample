@@ -5,6 +5,15 @@ An Excel-DNA add-in for the KAT teams that uses many of the features provided by
 ## TODO
 
 1. Ribbon_GetContent - is hacked to get it working
+1. Propmt for DebugCalcEngines credentials and store in preferences.json - `var newHash = ( new PasswordHasher<string>().HashPassword( "terry.aney", "password" ) ).Dump();`
+```
+// Encrypt (hash MacAddress(length64))(encrypted(password))
+// Decrypt, verify Mac with hash
+// Decrypt, decrypted password and pass it along
+
+				// Cryptography3DES.DefaultEncryptAsync
+```
+1. Save History - Load/Save window position in preferences
 1. Implement Ribbon handlers
 	1. exportMappedxDSData - Rename this better after you figure out what it is doing
 1. [Custom Intellisense/Help Info](https://github.com/Excel-DNA/IntelliSense/issues/21) - read this and linked topic to see what's possible
@@ -126,6 +135,34 @@ Given the amount of methods I had to implement to provide all the required funct
 I also used method prefixes that matched the CustomUI `group.id` as well to make code navigation easier (via `CTRL+T` keyboard shortcut).  For example, for my group with an `id` of `Navigation`, the methods all have the prefix `Navigation_`.
 
 Back to [Features listing](#features).
+
+### async/await Issues
+
+The KAT add-in uses async/await code to perform various tasks.
+
+1. https://groups.google.com/g/exceldna/c/_pKphutWbvo - question asking about my different scenarios
+2. https://stackoverflow.com/a/68303070/166231 - Cleary answer about async
+
+Issues:
+
+1. Availability of await/async - some places it was impossible, i.e. `Application_WorkbookBeforeSave` because of `ref bool Cancel`.
+2. Desire to have code await a method and not continue running until complete, i.e. `Application_WorkbookBeforeSave` where I needed the `ProcessSaveHistoryAsync` method to complete before flow returned and `Application_WorkbookAfterSave` was called.
+3. Ability to run async code without negatively affecting Excel's calculation thread - when problems happened and Excel attempts to shutdown, it does not terminate the msexcel.exe process, but when the current Excel window is closed it immediately launches a new window.
+
+Async Tasks in Excel-DNA:
+
+1. Calling `Camelot.Api.Excel` web application methods - during handlers of RibbonUI buttons, during Excel 'state' change to query information about the current CalcEngine, and during RibbonUI handlers (i.e. GetContent) to query information on demand about current CalcEngine.
+2. Ability to launch and run a long running task in a separate thread that can be cancelled if needed and then report back information to the main thread (i.e. Local Batch Processes)
+
+Code Locations and Requirements
+
+| Method | Requirement | Strategy |
+| --- | --- | --- |
+|  |  |  |
+
+
+Back to [Features listing](#features).
+
 
 ### ExcelIntegration.RegisterUnhandledExceptionHandler
 
@@ -356,7 +393,7 @@ public class AddIn : IExcelAddIn
 					.AddJsonFile( e.FullPath, optional: true )
 					.Build();
 
-				Settings = configuration.GetSection( "AddInSettings" ).Get<AddInSettings>() ?? new();
+				Settings = configuration.GetSection( "addInSettings" ).Get<AddInSettings>() ?? new();
 			}
 			catch ( Exception ex )
 			{

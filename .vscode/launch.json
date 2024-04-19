@@ -3,6 +3,10 @@
     "configurations": [
         {
             "name": "Excel.AddIn",
+			"presentation": {
+				"order": 1,
+				"group": "1. Excel Add-In"
+			},
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "debug",

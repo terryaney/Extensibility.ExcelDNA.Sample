@@ -6,7 +6,7 @@
 			"type": "command",
 			"command": "extension.commandvariable.transform",
 			"args": {
-				"text": "${workspaceFolder}\\src\\Excel.AddIn.csproj"
+				"text": "${workspaceFolder:Excel.AddIn}\\src\\Excel.AddIn.csproj"
 			}
 		},
 		{
