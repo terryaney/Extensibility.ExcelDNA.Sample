@@ -1,12 +1,13 @@
 ﻿using ExcelDna.Integration.CustomUI;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Responses;
-using Microsoft.Office.Interop.Excel;
 using System.Xml.Linq;
 
 namespace KAT.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
+	// TODO: All methods need error handler like runaction...
+
 	public bool Ribbon_GetVisible( IRibbonControl control )
 	{
 		return control.Id switch
@@ -77,50 +78,50 @@ public partial class Ribbon
 		{
 			case "katDataStoreDebugCalcEnginesMenu":
 			{
-				string? content = null;
-				
-				// await ExcelAsyncTaskScheduler.Run( async () => {
-				// ExcelAsyncUtil.QueueAsMacro( async () => {
-					
-					// await EnsureAddInCredentialsAsync();
-					EnsureAddInCredentialsAsync().GetAwaiter().GetResult();
-					var ceName = WorkbookState.ManagementName;
+				var debugFiles = GetDebugCalcEnginesAsync().GetAwaiter().GetResult();
 
-					var debugFiles = string.IsNullOrEmpty( AddIn.Settings.CalcEngineManagement.Password )
-						? Enumerable.Empty<DebugFile>()
-						// TODO: await LibraryHelpers.GetDebugCalcEnginesAsync( userDirectory, ceName );
-						: Enumerable.Range( 0, 3 ).Select( i => new DebugFile { VersionKey = i, AuthId = "111111111", DateUploaded = DateTime.Now.AddHours( -1 * ( i + 1 ) ) } );
-
-					XNamespace ns = "http://schemas.microsoft.com/office/2009/07/customui";
-					var menu =
-						new XElement( ns + "menu",
-							debugFiles.Any()
-								? debugFiles.Select( ( f, i ) =>
-									new XElement( ns + "button",
-										new XAttribute( "id", "managementDownloadFile" + i ),
-										new XAttribute( "keytip", i + 1 ),
-										new XAttribute( "imageMso", "CustomizeXSLTMenu" ),
-										new XAttribute( "onAction", "Ribbon_OnAction" ),
-										new XAttribute( "tag", $"DownloadDebugFile|{f.VersionKey}" ),
-										new XAttribute( "label", $"f.AuthId at {( f.DateUploaded.Date == DateTime.Today.Date ? f.DateUploaded.ToShortTimeString() : f.DateUploaded.ToString() )}" )
-									)
+				XNamespace ns = "http://schemas.microsoft.com/office/2009/07/customui";
+				var menu =
+					new XElement( ns + "menu",
+						debugFiles.Any()
+							? debugFiles.Select( ( f, i ) =>
+								new XElement( ns + "button",
+									new XAttribute( "id", "managementDownloadFile" + i ),
+									new XAttribute( "keytip", i + 1 ),
+									new XAttribute( "imageMso", "CustomizeXSLTMenu" ),
+									new XAttribute( "onAction", "Ribbon_OnAction" ),
+									new XAttribute( "tag", $"DownloadDebugFile|{f.VersionKey}" ),
+									new XAttribute( "label", $"{f.AuthId} at {( f.DateUploaded.Date == DateTime.Today.Date ? f.DateUploaded.ToShortTimeString() : f.DateUploaded.ToString() )}" )
 								)
-								: new[] {
-										new XElement( ns + "button",
-											new XAttribute( "id", "managementDownloadFile0" ),
-											new XAttribute( "imageMso", "CustomizeXSLTMenu" ),
-											new XAttribute( "label", "No files available" ),
-											new XAttribute( "enabled", "false" )
-										)
-								}
-							);
+							)
+							: new[] {
+									new XElement( ns + "button",
+										new XAttribute( "id", "managementDownloadFile0" ),
+										new XAttribute( "imageMso", "CustomizeXSLTMenu" ),
+										new XAttribute( "label", "No files available" ),
+										new XAttribute( "enabled", "false" )
+									)
+							}
+						);
 
-					content = menu.ToString();
-				// } );
-				return content;
+				return menu.ToString();
 			}
 			default: return null;
 		}
+	}
+
+	private async Task<IEnumerable<DebugFile>> GetDebugCalcEnginesAsync()
+	{
+		await EnsureAddInCredentialsAsync();
+
+		var ceName = WorkbookState.ManagementName;
+
+		var debugFiles = string.IsNullOrEmpty( AddIn.Settings.CalcEngineManagement.Password )
+			? Enumerable.Empty<DebugFile>()
+			// TODO: await LibraryHelpers.GetDebugCalcEnginesAsync( userDirectory, ceName );
+			: Enumerable.Range( 0, 3 ).Select( i => new DebugFile { VersionKey = i, AuthId = "111111111", DateUploaded = DateTime.Now.AddHours( -1 * ( i + 1 ) ) } );
+
+		return debugFiles!;
 	}
 
 	private int auditShowLogBadgeCount;
