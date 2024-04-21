@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-using System.Text.Json.Nodes;
-using FluentValidation.Validators;
+﻿using System.Text.Json.Nodes;
 using KAT.Camelot.Domain.Extensions;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
@@ -51,9 +49,16 @@ public partial class Ribbon
 	
 	private async void Application_WorkbookActivate( MSExcel.Workbook wb )
 	{
-		await EnsureAddInCredentialsAsync();
-		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
-		ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
+		try
+		{
+			await EnsureAddInCredentialsAsync();
+			await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
+			ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
+		}
+		catch ( Exception ex )
+		{
+			LogError( $"Application_WorkbookActivate", ex );
+		}
 	}
 
 	private void Application_WorkbookBeforeSave( MSExcel.Workbook wb, bool SaveAsUI, ref bool Cancel )
@@ -84,8 +89,7 @@ public partial class Ribbon
 				return;
 			}
 
-			// TODO: Is this acceptable?  Excel seems to close successfully even without QueueAsMacro but can't make task async due to ref.
-			calcEngineUploadInfo = ProcessSaveHistoryAsync( wb ).GetAwaiter().GetResult();
+			calcEngineUploadInfo = Task.Run( () => ProcessSaveHistoryAsync( wb ) ).GetAwaiter().GetResult();
 		}
 		catch ( Exception ex )
 		{

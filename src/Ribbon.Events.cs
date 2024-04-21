@@ -81,10 +81,14 @@ public partial class Ribbon
 		{
 			return control.Id switch
 			{
-				"katDataStoreDownloadLatest" => $"Download latest version ({WorkbookState.CurrentVersion ?? "Current"} -> {WorkbookState.UploadedVersion ?? "Latest"})",
+				"katDataStoreDownloadLatest" => WorkbookState.IsLatestVersion
+					? "Download latest version"
+					: $"Download latest version ({WorkbookState.CurrentVersion ?? "Current"} -> {WorkbookState.UploadedVersion ?? "Latest"})",
+				
 				"katDataStoreCheckOut" => string.IsNullOrEmpty( WorkbookState.CheckedOutBy )
 					? "Check Out CalcEngine"
 					: $"Check Out CalcEngine (checked out by: {WorkbookState.CheckedOutBy})",
+				
 				_ => null,
 			};
 		}
@@ -104,7 +108,8 @@ public partial class Ribbon
 			{
 				case "katDataStoreDebugCalcEnginesMenu":
 				{
-					var debugFiles = GetDebugCalcEnginesAsync().GetAwaiter().GetResult();
+					var task = Task.Run( () => GetDebugCalcEnginesAsync() );
+					var debugFiles = task.GetAwaiter().GetResult();
 
 					XNamespace ns = "http://schemas.microsoft.com/office/2009/07/customui";
 					var menu =
@@ -163,7 +168,11 @@ public partial class Ribbon
 	private async Task<IEnumerable<DebugFile>> GetDebugCalcEnginesAsync()
 	{
 		await EnsureAddInCredentialsAsync();
-		return await apiService.GetDebugFilesAsync( WorkbookState.ManagementName, AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
+		return await apiService.GetDebugFilesAsync( 
+			WorkbookState.ManagementName, 
+			AddIn.Settings.KatUserName, 
+			await AddIn.Settings.GetClearPasswordAsync() 
+		);
 	}
 
 	private int auditShowLogBadgeCount;

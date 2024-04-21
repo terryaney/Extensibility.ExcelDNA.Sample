@@ -52,13 +52,11 @@ public class AddIn : IExcelAddIn
 				}
 				catch ( Exception ex )
 				{
-					// TODO: Need to log this somewhere...event viewer via Logging?
-					Console.WriteLine( ex.ToString() );
+					Ribbon.LogError( "Unable to initialize IConfiguraiton for appsettings.json.  Using default settings.", ex );
 					Settings = new();
 				}
 
-				// https://groups.google.com/g/exceldna/c/ILgL-dW47A4/m/9HrOyClJAQAJ
-				// Excel process not shutting down properly if I didn't wrap this in QueueAsMacro.
+				// Don't know why I need QueueAsMacro here.  Without it, Excel wouldn't close gracefully.
 				ExcelAsyncUtil.QueueAsMacro( () => Ribbon.CurrentRibbon?.InvalidateFeatures() );
 			} 
 		);
@@ -80,11 +78,15 @@ public class AddIn : IExcelAddIn
 	/// </remarks>
 	private object UnhandledExceptionHandler( object exception )
 	{
-		// https://groups.google.com/d/msg/exceldna/cHD8Tx56Msg/MdPa2PR13hkJ
-		// Explains why needs caller here and QueueAsMacro for other XlCall methods.
 		var caller = ExcelApi.GetCaller();
 
-		ExcelAsyncUtil.QueueAsMacro( () => Ribbon.CurrentRibbon.LogFunctionError( caller, exception ) );
+		// Calculation error is happening on Excel calculation thread, so need to QueueAsMacro to get back to main Excel UI thread.
+		// https://groups.google.com/d/msg/exceldna/cHD8Tx56Msg/MdPa2PR13hkJ
+		// Explains why needs caller other XlCall methods inside
+		ExcelAsyncUtil.QueueAsMacro( () =>
+		{
+			Ribbon.CurrentRibbon.LogFunctionError( caller, exception );
+		} );
 
 		return ExcelError.ExcelErrorValue;
 	}

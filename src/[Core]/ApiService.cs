@@ -8,7 +8,6 @@ using KAT.Camelot.Domain.Extensions;
 
 namespace KAT.Extensibility.Excel.AddIn;
 
-// TODO: Get ribbon xml ids standardized and in here?
 public class ApiService
 {
 	private readonly IHttpClientFactory httpClientFactory;
@@ -53,13 +52,34 @@ public class ApiService
 		return fileName;
 	}
 
-	public async Task Checkin( string calcEngine, string? userName, string? password )
+	public async Task<bool> DownloadLatestAsync( string path, string? userName, string? password )
+	{
+		if ( string.IsNullOrEmpty( userName ) || string.IsNullOrEmpty( password ) )
+		{
+			return false;
+		}
+
+		var calcEngine = Path.GetFileNameWithoutExtension( path );
+		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.DownloadLatest( calcEngine )}";
+		using var response = await SendHttpRequestAsync(
+			new CalcEngineRequest { Name = calcEngine, Email = userName, Password = password },
+			url
+		);
+
+		using var source = await response.Content.ReadAsStreamAsync();
+		using var dest = File.Create( path );
+		await source.CopyToAsync( dest );
+
+		return true;
+	}
+
+	public async Task CheckinAsync( string calcEngine, string? userName, string? password )
 	{
 		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.Checkin( Path.GetFileNameWithoutExtension( calcEngine ) )}";
 		await SendRequestAsync( calcEngine, userName, password, url );
 	}
 
-	public async Task Checkout( string calcEngine, string? userName, string? password )
+	public async Task CheckoutAsync( string calcEngine, string? userName, string? password )
 	{
 		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.Checkout( Path.GetFileNameWithoutExtension( calcEngine ) )}";
 		await SendRequestAsync( calcEngine, userName, password, url );
@@ -110,7 +130,6 @@ public class ApiService
 			)
 		};
 
-		// TODO: Global error handling...if ensure success status code throws error, excel crashes...get better global handling...
 		try
 		{
 			var response = await httpClient.SendConduentAsync( request );
@@ -120,7 +139,7 @@ public class ApiService
 			return response;
 		}
 		catch ( Exception ex )
-		{
+		{			
 			throw new ApplicationException( $"Unable to send request to {url}.", ex );
 		}
 	}

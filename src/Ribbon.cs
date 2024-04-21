@@ -129,25 +129,9 @@ public partial class Ribbon : ExcelRibbon
 
 	public void Ribbon_OnAction( IRibbonControl control )
 	{
-		// Need ExcelAsyncUtil.QueueAsMacro so that I can use XlCall.Excel API...some calls work without this (or Application.Run(macroName))
-		// hack, but some (ExcelApi.GetText) don't.
-		//
-		// I couldn't make my functions static to allow the use of Application.Run() workaround because my addin/application event handlers and
-		// supporting functions needed access to share variables (i.e. the WorkBookBeforeSave() has a flag - skipHistoryUpdateOnSave - that needs to
-		// be toggled off during some of my Ribbon callbacks) and trying to make callbacks static just made code too combersome to maintain.
-		//
-		// QueueAsMacro Comment: http://stackoverflow.com/questions/31038649/passing-an-excel-range-from-vba-to-c-sharp-via-excel-dna#comment56086701_31047222
-		//
-		// Application.Run() to enable XlCall.Excel functionality:
-		// https://groups.google.com/forum/#!topic/exceldna/YLf6xWfBdQU
-		// https://groups.google.com/d/msg/exceldna/t4BDHk_rnQI/S9N1cqQVRw4J
-		// https://groups.google.com/forum/#!topic/exceldna/BR5sNFeHvdA
-		// application.Run( ctrl.Id, ctrl.Tag );
-		// application.Run( control.Tag );
-
 		var actionParts = control.Tag.Split( '|' );
 
-		ExcelAsyncUtil.QueueAsMacro( () =>
+		ExcelAsyncUtil.QueueAsMacro( async () =>
 		{
 			try
 			{
@@ -160,25 +144,36 @@ public partial class Ribbon : ExcelRibbon
 					? typeof( Ribbon ).GetMethod( actionParts[ 0 ], parameterTypes! )
 					: typeof( Ribbon ).GetMethod( actionParts[ 0 ] );
 
-				// TODO: Deadlock error :( Clicked download debug but this mi was originally null
-				// because my types were wrong.  If I clicked dropdown again, it was locked up and if I hit
-				// pause on debugger it highlighted the .GetAwaiter().GetResult() line in the Ribbon_GetContent.
-				// If no error happens, I can click over and over again without issue, so I think there is problem there.
-				// If method (in my case download debug) throws error, didn't cause the deadlock
-				mi!.Invoke( this, new object[] { control }.Concat( parameters ).ToArray() );
+				if ( mi!.ReturnType == typeof( Task ) )
+				{
+					await (Task)mi.Invoke( this, new object[] { control }.Concat( parameters ).ToArray() )!;
+				}
+				else
+				{
+					mi.Invoke( this, new object[] { control }.Concat( parameters ).ToArray() );
+				}
 			}
 			catch ( Exception ex )
 			{
+				// Deadlock Error :( https://groups.google.com/g/exceldna/c/_pKphutWbvo/m/uvc38llBAAAJ
+				// If ExcelDna.Logging.LogDisplay.WriteLine/Show was called before I called my Ribbon_GetContent
+				// handler which uses async code, it would deadlock.  I originally had *Async().GetAwaiter().GetResult().
+				// I changed that to Task.Run( () => *Async() ).GetAwaiter().GetResult() and that fixed the deadlock it seems.
+				// I had originally wrapped my call to LogError in *another* QueueAsMacro, but I don't think that is needed.
+				// Leave it here.  I've found myself sprinkling QueueAsMacro in many/all of my Async ribbon button events
+				// to ensure that Excel closes cleanly.  Unfortunately, I don't have my head wrapped around the whole
+				// async/await and thread context issues.
 				LogError( $"Ribbon_OnAction {control.Tag}", ex );
+				// ExcelAsyncUtil.QueueAsMacro( () => LogError( $"Ribbon_OnAction {control.Tag}", ex ) );
 			}
 		} );
 	}
 
 	private readonly ConcurrentDictionary<string, string?> cellsInError = new();
 
-	private static void LogError( string message, Exception ex )
+	internal static void LogError( string message, Exception ex )
 	{
-		var exDisplay = 
+		var exDisplay =
 			ex.InnerException ?? // Exception in ribbon handler method
 			ex; // Exception in try clause above discovering the method to invoke.
 
@@ -195,11 +190,6 @@ public partial class Ribbon : ExcelRibbon
 
 	public void LogFunctionError( ExcelReference caller, object exception )
 	{
-		// If I call LogDisplay.WriteLine *outside* QueueAsMacro, it shows, but if I call
-		// it within QueueAsMacro it doesn't show for some reason.
-		// Posted to: https://groups.google.com/forum/#!topic/exceldna/97aS22hYR68
-		// No response yet.
-
 		var address = caller.GetAddress();
 		var formula = caller.GetFormula();
 
@@ -208,9 +198,7 @@ public partial class Ribbon : ExcelRibbon
 
 		if ( reportError )
 		{
-			var message = $"Error: {address} {formula ?? "unavailable"}{Environment.NewLine}{exception}";
-		
-			ExcelDna.Logging.LogDisplay.RecordLine( message );
+			ExcelDna.Logging.LogDisplay.RecordLine( $"Error: {address} {formula ?? "unavailable"}{Environment.NewLine}{exception}" );
 
 			auditShowLogBadgeCount++;
 			ribbon.InvalidateControl( "katShowDiagnosticLog" );

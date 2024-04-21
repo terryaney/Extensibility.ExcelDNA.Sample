@@ -1,11 +1,5 @@
-using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
-using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1;
-using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Requests;
-using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Responses;
-using KAT.Camelot.Domain.Extensions;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Extensibility.Excel.AddIn;
@@ -52,9 +46,6 @@ public class WorkbookState
 
 	public async Task UpdateWorkbookAsync( MSExcel.Workbook activeWorkbook )
 	{
-		// TODO: Need to check all callers and if only changing sheets, don't need to call api, probably need overload
-		// TODO: No more static 'total' create, make methods to initialize diff bits
-
 		if ( activeWorkbook == null )
 		{
 			ClearState();
@@ -103,11 +94,13 @@ public class WorkbookState
 		HasRBLeMacro = hasRBLeMacro;
 		HasLinks = hasLinks;
 
-		var calcEngineInfo = await apiService.GetCalcEngineInfoAsync(
-			ManagementName,
-			AddIn.Settings.KatUserName,
-			await AddIn.Settings.GetClearPasswordAsync()
-		);
+		var calcEngineInfo = IsCalcEngine
+			? await apiService.GetCalcEngineInfoAsync(
+				ManagementName,
+				AddIn.Settings.KatUserName,
+				await AddIn.Settings.GetClearPasswordAsync()
+			)
+			: null;
 
 		isUploadable =
 			calcEngineInfo != null &&

@@ -1,23 +1,16 @@
 ﻿using System.Diagnostics;
-using Aspose.Words.Vba;
 using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
+using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
-	public async Task KatDataStore_DownloadLatestCalcEngine( IRibbonControl control )
-	{
-		await EnsureAddInCredentialsAsync();
-		// TODO: Make sure to login when download
-		MessageBox.Show( "// TODO: Process " + control.Id );
-	}
-
 	public async Task KatDataStore_CheckInCalcEngine( IRibbonControl _ )
 	{
 		await EnsureAddInCredentialsAsync();
-		await apiService.Checkin( WorkbookState.ManagementName, AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
+		await apiService.CheckinAsync( WorkbookState.ManagementName, AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
 		WorkbookState.CheckInCalcEngine();
 		ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
 	}
@@ -25,7 +18,7 @@ public partial class Ribbon
 	public async Task KatDataStore_CheckOutCalcEngine( IRibbonControl _ )
 	{
 		await EnsureAddInCredentialsAsync();
-		await apiService.Checkout( WorkbookState.ManagementName, AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
+		await apiService.CheckoutAsync( WorkbookState.ManagementName, AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
 		WorkbookState.CheckOutCalcEngine();
 		ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
 	}
@@ -46,14 +39,44 @@ public partial class Ribbon
 		Process.Start( psi );
 	}
 
+	public async Task KatDataStore_DownloadLatestCalcEngine( IRibbonControl _ )
+	{
+		var managedCalcEngine = application.Workbooks.Cast<MSExcel.Workbook>().FirstOrDefault( w => string.Compare( w.Name, WorkbookState.ManagementName, true ) == 0 );
+		var isDirty = !managedCalcEngine?.Saved ?? false;
+		var fullName = Path.Combine( Path.GetDirectoryName( application.ActiveWorkbook.FullName )!, WorkbookState.ManagementName );
+
+		if ( isDirty )
+		{
+			if ( MessageBox.Show( 
+				"You currently have changes in this CalcEngine. If you proceed, all changes will be lost.", 
+				"Download Latest Version", 
+				MessageBoxButtons.YesNo, 
+				MessageBoxIcon.Warning, 
+				MessageBoxDefaultButton.Button2 
+			) != DialogResult.Yes )
+			{
+				return;
+			}
+		}
+
+		managedCalcEngine?.Close( false );
+
+		await EnsureAddInCredentialsAsync();
+		if ( await apiService.DownloadLatestAsync( fullName, AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() ) )
+		{
+			// Don't know why I need QueueAsMacro here.  Without it, Excel wouldn't close gracefully.
+			ExcelAsyncUtil.QueueAsMacro( () => application.Workbooks.Open( fullName ) );
+		}
+	}
+
 	public async Task KatDataStore_DownloadDebugFile( IRibbonControl _, string versionKey )
 	{
 		await EnsureAddInCredentialsAsync();
 		var fileName = await apiService.DownloadDebugAsync( int.Parse( versionKey ), AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
 		if ( !string.IsNullOrEmpty( fileName ) )
 		{
-			// TODO: THrow an exception here and see log displays nicely with one error and debug dropdown still works
-			ExcelAsyncUtil.QueueAsMacro( () => application.Workbooks.Open( fileName ) );			
+			// Don't know why I need QueueAsMacro here.  Without it, Excel wouldn't close gracefully.
+			ExcelAsyncUtil.QueueAsMacro( () => application.Workbooks.Open( fileName ) );
 		}
 	}
 }
