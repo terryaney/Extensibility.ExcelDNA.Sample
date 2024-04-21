@@ -1,4 +1,8 @@
-﻿using MSExcel = Microsoft.Office.Interop.Excel;
+﻿using System.Text.Json;
+using System.Text.Json.Nodes;
+using FluentValidation.Validators;
+using KAT.Camelot.Domain.Extensions;
+using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Extensibility.Excel.AddIn;
 
@@ -47,6 +51,7 @@ public partial class Ribbon
 	
 	private async void Application_WorkbookActivate( MSExcel.Workbook wb )
 	{
+		await EnsureAddInCredentialsAsync();
 		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
 		ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
 	}
@@ -120,27 +125,49 @@ public partial class Ribbon
 
 	private async Task EnsureAddInCredentialsAsync()
 	{
-		await Task.Delay( 2000 ); // TODO: Remove
-		if ( WorkbookState.ShowCalcEngineManagement && ( string.IsNullOrEmpty( AddIn.Settings.CalcEngineManagement.Email ) || string.IsNullOrEmpty( AddIn.Settings.CalcEngineManagement.Password ) ) )
+		if ( WorkbookState.ShowCalcEngineManagement && ( string.IsNullOrEmpty( AddIn.Settings.KatUserName ) || string.IsNullOrEmpty( AddIn.Settings.KatPassword ) ) )
 		{
-			// TODO: Implement Credentials dialog
-			// var credentials = new Credentials( AddIn.Settings.CalcEngineManagement.Email, AddIn.Settings.CalcEngineManagement.Password );
-			// credentials.ShowDialog();
+			using var credentials = new Credentials();
+			var credentialInfo = credentials.GetCredentials(  
+				AddIn.Settings.KatUserName, 
+				await AddIn.Settings.GetClearPasswordAsync() 
+			);
 
-			// If updated...
-			// await UpdateAddInCredentialsAsync( "terry.aney@conduent.com", "password" );
+			if ( credentialInfo != null )
+			{
+				await UpdateAddInCredentialsAsync( credentialInfo.UserName, credentialInfo.Password );
+			}
 		}
 	}
 
 	private async Task UpdateAddInCredentialsAsync( string userName, string password )
 	{
-		application.StatusBar = "Saving CalcEngine Management credentials...";
-		// TODO: Save new settings in appsettings.json and appsettings.secrets.json
+		application.StatusBar = "Saving KAT credentials...";
+
 		// Disable edit notifications...
-		// calcEngineUploadInfo.UserName;
-		var encryptedPassword = await CalcEngineManagement.EncryptPasswordAsync( password );
-		// trigger Change() of appsettings.json file
-		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
+		AddIn.settingsProcessor.Disable();
+
+		var appSettingsPath = Path.Combine( AddIn.XllPath, "appsettings.json" );
+		var appSecretsPath = Path.Combine( AddIn.XllPath, "appsettings.secrets.json" );
+		var encryptedPassword = await AddInSettings.EncryptPasswordAsync( password );
+
+		static void updateSetting( string path, string key, string value )
+		{
+			var appSettings = File.Exists( path )
+				? ( JsonNode.Parse( File.ReadAllText( path ) ) as JsonObject )!
+				: new JsonObject();
+
+			var addInSettings = ( ( appSettings[ "addInSettings" ] ?? appSettings.AddOrUpdate( "addInSettings", new JsonObject() ) ) as JsonObject )!;
+			addInSettings.AddOrUpdate( key, value );
+			appSettings.Save( path );
+		}
+
+		updateSetting( appSettingsPath, "katUserName", userName );
+		updateSetting( appSecretsPath, "katPassword", encryptedPassword! );
+
+		AddIn.settingsProcessor.Enable();
+
+		AddIn.Settings.SetCredentials( userName, encryptedPassword );
 	}
 
 	private DialogResult AuditCalcEngineTabs( MSExcel.Workbook workbook )
@@ -187,7 +214,11 @@ public partial class Ribbon
 		{
 			using var saveHistory = new SaveHistory( workbook, WorkbookState );
 
-			var saveHistoryInfo = await saveHistory.GetHistoryInformationAsync();
+			var saveHistoryInfo = saveHistory.GetHistoryInformation( 
+				AddIn.Settings.SaveHistoryName, 
+				AddIn.Settings.KatUserName, 
+				await AddIn.Settings.GetClearPasswordAsync() 
+			);
 
 			if ( saveHistoryInfo.Result == DialogResult.Ignore )
 			{
@@ -249,7 +280,7 @@ public partial class Ribbon
 		{
 			try
 			{
-				if ( calcEngineUploadInfo.UserName != AddIn.Settings.CalcEngineManagement.Email || calcEngineUploadInfo.Password != await AddIn.Settings.CalcEngineManagement.GetClearPasswordAsync() )
+				if ( calcEngineUploadInfo.UserName != AddIn.Settings.KatUserName || calcEngineUploadInfo.Password != await AddIn.Settings.GetClearPasswordAsync() )
 				{
 					await UpdateAddInCredentialsAsync( calcEngineUploadInfo.UserName, calcEngineUploadInfo.Password );
 				}

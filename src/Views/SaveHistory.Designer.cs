@@ -233,8 +233,6 @@ internal partial class SaveHistory
 		this.ShowIcon = false;
 		this.ShowInTaskbar = false;
 		this.Text = "KAT Version History";
-		this.FormClosed += new System.Windows.Forms.FormClosedEventHandler( this.SaveHistory_FormClosed );
-		this.Load += new System.EventHandler( this.SaveHistory_Load );
 		( (System.ComponentModel.ISupportInitialize)( this.errorProvider ) ).EndInit();
 		this.ResumeLayout( false );
 		this.PerformLayout();

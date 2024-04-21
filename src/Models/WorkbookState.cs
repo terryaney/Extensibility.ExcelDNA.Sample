@@ -27,11 +27,11 @@ public class WorkbookState
 	private bool isUploadable;
 	public bool IsUploadable => ShowCalcEngineManagement && isUploadable;
 	public bool IsLatestVersion => 
-		!string.IsNullOrEmpty( UploadedVersion ) && !string.IsNullOrEmpty( currentVersion ) &&
-		double.TryParse( currentVersion, out var version ) &&
+		!string.IsNullOrEmpty( UploadedVersion ) && !string.IsNullOrEmpty( CurrentVersion ) &&
+		double.TryParse( CurrentVersion, out var version ) &&
 		version == double.Parse( UploadedVersion );
 
-	public string? currentVersion { get; private set; }
+	public string? CurrentVersion { get; private set; }
 	public string? UploadedVersion { get; private set; }
 	public string? CheckedOutBy { get; private set; }
 
@@ -42,10 +42,12 @@ public class WorkbookState
 	public SheetState SheetState { get; private set; }
 
 	internal MSExcel.Name[] bookNames = Array.Empty<MSExcel.Name>();
+	private readonly ApiService apiService;
 
-	public WorkbookState()
+	public WorkbookState( ApiService dataLockerService )
 	{
 		SheetState = new( this, null );
+		this.apiService = dataLockerService;
 	}
 
 	public async Task UpdateWorkbookAsync( MSExcel.Workbook activeWorkbook )
@@ -94,14 +96,18 @@ public class WorkbookState
 			isCalcEngine && rbleMacro != null &&
 			!( (string)rbleMacro.RefersTo ).Contains( "#REF" );
 
-		ManagementName = liveName; // This must be set before calling GetCalcEngineInfoAsync
+		ManagementName = liveName;
 		IsCalcEngine = isCalcEngine;
 		IsSpecSheetFile = isSpecSheet;
 		HasxDSDataFields = hasxDSDataFields;
 		HasRBLeMacro = hasRBLeMacro;
 		HasLinks = hasLinks;
 
-		var calcEngineInfo = await GetCalcEngineInfoAsync();
+		var calcEngineInfo = await apiService.GetCalcEngineInfoAsync(
+			ManagementName,
+			AddIn.Settings.KatUserName,
+			await AddIn.Settings.GetClearPasswordAsync()
+		);
 
 		isUploadable =
 			calcEngineInfo != null &&
@@ -109,7 +115,7 @@ public class WorkbookState
 
 		CheckedOutBy = calcEngineInfo?.CheckedOutBy;
 		UploadedVersion = calcEngineInfo?.Version.ToString();
-		currentVersion = activeWorkbook.RangeOrNull<string>( "Version" );
+		CurrentVersion = activeWorkbook.RangeOrNull<string>( "Version" );
 
 		UpdateFeatures();
 		UpdateSheet( ( activeWorkbook.ActiveSheet as MSExcel.Worksheet )! );
@@ -117,7 +123,7 @@ public class WorkbookState
 
 	public void UpdateVersion( MSExcel.Workbook activeWorkbook ) => UploadedVersion = activeWorkbook.RangeOrNull<string>( "Version" );
 	public void CheckInCalcEngine() => CheckedOutBy = null;
-	public void CheckOutCalcEngine() => CheckedOutBy = AddIn.Settings.CalcEngineManagement.Email!;
+	public void CheckOutCalcEngine() => CheckedOutBy = AddIn.Settings.KatUserName;
 
 	public void UpdateFeatures()
 	{
@@ -153,44 +159,6 @@ public class WorkbookState
 		return (managementName, $"{Path.GetFileNameWithoutExtension( managementName )}_Test{Path.GetExtension( managementName )}");
 	}
 
-	private async Task<CalcEngineInfo?> GetCalcEngineInfoAsync()
-	{
-		if ( string.IsNullOrEmpty( AddIn.Settings.CalcEngineManagement.Password ) )
-		{
-			return null;
-		}
-
-		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.Get( Path.GetFileNameWithoutExtension( ManagementName ) )}";
-
-		using var httpClient = new HttpClient();
-		using var request = new HttpRequestMessage( HttpMethod.Post, url ) 
-		{ 
-			Content = new StringContent( JsonSerializer.Serialize( 
-				new CalcEngineRequest { 
-					Name = ManagementName, 
-					Email = AddIn.Settings.CalcEngineManagement.Email!, 
-					Password = AddIn.Settings.CalcEngineManagement.Password! 
-				} ), 
-				Encoding.UTF8, 
-				"application/json" 
-			) 	
-		};
-
-		// TODO: Global error handling...if ensure success status code throws error, excel crashes...get better global handling...
-		try
-		{
-			using var response = await httpClient.SendConduentAsync( request );
-
-			response.EnsureSuccessStatusCode();
-
-			return await response.Content.ReadFromJsonAsync<CalcEngineInfo>();
-		}
-		catch ( Exception ex )
-		{
-			throw new ApplicationException( $"Unable to get CalcEngine info from {url}.", ex );
-		}
-	}
-
 	public void ClearState()
 	{
 		isGlobalTablesFile =
@@ -204,7 +172,7 @@ public class WorkbookState
 
 		ManagementName =
 		UploadedVersion =
-		currentVersion =
+		CurrentVersion =
 		CheckedOutBy = null!;
 
 		SheetState = new( this, null );

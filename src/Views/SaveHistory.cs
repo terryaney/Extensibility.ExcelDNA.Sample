@@ -15,21 +15,11 @@ internal partial class SaveHistory : Form
 		this.workbookState = workbookState;
 	}
 
-	private void SaveHistory_FormClosed( object sender, FormClosedEventArgs e )
-	{
-
-	}
-
-	private void SaveHistory_Load( object sender, EventArgs e )
-	{
-
-	}
-
 	/// <summary>
 	/// If an Excel file has 'RBLInfo' history log, this prompts the user to enter information about the changes they are making and allows uploading to Management Site if it is a CalcEngine.
 	/// </summary>
 	/// <returns>Returns action to perform when saving Excel file that has 'RBLInfo' history log.  Ignore - do nothing, simply allow save to occur.  OK - Update history log.  Continue - Update history log and upload to Management Site.  Retry - Do not update history log, just attempt to re-upload to Management Site.</returns>
-	public async Task<SaveHistoryInfo> GetHistoryInformationAsync()
+	public SaveHistoryInfo GetHistoryInformation( string name, string? userName, string? password )
 	{
 		var sheets = workbook.Worksheets.Cast<MSExcel.Worksheet>();
 		var historySheet =
@@ -78,12 +68,12 @@ internal partial class SaveHistory : Form
 			currentVersionRange.Value = currentVersionValue;
 		}
 
-		author.Text = AddIn.Settings.SaveHistoryName;
+		author.Text = name;
 		version.Text = proposedVersion;
 		lManagementSite.Text += $" (Current Version: {workbookState.UploadedVersion})";
 
-		tUserName.Text = AddIn.Settings.CalcEngineManagement.Email;
-		tPassword.Text = await AddIn.Settings.CalcEngineManagement.GetClearPasswordAsync();
+		tUserName.Text = userName;
+		tPassword.Text = password;
 
 		if ( !workbookState.ShowCalcEngineManagement || !workbookState.IsCalcEngine )
 		{
@@ -93,7 +83,7 @@ internal partial class SaveHistory : Form
 			MinimumSize = new Size( MinimumSize.Width, 235 );
 			Height = 235;
 		}
-		else if ( string.Compare( workbookState.CheckedOutBy, AddIn.Settings.CalcEngineManagement.Email, true ) != 0 )
+		else if ( string.Compare( workbookState.CheckedOutBy, userName, true ) != 0 )
 		{
 			ok.Text = "A&pply";
 			lManagementSite.Text = "Check Out To Upload To Management Site";

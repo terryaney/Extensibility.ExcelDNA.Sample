@@ -28,6 +28,7 @@ public partial class Ribbon
 
 	public async Task Kat_RefreshRibbon( IRibbonControl _ )
 	{
+		await EnsureAddInCredentialsAsync();
 		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
 		ribbon.Invalidate();
 	}

@@ -1,6 +1,7 @@
 ﻿using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 using ExcelDna.Integration.Extensibility;
+using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -31,7 +32,8 @@ public partial class Ribbon : ExcelRibbon
 
 	public static Ribbon CurrentRibbon { get; private set; } = null!;
 
-	private readonly WorkbookState WorkbookState = new();
+	private readonly WorkbookState WorkbookState;
+	private readonly ApiService apiService;
 
 	public Ribbon()
 	{
@@ -47,6 +49,14 @@ public partial class Ribbon : ExcelRibbon
 		using var streamXml = assembly.GetManifestResourceStream( "KAT.Extensibility.Excel.AddIn.Resources.Ribbon.xml" )!;
 		using var sr = new StreamReader( streamXml );
 		customUi = sr.ReadToEnd();
+
+		// Create service collection
+        var services = new ServiceCollection();
+        services.AddHttpClient();
+        var serviceProvider = services.BuildServiceProvider();
+        var clientFactory = serviceProvider.GetService<IHttpClientFactory>()!;
+		apiService = new ApiService( clientFactory );
+		WorkbookState = new WorkbookState( apiService );
 	}
 
 	public override string GetCustomUI( string RibbonID ) => customUi;
@@ -135,14 +145,27 @@ public partial class Ribbon : ExcelRibbon
 		// application.Run( ctrl.Id, ctrl.Tag );
 		// application.Run( control.Tag );
 
-		var actionParts = control.Tag.Split( ':' );
+		var actionParts = control.Tag.Split( '|' );
 
 		ExcelAsyncUtil.QueueAsMacro( () =>
 		{
 			try
 			{
-				var mi = typeof( Ribbon ).GetMethod( actionParts[ 0 ] )!;
-				mi.Invoke( this, new object[] { control }.Concat( actionParts.Skip( 1 ) ).ToArray() );
+				var parameters = actionParts.Skip( 1 ).ToArray();
+				var parameterTypes = parameters.Any()
+					? new[] { typeof( IRibbonControl ) }.Concat( parameters.Select( p => typeof( string ) ) ).ToArray()
+					: null;
+
+				var mi = parameters.Any()
+					? typeof( Ribbon ).GetMethod( actionParts[ 0 ], parameterTypes! )
+					: typeof( Ribbon ).GetMethod( actionParts[ 0 ] );
+
+				// TODO: Deadlock error :( Clicked download debug but this mi was originally null
+				// because my types were wrong.  If I clicked dropdown again, it was locked up and if I hit
+				// pause on debugger it highlighted the .GetAwaiter().GetResult() line in the Ribbon_GetContent.
+				// If no error happens, I can click over and over again without issue, so I think there is problem there.
+				// If method (in my case download debug) throws error, didn't cause the deadlock
+				mi!.Invoke( this, new object[] { control }.Concat( parameters ).ToArray() );
 			}
 			catch ( Exception ex )
 			{

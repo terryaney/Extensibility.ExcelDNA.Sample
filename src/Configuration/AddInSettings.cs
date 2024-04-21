@@ -1,4 +1,5 @@
 using System.Net.NetworkInformation;
+using KAT.Camelot.Domain.Security.Cryptography;
 
 namespace KAT.Extensibility.Excel.AddIn;
 
@@ -8,22 +9,18 @@ public class AddInSettings
 	public string ApiEndpoint { get; init; } = null!;
 	public string[] DataServices { get; init; } = Array.Empty<string>();
 	public string? SaveHistoryName { get; init; }
-	public CalcEngineManagement CalcEngineManagement { get; init; } = new();
 	public DataExport DataExport { get; init; } = new();
 	public Features Features { get; init; } = new();
-}
 
-public class DataExport
-{
-	public string? Path { get; init; }
-	public bool AppendDateToName { get; init; } = false;
+	public string? KatUserName { get; set; }
+	public string? KatPassword { get; set; }
 
-}
-
-public class CalcEngineManagement
-{
-	public string? Email { get; init; }
-	public string? Password { get; init; }
+	public void SetCredentials( string? userName, string? password )
+	{
+		KatUserName = userName;
+		KatPassword = password;
+		clearPassword = null;
+	}
 
 	private string? clearPassword = null;
 	public async Task<string?> GetClearPasswordAsync()
@@ -32,18 +29,14 @@ public class CalcEngineManagement
 
 		var macAddress = GetMacAddress();
 
-		if ( Password == null || macAddress == null ) return null;
+		if ( KatPassword == null || macAddress == null ) return null;
 
-		// TODO: var decryptedSetting = await Cryptography3DES.DefaultDecryptAsync( Password );
-		// TODO: var macAddressHash = Password.SHA256Hash( macAddress );
-		await Task.Delay( 0 );
-		var decryptedSetting = Password;
-		var macAddressHash = macAddress;
+		var decryptedSetting = await Cryptography3DES.DefaultDecryptAsync( KatPassword );
+		var macAddressHash = Hash.SHA256Hash( macAddress );
 		
 		if ( !decryptedSetting.StartsWith( macAddressHash ) ) return null;
 
-		// TODO: return clearPassword = await Cryptography3DES.DefaultDecryptAsync( decryptedSetting[ macAddressHash.Length.. ] );
-		return clearPassword = decryptedSetting[ macAddressHash.Length.. ]; 
+		return clearPassword = await Cryptography3DES.DefaultDecryptAsync( decryptedSetting[ macAddressHash.Length.. ] );
 	}
 
 	public static async Task<string?> EncryptPasswordAsync( string password )
@@ -52,13 +45,9 @@ public class CalcEngineManagement
 
 		if ( macAddress == null ) return null;
 
-		// TODO: var encryptedPassword = await Cryptography3DES.DefaultEncryptAsync( password );
-		// TODO: var macAddressHash = Camelot.Domain.Security.Cryptography.Password.SHA256Hash( macAddress );
-		// TODO: return await Cryptography3DES.DefaultEncryptAsync( macAddressHash + encryptedPassword );
-		await Task.Delay( 0 );
-		var encryptedPassword = password;
-		var macAddressHash = macAddress;
-		return macAddressHash + encryptedPassword;
+		var encryptedPassword = await Cryptography3DES.DefaultEncryptAsync( password );
+		var macAddressHash = Hash.SHA256Hash( macAddress );
+		return await Cryptography3DES.DefaultEncryptAsync( macAddressHash + encryptedPassword );
 	}
 
 	private static string? GetMacAddress()
@@ -73,6 +62,13 @@ public class CalcEngineManagement
 		}
 		return null;
 	}
+}
+
+public class DataExport
+{
+	public string? Path { get; init; }
+	public bool AppendDateToName { get; init; } = false;
+
 }
 
 public class Features

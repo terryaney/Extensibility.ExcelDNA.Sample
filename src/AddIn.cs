@@ -26,7 +26,7 @@ public class AddIn : IExcelAddIn
 
 	internal static AddIn CurrentAddin { get; private set; } = null!;
 
-	private FileWatcherNotification settingsProcessor = null!;
+	internal static FileWatcherNotification settingsProcessor = null!;
 
 
 	public void AutoOpen()
