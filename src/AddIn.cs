@@ -9,25 +9,10 @@ public class AddIn : IExcelAddIn
 {
 	internal static string XllPath = null!;
 	internal static string ResourcePath => Directory.CreateDirectory( Path.Combine( XllPath, "Resources" ) ).FullName;
-	internal static string PreferencesPath => Path.Combine( XllPath, "appsettings.preferences.json" );
-	internal static JsonObject Preferences
-	{
-		get
-		{
-			var path = PreferencesPath;
-
-			return File.Exists( path )
-				? ( JsonNode.Parse( File.ReadAllText( path ) ) as JsonObject )!
-				: new JsonObject();
-		}
-	}
 
 	internal static AddInSettings Settings = new();
-
 	internal static AddIn CurrentAddin { get; private set; } = null!;
-
 	internal static FileWatcherNotification settingsProcessor = null!;
-
 
 	public void AutoOpen()
 	{
@@ -83,10 +68,7 @@ public class AddIn : IExcelAddIn
 		// Calculation error is happening on Excel calculation thread, so need to QueueAsMacro to get back to main Excel UI thread.
 		// https://groups.google.com/d/msg/exceldna/cHD8Tx56Msg/MdPa2PR13hkJ
 		// Explains why needs caller other XlCall methods inside
-		ExcelAsyncUtil.QueueAsMacro( () =>
-		{
-			Ribbon.CurrentRibbon.LogFunctionError( caller, exception );
-		} );
+		ExcelAsyncUtil.QueueAsMacro( () => Ribbon.CurrentRibbon.LogFunctionError( caller, exception ) );
 
 		return ExcelError.ExcelErrorValue;
 	}

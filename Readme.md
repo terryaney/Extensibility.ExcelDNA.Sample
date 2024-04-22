@@ -68,7 +68,7 @@ My add-in has a CustomUI ribbon and to enable intellisense in the `Ribbon.xml` f
 	"xml.fileAssociations": [
 		{
 			"pattern": "Ribbon.xml",
-			"systemId": "https://raw.githubusercontent.com/Excel-DNA/ExcelDna/master/Distribution/XmlSchemas/customUI.xsd"
+			"systemId": "https://raw.githubusercontent.com/Excel-DNA/ExcelDna/master/Distribution/XmlSchemas/customui14.xsd"
 		}
 	]
 }
@@ -77,17 +77,16 @@ My add-in has a CustomUI ribbon and to enable intellisense in the `Ribbon.xml` f
 ## Features
 
 1. [Ribbon Organization](#ribbon-organization)
-1. [async/await Issues](#asyncawait-issues)
+1. [Thread Context Issues](#thread-context-issues)
 1. [ExcelIntegration.RegisterUnhandledExceptionHandler](#excelintegrationregisterunhandledexceptionhandler)
 1. [appsettings.json Support](#appsettingsjson-support)
-1. [Fixing Workbook Links](#fixing-workbook-links)
 1. [Changing Visible/Enabled State of Ribbon Controls](#changing-visibleenabled-state-of-ribbon-controls)
-1. [Custom Ribbon Image with Badge Count](#custom-ribbon-image-with-badge-count)
 1. [Using Windows Form Dialogs](#using-windows-form-dialogs)
+1. [Fixing Workbook Links](#fixing-workbook-links)
 
 ### Ribbon Organization
 
-The use of the `IRibbonUI` in the KAT Tools add-in is quite extensive.  There is state management of CustomUI elements via ribbon events, CustomUI element handlers, dynamic menus, and dynamic images to name a few.  In this section I will describe some of the challenges I faced with `IRibbonUI` and how I overcame them.
+The use of the `IRibbonUI` functionality in the KAT Tools add-in is quite extensive.  There is state management (enabled/visible) of CustomUI elements via ribbon events, CustomUI element handlers, dynamic menus with content from async method calls, and dynamic images to name a few.  In this section I will describe some of the challenges I faced with `IRibbonUI` and how I overcame them.
 
 **Helpful Documenation Links**
 
@@ -96,7 +95,7 @@ The use of the `IRibbonUI` in the KAT Tools add-in is quite extensive.  There is
 
 **Managing the Sheer Amount of Code**
 
-Given the amount of methods I had to implement to provide all the required functionality, the lines of code became quite overwhelming (at least given the way I organized the code).  To help alleviate this, I used [partial classes](https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/partial-classes-and-methods#partial-classes) just as an organizational tool.  This made it easier to find and maintain the code for me.  Additionally, to make this separation easier to manage in the (Solution) Explorer side bar, I would suggest to enable file nesting.  To enable file nesting in Visual Studio Code, add the following to your `settings.json` file:
+Given the amount of code I had to implement to provide all the required functionality, the number of lines/methods became quite overwhelming (at least given the way I organized the code - leaving vast majority of the code within the `Ribbon` class).  To help alleviate this, I used [partial classes](https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/partial-classes-and-methods#partial-classes) as an organizational tool.  This made it easier to find and maintain the code for me but your mileage may vary.  Additionally, to make this separation easier to manage in the (Solution) Explorer side bar, I would suggest enabling file nesting.  To enable file nesting in Visual Studio Code, add the following to your `settings.json` file:
 
 ```json
 {
@@ -106,43 +105,64 @@ Given the amount of methods I had to implement to provide all the required funct
 }
 ```
 
-I also used method prefixes that matched the CustomUI `group.id` as well to make code navigation easier (via `CTRL+T` keyboard shortcut).  For example, for my group with an `id` of `Navigation`, the methods all have the prefix `Navigation_`.
+I also used method prefixes that matched the CustomUI `group.id` as well to make code navigation easier (via `CTRL+T` keyboard shortcut).  For example, for my group with an `id` of `groupNavigation`, the methods all have the prefix `Navigation_`.
 
 Back to [Features listing](#features).
 
-### async/await Issues
+### Thread Context Issues
 
-The KAT add-in uses async/await code to perform various tasks.
+The following requirements were some of the challenges I faced regarding Excel thread context switching.  In some cases, the code would not function correctly (or at all), but in many cases, the code would execute as I expected, but when I closed Excel, it attempts to shutdown but the `msexcel.exe` process is not terminated and after the current Excel window is closed it immediately launches a new window with no spreadsheet and the add-in is not displayed.  Attempting to view the add-in in Excel's add-in dialog caused Excel to GPF and shutdown, requiring the user to re-add the add-in via Excel's dialog.
+
+
+1. **Api Functionality via HttpClient** - The `Camelot.Api.Excel` api project is used both to manage state of the ribbon as well as provide functionality for some of the button events.  See [`WorkbookState.RefreshAsync`](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Models/WorkbookState.cs) or [`Ribbon.KatDataStore_DownloadLatestCalcEngine`](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Ribbon.Handlers.KatDataStore.cs) for some examples.
+2. **Long Running Tasks** - Some ribbon handlers require launching a long running task that can be cancelled if needed, does not block the main Excel threads, and then reports back information to the main thread (i.e. Local Batch Processes).
+3. **async/await Support in Handlers** - The ability to run async code in Ribbon button handlers and follow up interactions with Excel COM objects to manipulate the Excel application in some fashion (i.e. `ribbon.Invalidate()` or other `application.*` methods (`application.Workbooks.Open`)).
+4. **FileSystemWatcher Event Support** - A `FileSystemWatcher` that is monitoring `appsettings*.json` file(s) for changes triggers change events when necessary that need to reload settings and then invalid the ribbon.  See [AddIn.AutoOpen](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/AddIn.cs) for more detail.
+5. **Global Exception Handler** - A global exception handler is added via `ExcelIntegration.RegisterUnhandledExceptionHandler` to provide the ability to catch all formula/calculation exceptions.  In the registered [UnhandledExceptionHandler](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/AddIn.cs) handler, the error is logged and a ribbon badge is updated with current count of errors.  See the [ExcelIntegration.RegisterUnhandledExceptionHandler](#excelintegrationregisterunhandledexceptionhandler) section for more detail.
+
+**Reference Links for Thread Context and async/await Issues**
 
 1. https://groups.google.com/g/exceldna/c/_pKphutWbvo - question asking about my different scenarios
-2. https://stackoverflow.com/a/68303070/166231 - Cleary answer about async
+1. https://groups.google.com/g/exceldna/c/ILgL-dW47A4/m/9HrOyClJAQAJ - Thread about ensuring Excel shuts down properly.
+1. https://stackoverflow.com/a/68303070/166231 - Stephen Cleary's answer about async/await best practices.
+1. https://learn.microsoft.com/en-us/archive/msdn-magazine/2015/july/async-programming-brownfield-async-development - Async Programming article by Stephen Cleary.
 
-Issues:
+The following are some of the specific issues I had to overcome/workaround.  To be honest, I do not have my head wrapped around Thread context switching/blocking.  So if anyone reads this and can explain it better, please contact me.
 
-1. Availability of await/async - some places it was impossible, i.e. `Application_WorkbookBeforeSave` because of `ref bool Cancel`.
-2. Desire to have code await a method and not continue running until complete, i.e. `Application_WorkbookBeforeSave` where I needed the `ProcessSaveHistoryAsync` method to complete before flow returned and `Application_WorkbookAfterSave` was called.
-3. Ability to run async code without negatively affecting Excel's calculation thread - when problems happened and Excel attempts to shutdown, it does not terminate the msexcel.exe process, but when the current Excel window is closed it immediately launches a new window.
+1. **Availability of await/async** - In some places (i.e. [`Application_WorkbookBeforeSave`](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Ribbon.Events.Excel.cs)), it was impossible to use `await`/`async`.  To work around this, I used [The Thread Pool Hack](https://learn.microsoft.com/en-us/archive/msdn-magazine/2015/july/async-programming-brownfield-async-development#the-thread-pool-hack) to run the async method from within synchronous code.  
+	1. [`Ribbon_GetContent`](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Ribbon.Events.cs)
+		1. Originally, I simply tried changing the handler signature to async (`public async Task<string?> Ribbon_GetContent( IRibbonControl control )`) and use `await` as normal hoping Excel Integration would properly call my method.  The code execution *did* wait until the api call was complete before returning the `menu.ToString(), however, before it completed, Excel had immediately shown a single, empty menu item and never refreshed it.
+		1. I then tried using `ExcelAsyncUtil.QueueAsMacro`, of course this didn't work because I couldn't `await` this method call, so the handler returned back to Excel immediately before the `menu.ToString()` was complete.
+		1. I then tried using `ExcelAsyncTaskScheduler` after reading [this discussion](https://groups.google.com/g/exceldna/c/9OkHWILuFMo/m/RpilXElgAQAJ), but it had similar results to `ExcelAsyncUtil.QueueAsMacro`.
+		1. I then tried [The Blocking Hack](https://learn.microsoft.com/en-us/archive/msdn-magazine/2015/july/async-programming-brownfield-async-development#the-blocking-hack) but if `ExcelDna.Logging.LogDisplay.WriteLine` or `Show` were called, the subsequent call to 'The Blocking Hack' would hang indefinitely.
+		1. Finally, I used 'The Thread Pool Hack' to get the desired behavior (menu populating correctly, and Excel closing gracefully).
+	1. [`Application_WorkbookBeforeSave`](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Ribbon.Events.Excel.cs) - Most of the `public void Application_*` event handlers seemed to function properly simply by placing an `async` keyboard in the method signature.  However, the `Application_WorkbookBeforeSave` handler was a special case because of the `ref bool Cancel` parameter preventing the use of the keyword.
+		1. Originally, I was using the 'The Blocking Hack' and it seemed to run correctly.
+		1. After the 'The Blocking Hack' was replaced in `Ribbon_GetContent`, I decided to use the 'The Thread Pool Hack' in `Application_WorkbookBeforeSave` for consistency and it worked as expected.
+1. **Needing to await asynchronous code** - There were cases where I desired code flow to behave like normal `async/await` code (i.e. code flow pauses until async code is complete).
+	1. `Application_WorkbookBeforeSave` - I needed the `ProcessSaveHistoryAsync` method to complete and assign the `calcEngineUploadInfo` variable before flow returned, allowing `Application_WorkbookBeforeSave` to complete and ultimately call `Application_WorkbookAfterSave` which performs asynchronous code if `calcEngineUploadInfo` is assigned.
+	1. `Ribbon_GetContent` - This same requirement was needed in this method as well, waiting for `menu` to be created before returning the result to Excel.
+1. **Access `ExcelDna.Logging.LogDisplay`/`ribbon.Invalidate()` While On Calculation Thread** - In the `UnhandledExceptionHandler` global exception handler, the use of both of these methods must be from within an `ExcelAsyncUtil.QueueAsMacro` wrapper otherwise Excel would not close gracefully.
 
-Async Tasks in Excel-DNA:
-
-1. Calling `Camelot.Api.Excel` web application methods - during handlers of RibbonUI buttons, during Excel 'state' change to query information about the current CalcEngine, and during RibbonUI handlers (i.e. GetContent) to query information on demand about current CalcEngine.
-2. Ability to launch and run a long running task in a separate thread that can be cancelled if needed and then report back information to the main thread (i.e. Local Batch Processes)
-
-Code Locations and Requirements
+Below is a summary of the code locations that faced thread context issues and what was used to overcome them.
 
 | Method | Requirement | Strategy |
 | --- | --- | --- |
-| `Ribbon_GetContent` | `Camelot.Api.Excel` | `.GetAwaiter().GetResult()` |
-
+| `AddIn.AutoOpen` | `FileSystemWatcher` | `ExcelAsyncUtil.QueueAsMacro` |
+| `UnhandledExceptionHandler` | `Excel COM Access` | `ExcelAsyncUtil.QueueAsMacro` |
+| `Ribbon_GetContent` | `Camelot.Api.Excel` | `Task.Run( () => *Async() ).GetAwaiter().GetResult()` |
+| `Application_WorkbookBeforeSave` | `Camelot.Api.Excel` | `Task.Run( () => *Async() ).GetAwaiter().GetResult()` |
+| `Ribbon_OnAction` | `Camelot.Api.Excel`<br/>`Async Functionality`<br/>`Long Running Task` | `ExcelAsyncUtil.QueueAsMacro` |
+| `KatDataStore_DownloadLatestCalcEngine` | `Camelot.Api.Excel`<br/>`Excel COM Access` | `ExcelAsyncUtil.QueueAsMacro` |
+| `KatDataStore_DownloadDebugFile` | `Camelot.Api.Excel`<br/>`Excel COM Access` | `ExcelAsyncUtil.QueueAsMacro` |
 
 Back to [Features listing](#features).
 
-
 ### ExcelIntegration.RegisterUnhandledExceptionHandler
 
-I register a global exception handler to log diagnostic information to the `ExcelDna.Logging.LogDisplay` window and update a ribbon image with a badge count.  In the diagnostic information, I wanted to display the address and formula of the offending cell.  Since the error handler runs on Excel's calculation thread, but directly converting the `ExcelReference` to an address can't (easily) be done in this context, so `ExcelAsyncUtil.QueueAsMacro` is required to register a delegate to run in a safe context on the main thread, from any other thread or context (i.e. when the calculation completes).  This [conversation](https://groups.google.com/d/msg/exceldna/cHD8Tx56Msg/MdPa2PR13hkJ) explains why `QueueAsMacro` is required for other `XlCall` methods.
+A global exception handler is registered to log diagnostic information to the `ExcelDna.Logging.LogDisplay` window and update a ribbon image with a badge count.  In the diagnostic information, I wanted to display the address and formula of the offending cell.  Since the error handler runs on Excel's calculation thread, but directly converting the `ExcelReference` to an address can't (easily) be done in this context, so `ExcelAsyncUtil.QueueAsMacro` is required to register a delegate to run in a safe context on the main thread, from any other thread or context (i.e. when the calculation completes).  This [conversation](https://groups.google.com/d/msg/exceldna/cHD8Tx56Msg/MdPa2PR13hkJ) explains why `QueueAsMacro` is required for other `XlCall` methods.
 
-For our add-in, we wanted to have a badge count on a ribbon image to indicate the number of formula errors that had occurred during calculations.  This is tracked via the `auditShowLogBadgeCount` variable below.  This variable is also used before saving a workbook to determine if the error log should be displayed.  
+To help promote cleaner Spreadsheet development, we wanted to show a badge count on a ribbon image when there were errors in the workbook formulas as an indicator to the developers.  The following code demonstrates a possible solution.
 
 ```csharp
 
@@ -173,24 +193,12 @@ public override void OnConnection( object Application, ext_ConnectMode ConnectMo
 {
 	base.OnConnection( Application, ConnectMode, AddInInst, ref custom );
 
-	application.WorkbookActivate += Application_WorkbookActivate;
+	application.WorkbookDeactivate += Application_WorkbookDeactivate;
 	application.WorkbookBeforeSave += Application_WorkbookBeforeSave;
 }
 
-public override void OnDisconnection( ext_DisconnectMode RemoveMode, ref Array custom )
+private void Application_WorkbookDeactivate( MSExcel.Workbook Wb )
 {
-	base.OnDisconnection( RemoveMode, ref custom );
-
-	application.WorkbookActivate -= Application_WorkbookActivate;
-	application.WorkbookBeforeSave -= Application_WorkbookBeforeSave;
-}
-
-private void Application_WorkbookActivate( MSExcel.Workbook Wb )
-{
-	// Clear error info whenever a new workbook is opened.  Currenly, only show any 
-	// errors after a cell is calculated.  Could call application.Calculate() to force everything
-	// to re-evaluate, but that could be expensive, so for now, not doing it, the function log display
-	// is just helpful information for CalcEngine developer to 'clean' up their formulas.
 	auditShowLogBadgeCount = 0;
 	cellsInError.Clear();
 	ExcelDna.Logging.LogDisplay.Clear();
@@ -206,6 +214,7 @@ private void Application_WorkbookBeforeSave( MSExcel.Workbook Wb, bool SaveAsUI,
 	}
 }
 
+// Only report error if not already reported once for current formula/worksheet
 private readonly ConcurrentDictionary<string, string?> cellsInError = new();
 
 public void LogFunctionError( ExcelReference caller, object exception )
@@ -216,18 +225,18 @@ public void LogFunctionError( ExcelReference caller, object exception )
 	var reportError = !cellsInError.TryGetValue( address, out var failedFormula ) || failedFormula != formula;
 	cellsInError[ address ] = formula;
 
-	// Only report error if not already reported once for current formula/worksheet
 	if ( reportError )
 	{
 		var message = $"Error: {address} {formula ?? "unavailable"}{Environment.NewLine}{exception}";
 	
 		ExcelDna.Logging.LogDisplay.RecordLine( message );
-
 		auditShowLogBadgeCount++;
+
 		ribbon.InvalidateControl( "katShowDiagnosticLog" );
 	}		
 }
 
+// Ribbon button to show log manually
 public void RBLe_ShowLog( IRibbonControl? _ )
 {
 	ExcelDna.Logging.LogDisplay.Show();
@@ -235,6 +244,7 @@ public void RBLe_ShowLog( IRibbonControl? _ )
 	ribbon.InvalidateControl( "katShowDiagnosticLog" );
 }
 
+// Ribbon event handler to draw badge count on ribbon image if needed
 private int auditShowLogBadgeCount;
 public Bitmap Ribbon_GetImage( IRibbonControl control )
 {
@@ -280,18 +290,7 @@ public static class ExcelApi
 		return !string.IsNullOrEmpty( formula ) ? formula : null;
 	}
 
-	public static string GetAddress( this ExcelReference? reference )
-	{
-		try
-		{
-			var address = (string)XlCall.Excel( XlCall.xlfReftext, reference, true /* true - A1, false - R1C1 */ );
-			return address;
-		}
-		catch ( Exception ex )
-		{
-			throw new ApplicationException( $"GetAddress failed.  reference.RowFirst:{reference?.RowFirst}, reference.RowLast:{reference?.RowLast}, reference.ColumnFirst:{reference?.ColumnFirst}, reference.ColumnLast:{reference?.ColumnLast}", ex );
-		}
-	}
+	public static string GetAddress( this ExcelReference? reference ) => (string)XlCall.Excel( XlCall.xlfReftext, reference, true /* true - A1, false - R1C1 */ );
 }
 ```
 
@@ -299,13 +298,14 @@ Back to [Features listing](#features).
 
 ### appsettings.json Support
 
-The KAT add-in requires support for user settings and the most convenient way to provide that functionality was simply by leveraging an `appsettings.json` file.  In the previous .NET Framework version, I used an `app.config` file which was distributed as `*.xll.config` and `*64.xll.config`.
+The KAT add-in requires support for user settings and secrets and the most convenient way to provide that functionality was simply by leveraging an `Microsoft.Extensions.Configuration.IConfiguration` capabilities.
 
 To enable this support:
 
-1. Output the `appsettings.json` file to the output directory during build so that it could be used during debugging.  Not displayed here, but additionally, a default `appsettings.json` file is included in the project distribution, but is based on whatever mechanism you choose to distribute your add-in.
-1. Read and monitor the `appsettings.json` file for changes.
-1. Access settings throughout the add-in.
+1. Output the `appsettings.json` file to the output directory during build so that it could be used during debugging.  
+1. For settings that should not be shared between users, they will be stored in an `appsettings.secrets.json` file that is not distributed/shared amoung users nor present in source control.
+1. Read and monitor the `appsettings.json` and `appsettings.secrets.json` files for changes and updates object/UI on demand when files change instead of requiring a restart.
+1. Access settings throughout the code base via the `AddIn.Settings` static object.
 
 #### Output `appsettings.json` File
 
@@ -321,23 +321,17 @@ Simply add the following to the `.csproj` file and the `appsettings.json` file w
 
 #### Read and Monitor `appsettings.json` File
 
-This was probably the trickiest part of the process.  As Excel-DNA documentation has stated, it does not want to include Dependency Injection into the project.  This means that the `IConfiguration` interface is not available by default.  To get around this, I used the `Microsoft.Extensions.Configuration` package (and couple others) to read the `appsettings.json` file directly.  This strongly typed settings class is a singleton and is accessed throughout the add-in via `AddIn.Settings`.
+This was probably the trickiest part of the process.  As Excel-DNA documentation has stated, [it does not want to include Dependency Injection into the project](https://github.com/Excel-DNA/ExcelDna/issues/20#issuecomment-135950407).  This means that the `IConfiguration` interface is not available by default in the normal usage pattern.  To get around this, I used the `Microsoft.Extensions.Configuration` package (and couple others) to read the `appsettings.json` file directly and bind it to a strongly typed settings object.  This strongly typed settings object is a singleton and is accessed throughout the add-in via `AddIn.Settings`.
 
 Note: See [ExcelRna.Extensions.Hosting](https://github.com/altso/ExcelRna.Extensions.Hosting) for what seems like a possible solution for Dependency Injection in Excel-DNA.  The project looks very promising, but I wanted to try and only use Excel-DNA for this project until Dependency Injection was a requirement.
 
-To monitor for changes (since `IOptionsSnapshot<T>` pattern is not available), I used a `FileSystemWatcher` to monitor the `appsettings.json` file for changes.  When a change is detected, the settings are reloaded (with a little protection against multiple notifications).  
+To monitor for changes (since `IOptionsSnapshot<T>` pattern is not available), I used a `FileSystemWatcher` to monitor the `appsettings.json` file for changes.  When a change is detected, the settings are reloaded (with a little protection against multiple notifications inside [FileWatcherNotification](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Configuration/FileWatcherNotification.cs)).  
 
 Below I will demonstrate what is needed to wire this all together.
 
-1. The *.csproj file needs to include the following package references:
+1. The *.csproj file needs to include the following package references: `Microsoft.Extensions.Configuration`, `Microsoft.Extensions.Configuration.Binder`, and `Microsoft.Extensions.Configuration.Json`.
 
-```xml
-<PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
-<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="7.0.0" />
-<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
-```
-
-2.  For this documentation, assume the AddInSettings class simply has a single property.
+2.  For this documentation, assume the AddInSettings class has a single property (see [AddInSettings](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Configuration/AddInSettings.cs) for all the settings that are supported).
 
 ```csharp
 public class AddInSettings
@@ -346,7 +340,7 @@ public class AddInSettings
 }
 ```
 
-3. In `IExcelAddIn.AutoOpen`, leverage the `FileWatcherNotification` class to monitor the `appsettings.json` file for changes and when a change is detected, reload the settings and invalidate the ribbon (the first time through, the ribbon might not be ready, but when subsequent 'file/settings' updates occur, it will be ready).
+3. In `IExcelAddIn.AutoOpen`, leverage the `FileWatcherNotification` class to monitor the `appsettings.json` files for changes and when a change is detected, reload the settings and invalidate the ribbon (the first time through, the ribbon might not be ready, but when subsequent 'file/settings' updates occur, it will be ready).
 
 ```csharp
 public class AddIn : IExcelAddIn
@@ -359,81 +353,34 @@ public class AddIn : IExcelAddIn
 		settingsProcessor = new( 
 			notificationDelay: 300, 
 			path: Path.GetDirectoryName( (string)XlCall.Excel( XlCall.xlGetName ) )!, 
-			filter: "appsettings.json", 
+			filter: "appsettings*.json", 
 			action: e => {
-			try
-			{
-				IConfiguration configuration = new ConfigurationBuilder()
-					.AddJsonFile( e.FullPath, optional: true )
-					.Build();
+				try
+				{
+					IConfiguration configuration = new ConfigurationBuilder()
+						.AddJsonFile( Path.Combine( XllPath, "appsettings.json" ), optional: true )
+						.AddJsonFile( Path.Combine( XllPath, "appsettings.secrets.json" ), optional: true )
+						.Build();
 
-				Settings = configuration.GetSection( "addInSettings" ).Get<AddInSettings>() ?? new();
-			}
-			catch ( Exception ex )
-			{
-				// TODO: Need to log this somewhere...event viewer via Logging?
-				Console.WriteLine( ex.ToString() );
-				Settings = new();
-			}
+					Settings = configuration.GetSection( "addInSettings" ).Get<AddInSettings>() ?? new();
+				}
+				catch ( Exception ex )
+				{
+					Ribbon.LogError( "Unable to initialize IConfiguraiton for appsettings.json.  Using default settings.", ex );
+					Settings = new();
+				}
 
-			// On the manual .Change() method called after this constructor, the Ribbon might not yet be initialized
-			Ribbon.CurrentRibbon?.InvalidateSettings();
-		} );
+				ExcelAsyncUtil.QueueAsMacro( () => ribbon.InvalidateControl( "tabKat" ) );
+			} );
 
 		settingsProcessor.Changed();
 	}
-}
-
-/// <summary>
-/// FileSystemWatcher notifications are capable of happening 'multiple' times for a single 'action'.  For example, if Notepad saves a file,
-/// you might not get a single 'Changed' event when everything is 'done', you might get multiple 'Changed' events.  Similarily, "when a file is 
-/// moved from one directory to another, several OnChanged and some OnCreated and OnDeleted events might be raised." (from MS Docs).  This class 
-/// mitigates that by having an internal timer that starts/restarts on each event.  So once the timer is created (first event), if no other events
-/// occur for notificationDelay milliseconds, then, and only then, is the event raised.
-/// </summary>
-/// <remarks>
-/// See https://asp-blogs.azurewebsites.net/ashben/31773 - see 'Events being raised multiple times'
-/// </remarks>
-public class FileWatcherNotification
-{
-	private readonly System.Timers.Timer timer;
-	private readonly FileSystemWatcher watcher;
-
-	private readonly string path;
-	private readonly string name;
-	private FileSystemEventArgs fileSystemEventArgs = null!;
-
-	public FileWatcherNotification( int notificationDelay, string path, string name, Action<FileSystemEventArgs> action )
-	{
-		watcher = new FileSystemWatcher( path, name ) { EnableRaisingEvents = true };
-		watcher.Changed += watcher_Changed;
-
-		timer = new( notificationDelay );
-		timer.Elapsed += ( sender, args ) =>
-		{
-			timer.Enabled = false;
-			action( fileSystemEventArgs );
-		};
-		this.path = path;
-		this.name = name;
-	}
-
-	private void watcher_Changed( object sender, FileSystemEventArgs e )
-	{
-		timer.Stop();
-		fileSystemEventArgs = e;
-		timer.Start();
-	}
-
-	public void Start() => timer.Start();
-	public void Stop() => timer.Stop();
-	public void Changed() => watcher_Changed( this, new FileSystemEventArgs( WatcherChangeTypes.Changed, path, name ) );
 }
 ```
 
 #### Access Settings
 
-To access the settings, simply use `AddIn.Settings.*` properties when needed.  However, I had one property (the only one in this sample) that needed to update the ribbon immediately when the settings where changed.  The call in the previous sample code to `Ribbon.CurrentRibbon?.InvalidateSettings();` is what accomplishes this.
+To access the settings, simply use `AddIn.Settings.*` properties when needed.  However, I had one property (the only one in this sample) that needed to update the ribbon immediately when the settings where changed.  The call in the previous sample code to `Ribbon.CurrentRibbon?.InvalidateFeatures();` is what accomplishes this.
 
 ** Ribbon.xml **
 ```xml
@@ -441,9 +388,7 @@ To access the settings, simply use `AddIn.Settings.*` properties when needed.  H
 	<ribbon startFromScratch="false">
 		<tabs>
 			<tab id="tabKat" keytip="K" label="KAT Tools" getVisible="Ribbon_GetVisible">
-				
 				<!-- All the group elements making up my ribbon omitted for brevity -->
-
 			</tab>
 		</tabs>
 	</ribbon>
@@ -454,94 +399,13 @@ To access the settings, simply use `AddIn.Settings.*` properties when needed.  H
 ```csharp
 public partial class Ribbon : ExcelRibbon
 {
-	public static Ribbon CurrentRibbon { get; private set; } = null!;
-	private bool showRibbon;
-
-	public void Ribbon_OnLoad( IRibbonUI ribbon )
-	{
-		this.ribbon = ribbon;
-		showRibbon = AddIn.Settings.ShowRibbon;
-	}
-
-	public void InvalidateSettings()
-	{
-		// Store new setting and invalidate the ribbon
-		showRibbon = AddIn.Settings.ShowRibbon;
-		ribbon.InvalidateControl( "tabKat" );
-	}
-
 	public bool Ribbon_GetVisible( IRibbonControl control )
 	{
 		return control.Id switch
 		{
-			"tabKat" => showRibbon,
+			"tabKat" => AddIn.Settings.ShowRibbon,
 			_ => true,
 		};
-	}
-}
-```
-
-Back to [Features listing](#features).
-
-### Fixing Workbook Links
-
-Totally random topic here, but thought I'd document it.  During the original creation of addin (.NET Framework and/or *.xla files) we often had problems where links to add-ins would get broken because users who uploaded Spreadengines to be used by our APIs had different installation locations for the various addins that were required.
-
-For example, let's say we have an addin named `rbl.xla` that exposed a function called `CalculateProjection`.  If the user had a formula of `=CalculateProjection(A1)` in their workbook all worked fine.  But when they uploaded, and the rbl.xla file was not in the same location as the workbook, the link would be broken **and the formula would be modified** to `=c:\installation\path\to\rbl.xla!CalculateProjection(A1)`.  This was compounded when the formula used several functions from `rbl.xla` because the length of the formula (after the path injections) would sometimes exceed the allowed limit for a formula expression and simply lose chunks of the formula.
-
-To combat this, our 'calculation servers' would run a function like the `UpdateWorkbookLinks` below when a workbook was opened before it was prcoessed.  This process has continued to live on in the Excel-DNA add-in.  To be honest, I'm not 100% sure it is still needed (i.e. if Excel improved its addin installation location detection).  But we do run the `UpdateWorkbookLinks` during the `Application_WorkbookOpen` event and also expose a ribbon button to run it manually in case users are sharing Excel files and having link issues.
-
-```csharp
-private void UpdateWorkbookLinks( MSExcel.Workbook wb )
-{
-	if ( wb == null )
-	{
-		ExcelDna.Logging.LogDisplay.RecordLine( $"LinkToLoadedAddIns: ActiveWorkbook is null." );
-		return;
-	}
-
-	if ( !WorkbookState.HasLinks ) return;
-
-	var linkSources = ( wb.LinkSources( MSExcel.XlLink.xlExcelLinks ) as Array )!;
-
-	var protectedInfo = wb.ProtectStructure
-		? new[] { "Entire Workbook" }
-		: wb.Worksheets.Cast<MSExcel.Worksheet>().Where( w => w.ProtectContents ).Select( w => string.Format( "Worksheet: {0}", w.Name ) ).ToArray();
-
-	if ( protectedInfo.Length > 0 )
-	{
-		MessageBox.Show( 
-			"Unable to update links due to protection.  The following items are protected:\r\n\r\n" + string.Join( "\r\n", protectedInfo ), 
-			"Unable to Update", 
-			MessageBoxButtons.OK, 
-			MessageBoxIcon.Warning 
-		);
-		return;
-	}
-
-	foreach ( var addin in application.AddIns.Cast<MSExcel.AddIn>().Where( a => a.Installed ) )
-	{
-		var fullName = addin.FullName;
-		var name = Path.GetFileName( fullName );
-
-		foreach ( object o in linkSources )
-		{
-			var link = (string)o;
-			var linkName = Path.GetFileName( link );
-
-			if ( string.Compare( name, linkName, true ) == 0 )
-			{
-				try
-				{
-					application.ActiveWorkbook.ChangeLink( link, fullName );
-				}
-				catch ( Exception ex )
-				{
-					ExcelDna.Logging.LogDisplay.RecordLine( $"LinkToLoadedAddIns Exception:\r\n\tAddIn Name:{addin.Name}\r\n\tapplication Is Null:{application == null}\r\n\tapplication.ActiveWorkbook Is Null:{application?.ActiveWorkbook == null}\r\n\tName: {name}\r\n\tLink: {link}\r\n\tFullName: {fullName}\r\n\tMessage: {ex.Message}" );
-					throw;
-				}
-			}
-		}
 	}
 }
 ```
@@ -553,9 +417,9 @@ Back to [Features listing](#features).
 Given the size of our ribbon, the visiblity and enabled states were toggling based on the current context of the workbook and or worksheet.  The following shows different parts of our addin demonstrating how we implemented this.
 
 1. Changing `Ribbon.xml` to have `getEnabled` and `getVisible` attributes indicating which method to call to determine the state of the control.
+1. Implementing the [`WorkbookState`](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Models/WorkbookState.cs) class to determine the state of the active workbook and worksheet.
 1. Implementing the `Ribbon_OnLoad`, `Ribbon_GetVisible` and `Ribbon_GetEnabled` methods to use a built in `WorkbookState` class to determine the proper values for the requested state.
-1. Implementing the `WorkbookState` class to determine the state of the workbook and worksheet.  Can example repository code, but this is just any mechanism you choose to determine the state of the workbook and worksheet (i.e. presence of named ranges, presence of tabs, etc.).
-1. Refreshing the ribbon when `WorkbookState` was updated via the `InvalidateControl` method.
+1. Refreshing the ribbon when `WorkbookState` was updated via the `ribbon.Invalidate()` method.
 
 #### Modifying Ribbon.xml for Visibility and Enabled State
 
@@ -577,7 +441,7 @@ Part of our ribbon.xml file showing the `onLoad` specified on `customUI` element
 
 #### Handling Ribbon Events for Visibility and Enabled State
 
-To manually refresh the state of the ribbon, we need to call the `InvalidateControl` method on the `IRibbonUI` object.  Therefore, in the `Ribbon_OnLoad` method, we store the `IRibbonUI` object in a class level variable.  Simple examples of the `Ribbon_GetVisible` and `Ribbon_GetEnabled` methods are also listed.
+To manually refresh the state of the ribbon, we need to call the `IRibbonUI.Invalidate` method.  Therefore, in the `Ribbon_OnLoad` method, we store the `IRibbonUI` object in a class level variable.  Simple examples of the `Ribbon_GetVisible` and `Ribbon_GetEnabled` methods are also listed.
 
 ```csharp
 public partial class Ribbon
@@ -591,11 +455,8 @@ public partial class Ribbon
 		return control.Id switch
 		{
 			"id1" => someCondition,
-
 			"id2" => someCondition2,
-
 			"id3" or "id4" => someCondition3,
-
 			_ => true,
 		};
 	}
@@ -605,11 +466,8 @@ public partial class Ribbon
 		return control.Id switch
 		{
 			"id1" => someCondition,
-
 			"id2" => someCondition2,
-
 			"id3" or "id4" => someCondition3,
-
 			_ => true,
 		};
 	}
@@ -618,7 +476,7 @@ public partial class Ribbon
 
 #### Refreshing Ribbon State on Demand
 
-Nothing too complicated about manually refreshing the ribbon state.  Basically, you just have to indicate which controls to refresh (via `InvalidateControl` method on the `IRibbonUI` object) when the 'context' changes.  To accomplish this you probably will at a minimum have the following application event handlers:
+Nothing too complicated about manually refreshing the ribbon state.  To accomplish this you probably will at a minimum have the following application event handlers:
 
 ```csharp
 public partial class Ribbon : ExcelRibbon
@@ -652,59 +510,30 @@ public partial class Ribbon : ExcelRibbon
 	private void Application_WorkbookActivate( MSExcel.Workbook wb )
 	{
 		workbookState = null;
-		ribbon.InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
+		ribbon.Invalidate();
 	}
 
 	private void Application_SheetActivate( object sheet )
 	{
 		workbookState = null;
-		ribbon.InvalidateControls( RibbonStatesToInvalidateOnSheetChange );
+		ribbon.Invalidate();
 	}
-
-	// Sample list of button ids that should be refresheds 'OnCalcEngineManagement'.
-	// Above, RibbonStatesToInvalidateOnWorkbookChange and RibbonStatesToInvalidateOnSheetChange
-	// are just arrays for more IDs to manage visible/enabled state when the context changes.
-	readonly string[] RibbonStatesToInvalidateOnCalcEngineManagement =
-		new[] { "katDataStoreDownloadLatest", "katDataStoreCheckIn", "katDataStoreCheckOut" };
 
 	public void KatDataStore_CheckInCalcEngine( IRibbonControl control )
 	{
-		// Omitted code that performs a 'Check In' of the current Spreadsheet, and when 
-		// successful, manually trigger a ribbon invalidate on the controls that care about
-		// 'checked in' state.
-
+		// Code omitted for brevity
 		workbookState = null;
-		ribbon.InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
+		ribbon.Invalidate();
 	}
 
-	// Sample button click handler that manually refreshes the *ENTIRE* ribbon.
-	// This was useful when the ribbon was in a 'bad' state or the 'context' could have been
-	// updated without Excel being aware and needed to be refreshed.
 	public void RBLe_RefreshRibbon( IRibbonControl _ )
 	{
+		// Code omitted for brevity
 		workbookState = null;
 		ribbon.Invalidate();
 	}
 }
-
-// Simple extension method to wrap Invalidating more than one control.
-public static class ExcelExtensions
-{
-	public static void InvalidateControls( this IRibbonUI ribbon, params string[] controlIds )
-	{
-		foreach ( var controlId in controlIds )
-		{
-			ribbon.InvalidateControl( controlId );
-		}
-	}
-}
 ```
-
-Back to [Features listing](#features).
-
-### Custom Ribbon Image with Badge Count
-
-To help promote cleaner Spreadsheet development, we wanted to show a badge count on a ribbon image when there were errors in the workbook formulas as an indicator to the developers.  See [ExcelIntegration.RegisterUnhandledExceptionHandler](#excelintegrationregisterunhandledexceptionhandler) section for the sample code that demonstrates how to accomplish this via the ribbons `getContent` method.
 
 Back to [Features listing](#features).
 
@@ -738,5 +567,15 @@ private CalcEngineUploadInfo? ProcessSaveHistory( MSExcel.Workbook workbook )
 	// Peform action with information provided in saveHistoryInformation...
 }
 ```
+
+Back to [Features listing](#features).
+
+### Fixing Workbook Links
+
+During the original creation of addin (.NET Framework and/or *.xla files) we often had problems where links to add-ins would get broken because users who uploaded Spreadengines to be used by KAT services had different installation locations for the various addins that were required.
+
+For example, assume there is an addin named `rbl.xla` that exposed a function called `CalculateProjection`.  If the user had a formula of `=CalculateProjection(A1)` in their workbook all worked fine.  But when they uploaded file to be used in KAT services, and the rbl.xla file was not in the same location on the server as it was for user, the link would be broken **and the formula would be modified** to `=c:\user\installation\path\to\rbl.xla!CalculateProjection(A1)`.  If not corrected upon opening, this was compounded when the formula used several functions from `rbl.xla` because the length of the formula (after the path injections) would sometimes exceed the allowed limit for a formula expression and simply lose chunks of the formula.
+
+To combat this, our 'calculation servers' would run a function like the [UpdateWorkbookLinks](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Ribbon.Handlers.CalcEngineUtilities.cs) when a workbook was opened, *before it was prcoessed*.  This process has continued to live on in the Excel-DNA add-in as a utility for users, but is no longer required in KAT services since Excel automation is no longer the server functionaliy used to process spreadsheets.
 
 Back to [Features listing](#features).

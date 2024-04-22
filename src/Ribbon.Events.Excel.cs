@@ -101,10 +101,8 @@ public partial class Ribbon
 	{
 		try
 		{
-			ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
-
-			Console.WriteLine( $"AfterSave Start: {DateTime.Now}" );
 			await UploadCalcEngineToManagementSiteAsync();
+
 		}
 		catch ( Exception ex )
 		{
