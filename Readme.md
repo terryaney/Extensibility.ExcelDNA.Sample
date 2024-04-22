@@ -79,7 +79,7 @@ My add-in has a CustomUI ribbon and to enable intellisense in the `Ribbon.xml` f
 1. [Ribbon Organization](#ribbon-organization)
 1. [Thread Context Issues](#thread-context-issues)
 1. [ExcelIntegration.RegisterUnhandledExceptionHandler](#excelintegrationregisterunhandledexceptionhandler)
-1. [appsettings.json Support](#appsettingsjson-support)
+1. [Dependency Injection](#dependency-injection)
 1. [Changing Visible/Enabled State of Ribbon Controls](#changing-visibleenabled-state-of-ribbon-controls)
 1. [Using Windows Form Dialogs](#using-windows-form-dialogs)
 1. [Fixing Workbook Links](#fixing-workbook-links)
@@ -296,7 +296,30 @@ public static class ExcelApi
 
 Back to [Features listing](#features).
 
-### appsettings.json Support
+### Dependency Injection
+
+As Excel-DNA documentation has stated, [it does not want to include Dependency Injection into the project](https://github.com/Excel-DNA/ExcelDna/issues/20#issuecomment-135950407).  This means that classes/interfaces like `IConfiguration` and `IHttpClientFactory` are not available by default in the normal usage pattern.
+
+As suggested in that discussion, I used static and/or global classes to provide the functionality I needed.
+
+Note: See [ExcelRna.Extensions.Hosting](https://github.com/altso/ExcelRna.Extensions.Hosting) for what seems like a possible solution for Dependency Injection in Excel-DNA.  The project looks very promising, but I wanted to try and only use Excel-DNA for this project until Dependency Injection was a requirement.
+
+#### IHttpClientFactory Support
+
+As documented in the [Thread Context Issues](#thread-context-issues) section, I needed to use `HttpClient` to make api calls to the Camelot.Api.Excel project.  As discussed in the [Use IHttpClientFactory to implement resilient HTTP requests](https://learn.microsoft.com/en-us/dotnet/architecture/microservices/implement-resilient-applications/use-httpclientfactory-to-implement-resilient-http-requests) article by Microsoft, there can be some problems with using the `HttpClient` class directly.  I'm not sure if creating a single static `HttpClient` would suffice for the lifetime of the add-in, but I decided to use the `IHttpClientFactory` to manage the `HttpClient` instances which allowed the class to follow the same pattern used in our web sites and apis when working with `HttpClient` class.
+
+To accomplish that, I use the have a single instance of the classes that need an `IHttpClientFactory` stored in the `Ribbon` class which are set up during the `Ribbon` constructor.  To enable this support, the following code creates a `ServiceCollection` and build a `ServiceProvider` to enable the supoprt of `IHttpClientFactory` and then creates the `HttpClient` instances as needed.
+
+```csharp
+// Create service collection
+var services = new ServiceCollection();
+services.AddHttpClient();
+var serviceProvider = services.BuildServiceProvider();
+var clientFactory = serviceProvider.GetService<IHttpClientFactory>()!;
+apiService = new ApiService( clientFactory );
+```
+
+#### IConfiguration / appsettings.json Support
 
 The KAT add-in requires support for user settings and secrets and the most convenient way to provide that functionality was simply by leveraging an `Microsoft.Extensions.Configuration.IConfiguration` capabilities.
 
@@ -307,7 +330,7 @@ To enable this support:
 1. Read and monitor the `appsettings.json` and `appsettings.secrets.json` files for changes and updates object/UI on demand when files change instead of requiring a restart.
 1. Access settings throughout the code base via the `AddIn.Settings` static object.
 
-#### Output `appsettings.json` File
+##### Output `appsettings.json` File
 
 Simply add the following to the `.csproj` file and the `appsettings.json` file will be copied to the output directory during build.
 
@@ -319,11 +342,9 @@ Simply add the following to the `.csproj` file and the `appsettings.json` file w
 </ItemGroup>
 ```
 
-#### Read and Monitor `appsettings.json` File
+##### Read and Monitor `appsettings.json` File
 
-This was probably the trickiest part of the process.  As Excel-DNA documentation has stated, [it does not want to include Dependency Injection into the project](https://github.com/Excel-DNA/ExcelDna/issues/20#issuecomment-135950407).  This means that the `IConfiguration` interface is not available by default in the normal usage pattern.  To get around this, I used the `Microsoft.Extensions.Configuration` package (and couple others) to read the `appsettings.json` file directly and bind it to a strongly typed settings object.  This strongly typed settings object is a singleton and is accessed throughout the add-in via `AddIn.Settings`.
-
-Note: See [ExcelRna.Extensions.Hosting](https://github.com/altso/ExcelRna.Extensions.Hosting) for what seems like a possible solution for Dependency Injection in Excel-DNA.  The project looks very promising, but I wanted to try and only use Excel-DNA for this project until Dependency Injection was a requirement.
+This was probably the trickiest part of the process.  I used the `Microsoft.Extensions.Configuration` package (and couple others) to read the `appsettings.json` file directly and bind it to a strongly typed settings object.  This strongly typed settings object is a singleton and is accessed throughout the add-in via `AddIn.Settings`.
 
 To monitor for changes (since `IOptionsSnapshot<T>` pattern is not available), I used a `FileSystemWatcher` to monitor the `appsettings.json` file for changes.  When a change is detected, the settings are reloaded (with a little protection against multiple notifications inside [FileWatcherNotification](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Configuration/FileWatcherNotification.cs)).  
 
@@ -378,7 +399,7 @@ public class AddIn : IExcelAddIn
 }
 ```
 
-#### Access Settings
+##### Access Settings
 
 To access the settings, simply use `AddIn.Settings.*` properties when needed.  However, I had one property (the only one in this sample) that needed to update the ribbon immediately when the settings where changed.  The call in the previous sample code to `Ribbon.CurrentRibbon?.InvalidateFeatures();` is what accomplishes this.
 

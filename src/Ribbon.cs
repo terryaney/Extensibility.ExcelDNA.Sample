@@ -51,10 +51,10 @@ public partial class Ribbon : ExcelRibbon
 		customUi = sr.ReadToEnd();
 
 		// Create service collection
-        var services = new ServiceCollection();
-        services.AddHttpClient();
-        var serviceProvider = services.BuildServiceProvider();
-        var clientFactory = serviceProvider.GetService<IHttpClientFactory>()!;
+		var services = new ServiceCollection();
+		services.AddHttpClient();
+		var serviceProvider = services.BuildServiceProvider();
+		var clientFactory = serviceProvider.GetService<IHttpClientFactory>()!;
 		apiService = new ApiService( clientFactory );
 		WorkbookState = new WorkbookState( apiService );
 	}
@@ -105,7 +105,7 @@ public partial class Ribbon : ExcelRibbon
 			// Used to remove event handlers to all charts that helped with old 'Excel' chart export 
 			// functionality, but SSG does not support that so only use Highcharts/Apex now.
 			// application.SheetDeactivate += Application_SheetDeactivate;
-			
+
 			// Used to update 'validation lists' in Tahiti spec sheets when any cell values changed, but no longer use Tahiti, 
 			// so disabling for now, but may bring back if 'improve' evolution spec sheet functionality.
 			// application.SheetChange += Application_SheetChange;
@@ -166,8 +166,6 @@ public partial class Ribbon : ExcelRibbon
 		} );
 	}
 
-	private readonly ConcurrentDictionary<string, string?> cellsInError = new();
-
 	internal static void LogError( string message, Exception ex )
 	{
 		var exDisplay =
@@ -185,6 +183,7 @@ public partial class Ribbon : ExcelRibbon
 		}
 	}
 
+	private readonly ConcurrentDictionary<string, string?> cellsInError = new();
 	public void LogFunctionError( ExcelReference caller, object exception )
 	{
 		var address = caller.GetAddress();
@@ -199,6 +198,6 @@ public partial class Ribbon : ExcelRibbon
 
 			auditShowLogBadgeCount++;
 			ribbon.InvalidateControl( "katShowDiagnosticLog" );
-		}		
+		}
 	}
 }
