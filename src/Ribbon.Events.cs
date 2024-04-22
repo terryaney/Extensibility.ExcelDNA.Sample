@@ -108,6 +108,10 @@ public partial class Ribbon
 			{
 				case "katDataStoreDebugCalcEnginesMenu":
 				{
+					// Deadlock Error :( https://groups.google.com/g/exceldna/c/_pKphutWbvo/m/uvc38llBAAAJ
+					// If ExcelDna.Logging.LogDisplay.WriteLine/Show was ever called, the subsequent call to this code would deadlock
+					// when I originally had *Async().GetAwaiter().GetResult(). I changed that to Task.Run( () => *Async() ).GetAwaiter().GetResult()
+					// and that fixed the deadlock it seems.
 					var task = Task.Run( () => GetDebugCalcEnginesAsync() );
 					var debugFiles = task.GetAwaiter().GetResult();
 

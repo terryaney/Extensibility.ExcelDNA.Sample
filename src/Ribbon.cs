@@ -155,14 +155,10 @@ public partial class Ribbon : ExcelRibbon
 			}
 			catch ( Exception ex )
 			{
-				// Deadlock Error :( https://groups.google.com/g/exceldna/c/_pKphutWbvo/m/uvc38llBAAAJ
-				// If ExcelDna.Logging.LogDisplay.WriteLine/Show was called before I called my Ribbon_GetContent
-				// handler which uses async code, it would deadlock.  I originally had *Async().GetAwaiter().GetResult().
-				// I changed that to Task.Run( () => *Async() ).GetAwaiter().GetResult() and that fixed the deadlock it seems.
 				// I had originally wrapped my call to LogError in *another* QueueAsMacro, but I don't think that is needed.
-				// Leave it here.  I've found myself sprinkling QueueAsMacro in many/all of my Async ribbon button events
-				// to ensure that Excel closes cleanly.  Unfortunately, I don't have my head wrapped around the whole
-				// async/await and thread context issues.
+				// Leaving it here as documenation.  I've found myself sprinkling QueueAsMacro in many/all of my Async ribbon 
+				// button events to ensure that Excel closes cleanly.  Unfortunately, I don't have my head wrapped around the 
+				// whole async/await and thread context issues.
 				LogError( $"Ribbon_OnAction {control.Tag}", ex );
 				application.Cursor = MSExcel.XlMousePointer.xlDefault;
 				// ExcelAsyncUtil.QueueAsMacro( () => LogError( $"Ribbon_OnAction {control.Tag}", ex ) );
