@@ -164,6 +164,7 @@ public partial class Ribbon : ExcelRibbon
 				// to ensure that Excel closes cleanly.  Unfortunately, I don't have my head wrapped around the whole
 				// async/await and thread context issues.
 				LogError( $"Ribbon_OnAction {control.Tag}", ex );
+				application.Cursor = MSExcel.XlMousePointer.xlDefault;
 				// ExcelAsyncUtil.QueueAsMacro( () => LogError( $"Ribbon_OnAction {control.Tag}", ex ) );
 			}
 		} );

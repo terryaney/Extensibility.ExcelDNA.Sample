@@ -66,6 +66,8 @@ public class ApiService
 			url
 		);
 
+		Directory.CreateDirectory( Path.GetDirectoryName( path )! );
+
 		using var source = await response.Content.ReadAsStreamAsync();
 		using var dest = File.Create( path );
 		await source.CopyToAsync( dest );

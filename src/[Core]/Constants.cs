@@ -6,6 +6,7 @@ public static class Constants
 	public static class FileNames
 	{
 		public const string GlobalTables = "MadHatter_GlobalTables.xls";
+		public const string Helpers = "MadHatter_CalculationHelpers.xlsm";
 		public const string RTCData = "RTCData.xlsx";
 	}
 

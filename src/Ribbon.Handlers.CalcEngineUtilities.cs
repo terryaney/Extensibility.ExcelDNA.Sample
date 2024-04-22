@@ -30,15 +30,11 @@ public partial class Ribbon
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public void CalcEngineUtilities_DownloadGlobalTables( IRibbonControl control )
-	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
-	}
+	public async Task CalcEngineUtilities_DownloadGlobalTables( IRibbonControl _ ) => 
+		await DownloadLatestCalcEngine( Constants.FileNames.GlobalTables, Path.Combine( AddIn.XllPath, "Resources" ) );
 
-	public void CalcEngineUtilities_DownloadHelpersCalcEngine( IRibbonControl control )
-	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
-	}
+	public async Task CalcEngineUtilities_DownloadHelpersCalcEngine( IRibbonControl _ ) =>
+		await DownloadLatestCalcEngine( Constants.FileNames.Helpers, Path.Combine( AddIn.XllPath, "Resources" ) );
 
 	public void CalcEngineUtilities_ConvertToRBLe( IRibbonControl control )
 	{
@@ -50,10 +46,7 @@ public partial class Ribbon
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public void CalcEngineUtilities_LinkToLoadedAddIns( IRibbonControl control )
-	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
-	}
+	public void CalcEngineUtilities_LinkToLoadedAddIns( IRibbonControl _ ) => UpdateWorkbookLinks( application.ActiveWorkbook );
 
 	private void UpdateWorkbookLinks( MSExcel.Workbook wb )
 	{
@@ -76,6 +69,8 @@ public partial class Ribbon
 			MessageBox.Show( "Unable to update links due to protection.  The following items are protected:\r\n\r\n" + string.Join( "\r\n", protectedInfo ), "Unable to Update", MessageBoxButtons.OK, MessageBoxIcon.Warning );
 			return;
 		}
+
+		var saved = wb.Saved;
 
 		foreach ( var addin in application.AddIns.Cast<MSExcel.AddIn>().Where( a => a.Installed ) )
 		{
@@ -101,5 +96,7 @@ public partial class Ribbon
 				}
 			}
 		}
+
+		wb.Saved = saved;
 	}
 }
