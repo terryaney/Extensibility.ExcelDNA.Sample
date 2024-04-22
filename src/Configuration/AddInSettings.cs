@@ -1,4 +1,5 @@
 using System.Net.NetworkInformation;
+using System.Security.Cryptography;
 using KAT.Camelot.Domain.Security.Cryptography;
 
 namespace KAT.Extensibility.Excel.AddIn;
@@ -31,12 +32,19 @@ public class AddInSettings
 
 		if ( KatPassword == null || macAddress == null ) return null;
 
-		var decryptedSetting = await Cryptography3DES.DefaultDecryptAsync( KatPassword );
-		var macAddressHash = Hash.SHA256Hash( macAddress );
-		
-		if ( !decryptedSetting.StartsWith( macAddressHash ) ) return null;
+		try
+		{
+			var decryptedSetting = await Cryptography3DES.DefaultDecryptAsync( KatPassword );
+			var macAddressHash = Hash.SHA256Hash( macAddress );
+			
+			if ( !decryptedSetting.StartsWith( macAddressHash ) ) return null;
 
-		return clearPassword = await Cryptography3DES.DefaultDecryptAsync( decryptedSetting[ macAddressHash.Length.. ] );
+			return clearPassword = await Cryptography3DES.DefaultDecryptAsync( decryptedSetting[ macAddressHash.Length.. ] );
+		}
+		catch ( CryptographicException ex ) when ( ex.Message == "The input data is not a complete block." )
+		{
+			return KatPassword;
+		}
 	}
 
 	public static async Task<string?> EncryptPasswordAsync( string password )

@@ -1,4 +1,5 @@
-﻿using MSExcel = Microsoft.Office.Interop.Excel;
+﻿using System.Text.Json.Nodes;
+using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Extensibility.Excel.AddIn;
 
@@ -7,12 +8,14 @@ internal partial class SaveHistory : Form
 	private string currentVersion = null!;
 	private readonly MSExcel.Workbook workbook;
 	private readonly WorkbookState workbookState;
+	private readonly JsonObject windowConfiguration;
 
-	public SaveHistory( MSExcel.Workbook workbook, WorkbookState workbookState )
+	public SaveHistory( MSExcel.Workbook workbook, WorkbookState workbookState, JsonObject? windowConfiguration )
 	{
 		InitializeComponent();
 		this.workbook = workbook;
 		this.workbookState = workbookState;
+		this.windowConfiguration = windowConfiguration ?? new JsonObject();
 	}
 
 	/// <summary>
@@ -32,7 +35,7 @@ internal partial class SaveHistory : Form
 
 		if ( historySheet == null || historyNames == null || historyRange == null )
 		{
-			return new() { Result = DialogResult.Ignore };
+			return new() { Result = DialogResult.Ignore, WindowConfiguration = windowConfiguration };
 		}
 
 		var currentVersionRange =
@@ -42,7 +45,7 @@ internal partial class SaveHistory : Form
 
 		if ( currentVersionRange == null )
 		{
-			return new() { Result = DialogResult.Ignore };
+			return new() { Result = DialogResult.Ignore, WindowConfiguration = windowConfiguration };
 		}
 
 		string proposedVersion = null!;
@@ -97,12 +100,26 @@ internal partial class SaveHistory : Form
 
 		description.Select();
 
+		WindowState = Enum.TryParse( (string?)windowConfiguration[ "state" ], out FormWindowState state) ? state : FormWindowState.Normal;
+		Location = new Point { X = (int?)windowConfiguration[ "left" ] ?? Left, Y = (int?)windowConfiguration[ "top" ] ?? Top };
+		Size = new Size { Width = (int?)windowConfiguration[ "width" ] ?? Width, Height = (int?)windowConfiguration[ "height" ] ?? Height };
+
 		var dialogResult = ShowDialog();
+
+		windowConfiguration[ "state" ] = WindowState.ToString();
+
+		if ( WindowState == FormWindowState.Normal )
+		{
+			windowConfiguration[ "top" ] = Location.Y;
+			windowConfiguration[ "left" ] = Location.X;
+			windowConfiguration[ "height" ] = Size.Height;
+			windowConfiguration[ "width" ] = Size.Width;
+		}
 
 		return new()
 		{
-			Result = version.Text == currentVersion && dialogResult == DialogResult.Continue 
-				? DialogResult.Retry 
+			Result = version.Text == currentVersion && dialogResult == DialogResult.Continue
+				? DialogResult.Retry
 				: dialogResult,
 			Author = author.Text,
 			Version = version.Text,
@@ -112,7 +129,9 @@ internal partial class SaveHistory : Form
 			ForceUpload = forceUpload.Checked,
 
 			HistoryRange = historyRange,
-			VersionRange = currentVersionRange
+			VersionRange = currentVersionRange,
+
+			WindowConfiguration = windowConfiguration
 		};
 	}
 

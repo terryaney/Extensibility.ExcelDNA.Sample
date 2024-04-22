@@ -1,6 +1,5 @@
 namespace KAT.Extensibility.Excel.AddIn;
 
-// TODO: Get ribbon xml ids standardized and in here?
 public static class Constants
 {
 	public static class FileNames

@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Extensibility.Excel.AddIn;
@@ -14,4 +15,5 @@ internal class SaveHistoryInfo
 
 	public MSExcel.Range HistoryRange { get; init; } = null!;
 	public MSExcel.Range VersionRange { get; init; } = null!;
+	public required JsonObject WindowConfiguration { get; init; }
 }

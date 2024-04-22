@@ -236,7 +236,6 @@ internal partial class SaveHistory
 		( (System.ComponentModel.ISupportInitialize)( this.errorProvider ) ).EndInit();
 		this.ResumeLayout( false );
 		this.PerformLayout();
-
 	}
 
 	#endregion

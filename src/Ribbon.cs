@@ -1,22 +1,25 @@
 ﻿using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 using ExcelDna.Integration.Extensibility;
+using KAT.Camelot.Domain.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text.Json.Nodes;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Extensibility.Excel.AddIn;
 
 /// <summary>
-/// TODO: Add a description of the Ribbon class here.
+/// KAT Add-In ribbon implementation to support Excel ribbon functionality.
 /// 
-/// Additionally, this class was converted to a partial class for easier maintenance and readability due the the amount
+/// This class was converted to a partial class (with file separation based on feature) for easier maintenance and readability due the the amount
 /// of code needed to support all 'ribbon functionality' that is required for the add-in.
 /// 
-/// 1. The Ribbon.RibbonEvents.cs partial class contains all the events for ribbon elements (i.e. OnLoad, GetVisible, GetEnabled, etc.)
-/// 2. The Ribbon.Handlers.*.cs partial class files contain ribbon handlers for each 'group' specified in the CustomUI ribbon xml.  
+/// 1. The Ribbon.Events.cs partial class contains all the events for ribbon elements (i.e. OnLoad, GetVisible, GetEnabled, etc.)
+/// 2. The Ribbon.Events.Excel.cs partial class contains all the events for Excel application events (i.e. WorkbookActivated, WorkbookDeactivated, etc.)
+/// 3. The Ribbon.Handlers.*.cs partial class files contain ribbon handlers for each 'group' specified in the CustomUI ribbon xml.  
 /// </summary>
 [ComVisible( true )]
 public partial class Ribbon : ExcelRibbon
@@ -199,5 +202,63 @@ public partial class Ribbon : ExcelRibbon
 			auditShowLogBadgeCount++;
 			ribbon.InvalidateControl( "katShowDiagnosticLog" );
 		}
+	}
+
+	private async Task UpdateAddInCredentialsAsync( string userName, string password )
+	{
+		application.StatusBar = "Saving KAT credentials...";
+
+		// Disable edit notifications...
+		AddIn.settingsProcessor.Disable();
+
+		var appSettingsPath = Path.Combine( AddIn.XllPath, "appsettings.json" );
+		var appSecretsPath = Path.Combine( AddIn.XllPath, "appsettings.secrets.json" );
+		var encryptedPassword = await AddInSettings.EncryptPasswordAsync( password );
+
+		static void updateSetting( string path, string key, string value )
+		{
+			var appSettings = File.Exists( path )
+				? ( JsonNode.Parse( File.ReadAllText( path ) ) as JsonObject )!
+				: new JsonObject();
+
+			var addInSettings = ( ( appSettings[ "addInSettings" ] ?? appSettings.AddOrUpdate( "addInSettings", new JsonObject() ) ) as JsonObject )!;
+			addInSettings.AddOrUpdate( key, value );
+			appSettings.Save( path );
+		}
+
+		updateSetting( appSettingsPath, "katUserName", userName );
+		updateSetting( appSecretsPath, "katPassword", encryptedPassword! );
+
+		AddIn.settingsProcessor.Enable();
+
+		AddIn.Settings.SetCredentials( userName, encryptedPassword );
+	}
+
+	private static void SaveWindowConfiguration( string name, JsonObject windowConfiguration )
+	{
+		var appSettingsPath = Path.Combine( AddIn.XllPath, "appsettings.json" );
+
+		var appSettings = File.Exists( appSettingsPath )
+			? ( JsonNode.Parse( File.ReadAllText( appSettingsPath ) ) as JsonObject )!
+			: new JsonObject();
+
+		var windowSettings = ( ( appSettings[ "windowSettings" ] ?? appSettings.AddOrUpdate( "windowSettings", new JsonObject() ) ) as JsonObject )!;
+		windowSettings[ name ] = windowConfiguration.Clone();
+
+		// Disable edit notifications...
+		AddIn.settingsProcessor.Disable();
+		appSettings.Save( appSettingsPath );
+		AddIn.settingsProcessor.Enable();
+	}
+
+	private static JsonObject? GetWindowConfiguration( string name )
+	{
+		var appSettingsPath = Path.Combine( AddIn.XllPath, "appsettings.json" );
+
+		var appSettings = File.Exists( appSettingsPath )
+			? ( JsonNode.Parse( File.ReadAllText( appSettingsPath ) ) as JsonObject )!
+			: new JsonObject();
+
+		return appSettings[ "windowSettings" ]?[ name ] as JsonObject;
 	}
 }

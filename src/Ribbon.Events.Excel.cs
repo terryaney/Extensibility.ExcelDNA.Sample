@@ -129,7 +129,7 @@ public partial class Ribbon
 	{
 		if ( WorkbookState.ShowCalcEngineManagement && ( string.IsNullOrEmpty( AddIn.Settings.KatUserName ) || string.IsNullOrEmpty( AddIn.Settings.KatPassword ) ) )
 		{
-			using var credentials = new Credentials();
+			using var credentials = new Credentials( GetWindowConfiguration( nameof( Credentials ) ) );
 			var credentialInfo = credentials.GetCredentials(  
 				AddIn.Settings.KatUserName, 
 				await AddIn.Settings.GetClearPasswordAsync() 
@@ -138,38 +138,9 @@ public partial class Ribbon
 			if ( credentialInfo != null )
 			{
 				await UpdateAddInCredentialsAsync( credentialInfo.UserName, credentialInfo.Password );
+				SaveWindowConfiguration( nameof( Credentials ), credentialInfo.WindowConfiguration );
 			}
 		}
-	}
-
-	private async Task UpdateAddInCredentialsAsync( string userName, string password )
-	{
-		application.StatusBar = "Saving KAT credentials...";
-
-		// Disable edit notifications...
-		AddIn.settingsProcessor.Disable();
-
-		var appSettingsPath = Path.Combine( AddIn.XllPath, "appsettings.json" );
-		var appSecretsPath = Path.Combine( AddIn.XllPath, "appsettings.secrets.json" );
-		var encryptedPassword = await AddInSettings.EncryptPasswordAsync( password );
-
-		static void updateSetting( string path, string key, string value )
-		{
-			var appSettings = File.Exists( path )
-				? ( JsonNode.Parse( File.ReadAllText( path ) ) as JsonObject )!
-				: new JsonObject();
-
-			var addInSettings = ( ( appSettings[ "addInSettings" ] ?? appSettings.AddOrUpdate( "addInSettings", new JsonObject() ) ) as JsonObject )!;
-			addInSettings.AddOrUpdate( key, value );
-			appSettings.Save( path );
-		}
-
-		updateSetting( appSettingsPath, "katUserName", userName );
-		updateSetting( appSecretsPath, "katPassword", encryptedPassword! );
-
-		AddIn.settingsProcessor.Enable();
-
-		AddIn.Settings.SetCredentials( userName, encryptedPassword );
 	}
 
 	private DialogResult AuditCalcEngineTabs( MSExcel.Workbook workbook )
@@ -214,7 +185,7 @@ public partial class Ribbon
 	{
 		if ( !string.IsNullOrEmpty( AddIn.Settings.SaveHistoryName ) && !skipHistoryUpdateOnMoveSpecFromDownloads )
 		{
-			using var saveHistory = new SaveHistory( workbook, WorkbookState );
+			using var saveHistory = new SaveHistory( workbook, WorkbookState, GetWindowConfiguration( nameof( SaveHistory ) ) );
 
 			var saveHistoryInfo = saveHistory.GetHistoryInformation( 
 				AddIn.Settings.SaveHistoryName, 
@@ -226,6 +197,8 @@ public partial class Ribbon
 			{
 				return null;
 			}
+
+			SaveWindowConfiguration( nameof( SaveHistory ), saveHistoryInfo.WindowConfiguration );
 
 			var currentVersion = (string?)saveHistoryInfo.VersionRange.Text;
 
@@ -268,7 +241,8 @@ public partial class Ribbon
 					UserName = saveHistoryInfo.UserName,
 					Password = saveHistoryInfo.Password,
 					ForceUpload = saveHistoryInfo.ForceUpload,
-					ExpectedVersion = currentVersion
+					ExpectedVersion = currentVersion,
+					WindowConfiguration = saveHistoryInfo.WindowConfiguration
 				} 
 				: null;
 		}

@@ -1,17 +1,25 @@
-﻿namespace KAT.Extensibility.Excel.AddIn;
+﻿using System.Text.Json.Nodes;
+
+namespace KAT.Extensibility.Excel.AddIn;
 
 internal partial class Credentials : Form
 {
-	public Credentials()
+	private readonly JsonObject windowConfiguration;
+
+	public Credentials( JsonObject? windowConfiguration )
 	{
 		InitializeComponent();
+		this.windowConfiguration = windowConfiguration ?? new JsonObject();
 	}
 
 	public CredentialInfo? GetCredentials( string? userName, string? password )
 	{
 		tUserName.Text = userName;
 		tPassword.Text = password;
-		
+
+		Location = new Point { X = (int?)windowConfiguration[ "left" ] ?? Left, Y = (int?)windowConfiguration[ "top" ] ?? Top };
+		Size = new Size { Width = (int?)windowConfiguration[ "width" ] ?? Width, Height = (int?)windowConfiguration[ "height" ] ?? Height };
+
 		var dialogResult = ShowDialog();
 
 		if ( dialogResult != DialogResult.OK )
@@ -19,10 +27,16 @@ internal partial class Credentials : Form
 			return null;
 		}
 
+		windowConfiguration[ "top" ] = Location.Y;
+		windowConfiguration[ "left" ] = Location.X;
+		windowConfiguration[ "height" ] = Size.Height;
+		windowConfiguration[ "width" ] = Size.Width;
+
 		return new()
 		{
 			UserName = tUserName.Text,
-			Password = tPassword.Text
+			Password = tPassword.Text,
+			WindowConfiguration = windowConfiguration
 		};
 	}
 
