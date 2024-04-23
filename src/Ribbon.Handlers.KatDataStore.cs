@@ -92,7 +92,7 @@ public partial class Ribbon
 		await EnsureAddInCredentialsAsync();
 
 		application.Cursor = MSExcel.XlMousePointer.xlWait;
-		var fileName = await apiService.DownloadDebugAsync( int.Parse( versionKey ), AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
+		var fileName = await apiService.DownloadDebugAsync( WorkbookState.ManagementName, int.Parse( versionKey ), AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
 		if ( !string.IsNullOrEmpty( fileName ) )
 		{
 			// Don't know why I need QueueAsMacro here.  Without it, Excel wouldn't close gracefully.

@@ -19,28 +19,25 @@ public class ApiService
 
 	public async Task<IEnumerable<DebugFile>> GetDebugFilesAsync( string calcEngine, string? userName, string? password )
 	{
-		var url = $"{AddIn.Settings.ApiEndpoint}{ApiEndpoints.CalcEngines.DebugListing}";
-		return await SendRequestAsync<DebugFile[]>( calcEngine, userName, password, url ) ?? Array.Empty<DebugFile>();
+		var url = $"{AddIn.Settings.ApiEndpoint}{ApiEndpoints.CalcEngines.Build.DebugListing( calcEngine )}";
+		return await SendRequestAsync<DebugFile[]>( userName, password, url, HttpMethod.Get ) ?? Array.Empty<DebugFile>();
 	}
 
 	public async Task<CalcEngineInfo?> GetCalcEngineInfoAsync( string calcEngine, string? userName, string? password )
 	{
 		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.Get( Path.GetFileNameWithoutExtension( calcEngine ) )}";
-		return await SendRequestAsync<CalcEngineInfo>( calcEngine, userName, password, url );
+		return await SendRequestAsync<CalcEngineInfo>( userName, password, url, HttpMethod.Get );
 	}
 
-	public async Task<string?> DownloadDebugAsync( int versionKey, string? userName, string? password )
+	public async Task<string?> DownloadDebugAsync( string calcEngine, int versionKey, string? userName, string? password )
 	{
 		if ( string.IsNullOrEmpty( userName ) || string.IsNullOrEmpty( password ) )
 		{
 			return null;
 		}
 
-		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Download}";
-		using var response = await SendHttpRequestAsync(
-			new DownloadDebugRequest { VersionKey = versionKey, Email = userName, Password = password },
-			url
-		);
+		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.DebugDownload( Path.GetFileNameWithoutExtension( calcEngine ), versionKey )}";
+		using var response = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get );
 
 		var downloadFolder = Path.Combine( Environment.GetFolderPath( Environment.SpecialFolder.UserProfile ), "Downloads" );
 		var fileName = Path.Combine( downloadFolder, response.Content.Headers.ContentDisposition!.FileName!.Replace( "\"", "" ) );
@@ -61,10 +58,7 @@ public class ApiService
 
 		var calcEngine = Path.GetFileNameWithoutExtension( path );
 		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.DownloadLatest( calcEngine )}";
-		using var response = await SendHttpRequestAsync(
-			new CalcEngineRequest { Name = calcEngine, Email = userName, Password = password },
-			url
-		);
+		using var response = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get );
 
 		Directory.CreateDirectory( Path.GetDirectoryName( path )! );
 
@@ -78,23 +72,23 @@ public class ApiService
 	public async Task CheckinAsync( string calcEngine, string? userName, string? password )
 	{
 		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.Checkin( Path.GetFileNameWithoutExtension( calcEngine ) )}";
-		await SendRequestAsync( calcEngine, userName, password, url );
+		await SendRequestWithoutResponseAsync( userName, password, url, HttpMethod.Patch );
 	}
 
 	public async Task CheckoutAsync( string calcEngine, string? userName, string? password )
 	{
 		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.Checkout( Path.GetFileNameWithoutExtension( calcEngine ) )}";
-		await SendRequestAsync( calcEngine, userName, password, url );
+		await SendRequestWithoutResponseAsync( userName, password, url, HttpMethod.Patch );
 	}
 
-	private async Task<T?> SendRequestAsync<T>( string calcEngine, string? userName, string? password, string url ) where T : class
+	private async Task<T?> SendRequestAsync<T>( string? userName, string? password, string url, HttpMethod method ) where T : class
 	{
 		if ( string.IsNullOrEmpty( userName ) || string.IsNullOrEmpty( password ) )
 		{
 			return null;
 		}
 
-		using var response = await SendHttpRequestAsync( calcEngine, userName, password, url );
+		using var response = await SendHttpRequestAsync( userName, password, url, method );
 		try
 		{
 			return await response.Content.ReadFromJsonAsync<T>();
@@ -105,32 +99,23 @@ public class ApiService
 		}
 	}
 
-	private async Task SendRequestAsync( string calcEngine, string? userName, string? password, string url )
+	private async Task SendRequestWithoutResponseAsync( string? userName, string? password, string url, HttpMethod method )
 	{
 		if ( string.IsNullOrEmpty( userName ) || string.IsNullOrEmpty( password ) )
 		{
 			return;
 		}
-		await SendHttpRequestAsync( calcEngine, userName, password, url );
+		await SendHttpRequestAsync( userName, password, url, method );
 	}
 
-	private async Task<HttpResponseMessage> SendHttpRequestAsync( string calcEngine, string userName, string password, string url ) =>
-		await SendHttpRequestAsync(
-			new CalcEngineRequest { Name = calcEngine, Email = userName, Password = password },
-			url
-		);
-
-	private async Task<HttpResponseMessage> SendHttpRequestAsync<T>( T payload, string url ) where T : class
+	private async Task<HttpResponseMessage> SendHttpRequestAsync( string userName, string password, string url, HttpMethod method )
 	{
 		using var httpClient = httpClientFactory.CreateClient();
-		using var request = new HttpRequestMessage( HttpMethod.Post, url )
-		{
-			Content = new StringContent( 
-				JsonSerializer.Serialize( payload ),
-				Encoding.UTF8,
-				"application/json"
-			)
-		};
+		
+		httpClient.DefaultRequestHeaders.Add( "x-kat-email", userName );
+		httpClient.DefaultRequestHeaders.Add( "x-kat-password", password );
+		
+		using var request = new HttpRequestMessage( method, url );
 
 		try
 		{
