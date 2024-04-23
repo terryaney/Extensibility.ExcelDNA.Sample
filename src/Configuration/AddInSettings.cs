@@ -2,7 +2,7 @@ using System.Net.NetworkInformation;
 using System.Security.Cryptography;
 using KAT.Camelot.Domain.Security.Cryptography;
 
-namespace KAT.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public class AddInSettings
 {

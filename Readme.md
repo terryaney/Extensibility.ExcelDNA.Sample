@@ -24,7 +24,7 @@ All the Excel-DNA samples seem to make the assumption that Visual Studio will be
                 "moduleLoad": false
             },
             "program": "C:\\Program Files\\Microsoft Office\\root\\Office16\\EXCEL.EXE",
-            "args": ["/x", "${workspaceFolder}\\src\\bin\\Debug\\net7.0-windows\\KAT.Extensibility.xll"],
+            "args": ["/x", "${workspaceFolder}\\src\\bin\\Debug\\net7.0-windows\\KAT.Extensibility.Excel.xll"],
             "cwd": "${workspaceFolder}\\src\\bin\\Debug\\net7.0-windows",
             "console": "internalConsole",
             "stopAtEntry": false

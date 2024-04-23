@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace KAT.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 /// <summary>
 /// FileSystemWatcher notifications are capable of happening 'multiple' times for a single 'action'.  For example, if Notepad saves a file,

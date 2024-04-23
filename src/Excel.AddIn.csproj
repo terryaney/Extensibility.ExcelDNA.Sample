@@ -5,8 +5,8 @@
 		<UseWindowsForms>true</UseWindowsForms>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<RootNamespace>KAT.Extensibility.Excel.AddIn</RootNamespace>
-		<AssemblyName>KAT.Extensibility.Excel.AddIn</AssemblyName>
+		<RootNamespace>KAT.Camelot.Extensibility.Excel.AddIn</RootNamespace>
+		<AssemblyName>KAT.Camelot.Extensibility.Excel.AddIn</AssemblyName>
 		<KATVersionPrefix>1.0.*</KATVersionPrefix>
 	</PropertyGroup>
 
@@ -23,7 +23,7 @@
 		<ExcelAddInExplicitRegistration>true</ExcelAddInExplicitRegistration>
 		<ExcelAddInComServer>true</ExcelAddInComServer>
 		<ExcelAddInName>KAT Tools</ExcelAddInName>
-		<ExcelAddInFileName>KAT.Extensibility</ExcelAddInFileName>
+		<ExcelAddInFileName>KAT.Extensibility.Excel</ExcelAddInFileName>
 		<ExcelDnaPublishPath>packed</ExcelDnaPublishPath>
 	</PropertyGroup>
 
@@ -41,6 +41,7 @@
 		<PackageReference Include="ExcelDna.IntelliSense" Version="1.8.0-alpha2" />
 		<PackageReference Include="ExcelDna.Interop" Version="15.0.1" />
 		<PackageReference Include="ExcelDna.Registration" Version="1.8.0-alpha2" />
+		<PackageReference Include="XLParser" Version="1.7.2" />
 	</ItemGroup>
 
 	<ItemGroup>

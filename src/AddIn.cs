@@ -3,10 +3,11 @@ using ExcelDna.Registration;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json.Nodes;
 
-namespace KAT.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public class AddIn : IExcelAddIn
 {
+	internal static string XllName = null!;
 	internal static string XllPath = null!;
 	internal static string ResourcePath => Directory.CreateDirectory( Path.Combine( XllPath, "Resources" ) ).FullName;
 
@@ -19,7 +20,8 @@ public class AddIn : IExcelAddIn
 		CurrentAddin = this;
 
 		// Store this for access from anywhere in my workflows: https://groups.google.com/g/exceldna/c/1rScvDdeVOk/m/euij1L-VihoJ
-		XllPath = Path.GetDirectoryName( (string)XlCall.Excel( XlCall.xlGetName ) )!;
+		XllName = (string)XlCall.Excel( XlCall.xlGetName );
+		XllPath = Path.GetDirectoryName( XllName )!;
 
 		settingsProcessor = new( 
 			notificationDelay: 300, 

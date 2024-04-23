@@ -3,7 +3,7 @@ using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Responses;
 using System.Xml.Linq;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
-namespace KAT.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
@@ -57,7 +57,7 @@ public partial class Ribbon
 				"calcEngineUtilitiesConvertToRBLe" or "calcEngineUtilitiesProcessWorkbook" or "calcEngineUtilitiesLocalBatch" => WorkbookState.IsCalcEngine,
 				"calcEngineUtilitiesLinkToLoadedAddIns" => WorkbookState.HasLinks,
 
-				"auditShowDependencies" or "auditHideDependencies" or "auditNonReferencedCells" => application.ActiveWorkbook != null,
+				"auditShowDependencies" or "auditHideDependencies" or "auditCellsWithEmptyDependencies" => application.ActiveWorkbook != null,
 				"auditCalcEngine" or "auditCalcEngineTab" or "auditInputResultTabs" => WorkbookState.IsCalcEngine,
 
 				"navigationTable" => WorkbookState.IsCalcEngine || WorkbookState.IsSpecSheetFile,

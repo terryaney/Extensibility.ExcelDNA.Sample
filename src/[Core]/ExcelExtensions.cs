@@ -1,10 +1,14 @@
+using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
-namespace KAT.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public static class ExcelExtensions
 {
+	private static MSExcel.Application Application => ( ExcelDnaUtil.Application as MSExcel.Application )!;
+	public static MSExcel.Worksheet ActiveWorksheet( this MSExcel.Application application ) => ( application.ActiveSheet as MSExcel.Worksheet )!;
+
 	public static void InvalidateControls( this IRibbonUI ribbon, params string[] controlIds )
 	{
 		foreach ( var controlId in controlIds )
@@ -12,8 +16,6 @@ public static class ExcelExtensions
 			ribbon.InvalidateControl( controlId );
 		}
 	}
-
-	public static MSExcel.Worksheet ActiveWorksheet( this MSExcel.Application application ) => ( application.ActiveSheet as MSExcel.Worksheet )!;
 
 	public static T? RangeOrNull<T>( this MSExcel.Workbook workbook, string name )
 	{
@@ -27,14 +29,9 @@ public static class ExcelExtensions
 
 			var range = namedRange?.RefersToRange;
 
-			if ( typeof( T ) == typeof( string ) )
-			{
-				return (T?)range?.Text;
-			}
-			else
-			{
-				return (T?)range;
-			}
+			return typeof( T ) == typeof( string )
+				? (T?)range?.Text
+				: (T?)range;
 		}
 		catch ( Exception ex )
 		{
@@ -58,14 +55,9 @@ public static class ExcelExtensions
 
 			var range = namedRange?.RefersToRange;
 
-			if ( typeof( T ) == typeof( string ) )
-			{
-				return (T?)range?.Text;
-			}
-			else
-			{
-				return (T?)range;
-			}
+			return typeof( T ) == typeof( string )
+				? (T?)range?.Text
+				: (T?)range;
 		}
 		catch ( Exception ex )
 		{
@@ -78,40 +70,23 @@ public static class ExcelExtensions
 
 	public static string GetText( this MSExcel.Range range ) => ( range.Text as string )!;
 
-	public static MSExcel.Range GetRange( this string address, MSExcel.Worksheet worksheet )
+	public static ExcelReference GetReference( this MSExcel.Range range )
 	{
-		// Start: '[Buck_MurphyOil_SE debug macro.xls]RBLMacro'!$A$3
-
-		var addressParts = address.Split( '!' );
-		// '[Buck_MurphyOil_SE debug macro.xls]RBLMacro'
-		// $A$3
-
-		if ( addressParts.Length == 1 )
-		{
-			return worksheet.Range[ addressParts[ 0 ] ];
-		}
-
-		var sheetName = addressParts[ 0 ].StartsWith( "'" )
-			? addressParts[ 0 ][ 1..^1 ]
-			: addressParts[ 0 ];
-		// Current: '[Buck_MurphyOil_SE debug macro.xls]RBLMacro'
-
-		var rangeAddress = addressParts[ 1 ];
-		// Current: $A$3
-
-		addressParts = sheetName.Split( ']' );
-		// [Buck_MurphyOil_SE debug macro.xls
-		// RBLMacro
-
-		sheetName = addressParts.Last();
-
-		if ( sheetName.EndsWith( ".csv", StringComparison.InvariantCultureIgnoreCase ) )
-		{
-			// Seems a csv file with one tab (the normal format) comes through as
-			// address -> 'sheetname.csv'!address
-			sheetName = Path.GetFileNameWithoutExtension( sheetName );
-		}
-
-		return ( ( addressParts.Length == 2 ? worksheet.Application.Workbooks[ addressParts[ 0 ][ 1.. ] ] : worksheet.Application.ActiveWorkbook ).Worksheets[ sheetName ] as MSExcel.Worksheet )!.Range[ rangeAddress ];
+		var sheet = (ExcelReference)XlCall.Excel( XlCall.xlSheetId, range.Worksheet.Name );
+		var row = range.Row - 1; // 0 based
+		var column = range.Column - 1; // 0 based
+		return new ExcelReference( row, row + range.Rows.Count - 1, column, column + range.Columns.Count - 1, sheet.SheetId );
 	}
+
+	/// <summary>
+	/// Return MSExcel.Range from ExcelDna.ExcelReference.
+	/// </summary>
+	/// <remarks>
+	/// Needed this because reference.GetValue() didn't preserve 'date' cells as DateTime, but rather only doubles and I'd have no way of returning
+	/// DateTime values correctly.  Interop.Range.Value on the other hand preserves DateTimes.  C API had no equivalent.  So unless I determined which
+	/// columns were DateTimes, and convert COM date/double to DateTime (FromOADate or something), and assuming it never changed across rows, I had no option but this method.
+	/// </remarks>
+	/// <param name="reference"></param>
+	/// <returns></returns>
+	public static MSExcel.Range GetRange( this ExcelReference reference ) => Application.Range[ reference.GetAddress() ];
 }

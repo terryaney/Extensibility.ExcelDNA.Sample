@@ -1,6 +1,6 @@
 ﻿using ExcelDna.Integration.CustomUI;
 
-namespace KAT.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {

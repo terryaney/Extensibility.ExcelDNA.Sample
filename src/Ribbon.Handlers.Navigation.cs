@@ -1,7 +1,7 @@
 ﻿using ExcelDna.Integration.CustomUI;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
-namespace KAT.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
@@ -126,7 +126,7 @@ public partial class Ribbon
 			if ( formula!.Contains( "BTRCellAddress" ) )
 			{
 				address = selection.Text as string;
-				var range = address!.GetRange( application.ActiveWorksheet() );
+				var range = address!.GetReference().GetRange();
 				range.Worksheet.Activate();
 				range.Activate();
 			}

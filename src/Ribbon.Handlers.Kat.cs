@@ -1,7 +1,9 @@
-﻿using ExcelDna.Integration.CustomUI;
+﻿using System.Diagnostics;
+using System.Reflection;
+using ExcelDna.Integration.CustomUI;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
-namespace KAT.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
@@ -36,8 +38,20 @@ public partial class Ribbon
 		application.Cursor = MSExcel.XlMousePointer.xlDefault;
 	}
 
-	public void Kat_HelpAbout( IRibbonControl control )
+	public void Kat_HelpAbout( IRibbonControl _ )
 	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
+		// https://stackoverflow.com/a/14498889/166231 - discusses versioning in xll
+		var fvi = FileVersionInfo.GetVersionInfo( AddIn.XllName );
+		var versionParts = Assembly.GetExecutingAssembly().GetCustomAttributes<AssemblyInformationalVersionAttribute>().First().InformationalVersion.Split( '.' );
+		var version = versionParts.Length == 3 && versionParts[ 2 ].Contains( '+' )
+			? string.Join( ".", versionParts.Take( 2 ).Concat( new [] { $"{versionParts[ 2 ].Split( '+' )[ 0 ]}+{versionParts[ 2 ].Split( '+' )[ 1 ][ ..6 ]}" } ) )
+			: string.Join( ".", versionParts );
+
+		MessageBox.Show(
+			$"KAT Excel Add-In: {version}{Environment.NewLine}ExcelDna.AddIn Package: {fvi.FileVersion}",
+			"KAT Excel Add-In",
+			MessageBoxButtons.OK,
+			MessageBoxIcon.Information
+		);
 	}
 }

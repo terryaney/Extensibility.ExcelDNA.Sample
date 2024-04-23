@@ -1,7 +1,7 @@
 ﻿using KAT.Camelot.Domain.Extensions;
 using System.Text.Json.Nodes;
 
-namespace KAT.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 internal partial class NavigateToTable : Form
 {

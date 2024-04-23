@@ -1,6 +1,6 @@
 ﻿using ExcelDna.Integration;
 
-namespace KAT.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public static class MyFunctions
 {

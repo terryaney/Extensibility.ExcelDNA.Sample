@@ -76,9 +76,9 @@
 					<button id="auditHideDependencies" keytip="I" screentip="Hide Dependencies for Current Selection" label="Hide Dependencies" imageMso="TraceDependentRemoveArrows" onAction="Ribbon_OnAction" tag="Audit_HideDependencies" getEnabled="Ribbon_GetEnabled" />
 
 					<menu id="auditExtras" keytip="3" label="Audit Tools" imageMso="SiteColumnActionsValidationSettings">
-						<button id="auditNonReferencedCells" keytip="F" screentip="Highlight unreferenced cells in current selection" label="Non-Referenced Cells" imageMso="FormulaEvaluate" onAction="Ribbon_OnAction" tag="Audit_ShowEmptyCellReferences" getEnabled="Ribbon_GetEnabled" />
+						<button id="auditCellsWithEmptyDependencies" keytip="F" screentip="Highlight cells with empty dependencies in current selection" label="Cells with Empty Dependencies" imageMso="FormulaEvaluate" onAction="Ribbon_OnAction" tag="Audit_ShowCellsWithEmptyDependencies" getEnabled="Ribbon_GetEnabled" />
 						<menuSeparator id="auditExtrasSep1"/>
-						<button id="auditSearchLocalCalcEngines" keytip="L" label="Search Local CalcEngines..." imageMso="MailMergeFindRecipient" onAction="Ribbon_OnAction" tag="Audit_SpecificToken" />
+						<button id="auditSearchLocalCalcEngines" keytip="L" label="Search Local CalcEngines..." imageMso="MailMergeFindRecipient" onAction="Ribbon_OnAction" tag="Audit_SearchLocalCalcEngines" />
 						<button id="auditInputResultTabs" keytip="A" label="Audit Input/Result Tabs" imageMso="EventOnAfterChange" onAction="Ribbon_OnAction" tag="Audit_CalcEngineTabs" getEnabled="Ribbon_GetEnabled"/>
 					</menu>
 				</group>

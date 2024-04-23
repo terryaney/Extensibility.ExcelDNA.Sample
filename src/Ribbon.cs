@@ -9,7 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
-namespace KAT.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 /// <summary>
 /// KAT Add-In ribbon implementation to support Excel ribbon functionality.
@@ -44,12 +44,12 @@ public partial class Ribbon : ExcelRibbon
 
 		var assembly = Assembly.GetExecutingAssembly();
 
-		using var streamImage = assembly.GetManifestResourceStream( "KAT.Extensibility.Excel.AddIn.Resources.ShowScriptBlockMark.png" )!;
+		using var streamImage = assembly.GetManifestResourceStream( "KAT.Camelot.Extensibility.Excel.AddIn.Resources.ShowScriptBlockMark.png" )!;
 		using var ms = new MemoryStream();
 		streamImage.CopyTo( ms );
 		auditShowLogImage = ms.ToArray();
 
-		using var streamXml = assembly.GetManifestResourceStream( "KAT.Extensibility.Excel.AddIn.Resources.Ribbon.xml" )!;
+		using var streamXml = assembly.GetManifestResourceStream( "KAT.Camelot.Extensibility.Excel.AddIn.Resources.Ribbon.xml" )!;
 		using var sr = new StreamReader( streamXml );
 		customUi = sr.ReadToEnd();
 

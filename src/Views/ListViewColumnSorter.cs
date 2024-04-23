@@ -1,6 +1,6 @@
 using System.Collections;
 
-namespace KAT.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public class ListViewColumnSorter : IComparer
 {

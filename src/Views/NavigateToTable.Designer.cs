@@ -1,4 +1,4 @@
-﻿namespace KAT.Extensibility.Excel.AddIn;
+﻿namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 partial class NavigateToTable
 {

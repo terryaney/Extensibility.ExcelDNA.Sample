@@ -1,7 +1,7 @@
 
 using ExcelDna.Integration;
 
-namespace KAT.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 // https://groups.google.com/g/exceldna/c/9OkHWILuFMo/m/RpilXElgAQAJ
 // https://github.com/Excel-DNA/Samples/blob/master/AsyncAwaitMacro/ExcelAsyncTask.cs

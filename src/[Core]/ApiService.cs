@@ -6,7 +6,7 @@ using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Requests;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Responses;
 using KAT.Camelot.Domain.Extensions;
 
-namespace KAT.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public class ApiService
 {

@@ -1,7 +1,7 @@
 using System.Text.Json.Nodes;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
-namespace KAT.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 internal class SaveHistoryInfo
 {
