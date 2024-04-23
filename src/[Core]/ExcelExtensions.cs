@@ -76,6 +76,8 @@ public static class ExcelExtensions
 		}
 	}
 
+	public static string GetText( this MSExcel.Range range ) => ( range.Text as string )!;
+
 	public static MSExcel.Range GetRange( this string address, MSExcel.Worksheet worksheet )
 	{
 		// Start: '[Buck_MurphyOil_SE debug macro.xls]RBLMacro'!$A$3
