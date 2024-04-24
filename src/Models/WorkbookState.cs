@@ -18,6 +18,8 @@ public class WorkbookState
 	public bool ShowGlobalTables { get; private set; }
 
 	public string ManagementName { get; private set; } = null!;
+	public string TestManagementName => $"{Path.GetFileNameWithoutExtension( ManagementName )}_Test{Path.GetExtension( ManagementName )}";
+
 	private bool isUploadable;
 	public bool IsUploadable => ShowCalcEngineManagement && isUploadable;
 	public bool IsLatestVersion => 
@@ -44,7 +46,7 @@ public class WorkbookState
 		this.apiService = dataLockerService;
 	}
 
-	public async Task UpdateWorkbookAsync( MSExcel.Workbook activeWorkbook )
+	public void UpdateWorkbook( MSExcel.Workbook? activeWorkbook )
 	{
 		if ( activeWorkbook == null )
 		{
@@ -80,7 +82,7 @@ public class WorkbookState
 
 		var hasLinks = activeWorkbook.LinkSources( MSExcel.XlLink.xlExcelLinks ) is Array linkSources && linkSources.Length >= 0;
 
-		var ( liveName, testName ) = GetManagementNames( activeWorkbook.Name );
+		var liveName = GetManagementName( activeWorkbook.Name );
 
 		var rbleMacro = bookNames.FirstOrDefault( n => n.Name == "RBLeMacro" );
 		var hasRBLeMacro =
@@ -93,7 +95,14 @@ public class WorkbookState
 		HasxDSDataFields = hasxDSDataFields;
 		HasRBLeMacro = hasRBLeMacro;
 		HasLinks = hasLinks;
+		CurrentVersion = activeWorkbook.RangeOrNull<string>( "Version" );
 
+		UpdateFeatures();
+		UpdateSheet( ( activeWorkbook.ActiveSheet as MSExcel.Worksheet )! );
+	}
+
+	public async Task UpdateCalcEngineInfoAsync( string activeWorkbookName )
+	{
 		var calcEngineInfo = IsCalcEngine
 			? await apiService.GetCalcEngineInfoAsync(
 				ManagementName,
@@ -104,14 +113,10 @@ public class WorkbookState
 
 		isUploadable =
 			calcEngineInfo != null &&
-			( string.Compare( liveName, activeWorkbook.Name, true ) == 0 || string.Compare( testName, activeWorkbook.Name, true ) == 0 );
+			( string.Compare( ManagementName, activeWorkbookName, true ) == 0 || string.Compare( TestManagementName, activeWorkbookName, true ) == 0 );
 
 		CheckedOutBy = calcEngineInfo?.CheckedOutBy;
 		UploadedVersion = calcEngineInfo?.Version.ToString();
-		CurrentVersion = activeWorkbook.RangeOrNull<string>( "Version" );
-
-		UpdateFeatures();
-		UpdateSheet( ( activeWorkbook.ActiveSheet as MSExcel.Worksheet )! );
 	}
 
 	public void UpdateVersion( MSExcel.Workbook activeWorkbook ) => UploadedVersion = activeWorkbook.RangeOrNull<string>( "Version" );
@@ -127,7 +132,7 @@ public class WorkbookState
 
 	public void UpdateSheet( MSExcel.Worksheet? activeSheet ) => SheetState = new( this, activeSheet );
 
-	private static (string LiveName, string TestName) GetManagementNames( string fileName )
+	private static string GetManagementName( string fileName )
 	{
 		var managementName =
 			Path.GetFileNameWithoutExtension( fileName )
@@ -149,7 +154,7 @@ public class WorkbookState
 
 		managementName += Path.GetExtension( fileName );
 
-		return (managementName, $"{Path.GetFileNameWithoutExtension( managementName )}_Test{Path.GetExtension( managementName )}");
+		return managementName;
 	}
 
 	public void ClearState()

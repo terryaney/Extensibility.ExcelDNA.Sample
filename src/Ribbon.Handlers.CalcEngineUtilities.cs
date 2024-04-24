@@ -30,11 +30,17 @@ public partial class Ribbon
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public async Task CalcEngineUtilities_DownloadGlobalTables( IRibbonControl _ ) => 
-		await DownloadLatestCalcEngine( Constants.FileNames.GlobalTables, Path.Combine( AddIn.XllPath, "Resources" ) );
+	public void CalcEngineUtilities_DownloadGlobalTables( IRibbonControl _ )
+	{
+		var fullName = DownloadLatestCalcEngineCheck( Constants.FileNames.GlobalTables, AddIn.ResourcesPath );
+		RunRibbonTask( () => DownloadLatestCalcEngineAsync( fullName ) );
+	}
 
-	public async Task CalcEngineUtilities_DownloadHelpersCalcEngine( IRibbonControl _ ) =>
-		await DownloadLatestCalcEngine( Constants.FileNames.Helpers, Path.Combine( AddIn.XllPath, "Resources" ) );
+	public void CalcEngineUtilities_DownloadHelpersCalcEngine( IRibbonControl _ )
+	{
+		var fullName = DownloadLatestCalcEngineCheck( Constants.FileNames.Helpers, AddIn.ResourcesPath );
+		RunRibbonTask( () => DownloadLatestCalcEngineAsync( fullName ) );
+	}
 
 	public void CalcEngineUtilities_ConvertToRBLe( IRibbonControl control )
 	{

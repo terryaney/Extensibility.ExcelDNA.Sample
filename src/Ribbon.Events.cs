@@ -146,7 +146,7 @@ public partial class Ribbon
 		}
 		catch ( Exception ex )
 		{
-			LogError( $"Ribbon_GetVisible {control.Tag}", ex );
+			LogError( $"Ribbon_GetContent {control.Tag}", ex );
 			return null;
 		}
 		finally

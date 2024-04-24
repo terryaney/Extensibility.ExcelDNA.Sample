@@ -7,26 +7,42 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
-	public async Task KatDataStore_CheckInCalcEngine( IRibbonControl _ )
+	public void KatDataStore_CheckInCalcEngine( IRibbonControl _ )
 	{
-		await EnsureAddInCredentialsAsync();
-
 		application.Cursor = MSExcel.XlMousePointer.xlWait;
-		await apiService.CheckinAsync( WorkbookState.ManagementName, AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
-		WorkbookState.CheckInCalcEngine();
-		ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
-		application.Cursor = MSExcel.XlMousePointer.xlDefault;
+
+		RunRibbonTask( async () =>
+		{
+			try
+			{
+				await EnsureAddInCredentialsAsync();
+				await apiService.CheckinAsync( WorkbookState.ManagementName, AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
+				WorkbookState.CheckInCalcEngine();
+			}
+			finally
+			{
+				InvalidateRibbon(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
+			}
+		} );
 	}
 
-	public async Task KatDataStore_CheckOutCalcEngine( IRibbonControl _ )
+	public void KatDataStore_CheckOutCalcEngine( IRibbonControl _ )
 	{
-		await EnsureAddInCredentialsAsync();
-
 		application.Cursor = MSExcel.XlMousePointer.xlWait;
-		await apiService.CheckoutAsync( WorkbookState.ManagementName, AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
-		WorkbookState.CheckOutCalcEngine();
-		ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
-		application.Cursor = MSExcel.XlMousePointer.xlDefault;
+
+		RunRibbonTask( async () =>
+		{
+			try
+			{
+				await EnsureAddInCredentialsAsync();
+				await apiService.CheckoutAsync( WorkbookState.ManagementName, AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
+				WorkbookState.CheckOutCalcEngine();
+			}
+			finally
+			{
+				InvalidateRibbon(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
+			}
+		} );
 	}
 
 	public void KatDataStore_ManageCalcEngine( IRibbonControl _ )
@@ -45,66 +61,24 @@ public partial class Ribbon
 		Process.Start( psi );
 	}
 
-	public async Task KatDataStore_DownloadLatestCalcEngine( IRibbonControl _ ) => await DownloadLatestCalcEngine( WorkbookState.ManagementName );
-
-	private async Task DownloadLatestCalcEngine( string calcEngine, string? destination = null )
+	public void KatDataStore_DownloadLatestCalcEngine( IRibbonControl _ )
 	{
-		var managedCalcEngine = application.Workbooks.Cast<MSExcel.Workbook>().FirstOrDefault( w => string.Compare( w.Name, calcEngine, true ) == 0 );
-		var isDirty = !managedCalcEngine?.Saved ?? false;
-		var fullName = Path.Combine( destination ?? Path.GetDirectoryName( ( managedCalcEngine ?? application.ActiveWorkbook ).FullName )!, calcEngine );
-
-		if ( isDirty )
-		{
-			if ( MessageBox.Show( 
-				"You currently have changes in this CalcEngine. If you proceed, all changes will be lost.", 
-				"Download Latest Version", 
-				MessageBoxButtons.YesNo, 
-				MessageBoxIcon.Warning, 
-				MessageBoxDefaultButton.Button2 
-			) != DialogResult.Yes )
-			{
-				return;
-			}
-		}
-
-		managedCalcEngine?.Close( false );
-
-		await EnsureAddInCredentialsAsync();
-
-		application.Cursor = MSExcel.XlMousePointer.xlWait;
-		if ( await apiService.DownloadLatestAsync( fullName, AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() ) )
-		{
-			// Don't know why I need QueueAsMacro here.  Without it, Excel wouldn't close gracefully.
-			ExcelAsyncUtil.QueueAsMacro( () =>
-			{
-				application.Workbooks.Open( fullName );
-				application.Cursor = MSExcel.XlMousePointer.xlDefault;
-			} );
-		}
-		else
-		{
-			application.Cursor = MSExcel.XlMousePointer.xlDefault;
-		}
+		var fullName = DownloadLatestCalcEngineCheck( WorkbookState.ManagementName );
+		RunRibbonTask( () => DownloadLatestCalcEngineAsync( fullName ) );
 	}
 
-	public async Task KatDataStore_DownloadDebugFile( IRibbonControl _, string versionKey )
+	public void KatDataStore_DownloadDebugFile( IRibbonControl _, string versionKey )
 	{
-		await EnsureAddInCredentialsAsync();
-
 		application.Cursor = MSExcel.XlMousePointer.xlWait;
-		var fileName = await apiService.DownloadDebugAsync( WorkbookState.ManagementName, int.Parse( versionKey ), AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
-		if ( !string.IsNullOrEmpty( fileName ) )
+
+		RunRibbonTask( async () => 
 		{
-			// Don't know why I need QueueAsMacro here.  Without it, Excel wouldn't close gracefully.
-			ExcelAsyncUtil.QueueAsMacro( () =>
+			await EnsureAddInCredentialsAsync();
+			var fileName = await apiService.DownloadDebugAsync( WorkbookState.ManagementName, int.Parse( versionKey ), AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
+			if ( !string.IsNullOrEmpty( fileName ) )
 			{
-				application.Workbooks.Open( fileName );
-				application.Cursor = MSExcel.XlMousePointer.xlDefault;
-			} );
-		}
-		else
-		{
-			application.Cursor = MSExcel.XlMousePointer.xlDefault;
-		}
+				ExcelAsyncUtil.QueueAsMacro( () => application.Workbooks.Open( fileName ) );
+			}
+		} );
 	}
 }

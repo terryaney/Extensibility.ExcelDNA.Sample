@@ -1,8 +1,5 @@
 using System.Net.Http.Json;
-using System.Text;
-using System.Text.Json;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1;
-using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Requests;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Responses;
 using KAT.Camelot.Domain.Extensions;
 
@@ -15,6 +12,21 @@ public class ApiService
 	public ApiService( IHttpClientFactory httpClientFactory )
 	{
 		this.httpClientFactory = httpClientFactory;
+	}
+
+	public async Task<string?> GetSpreadsheetGearLicenseAsync( string? userName, string? password )
+	{
+		if ( string.IsNullOrEmpty( userName ) || string.IsNullOrEmpty( password ) )
+		{
+			return null;
+		}
+
+		var url = $"{AddIn.Settings.ApiEndpoint}{ApiEndpoints.License.SpreadsheetGear}";
+		using var response = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get );
+
+		if ( !response.IsSuccessStatusCode ) return null;
+
+		return await response.Content.ReadAsStringAsync();
 	}
 
 	public async Task<IEnumerable<DebugFile>> GetDebugFilesAsync( string calcEngine, string? userName, string? password )

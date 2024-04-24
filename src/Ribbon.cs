@@ -5,6 +5,7 @@ using KAT.Camelot.Domain.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Concurrent;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text.Json.Nodes;
 using MSExcel = Microsoft.Office.Interop.Excel;
@@ -132,39 +133,47 @@ public partial class Ribbon : ExcelRibbon
 
 	public void Ribbon_OnAction( IRibbonControl control )
 	{
-		var actionParts = control.Tag.Split( '|' );
+		var tag = control.Tag;
+		var actionParts = tag.Split( '|' );
 
-		ExcelAsyncUtil.QueueAsMacro( async () =>
+		try
+		{
+			var parameters = actionParts.Skip( 1 ).ToArray();
+			var parameterTypes = parameters.Any()
+				? new[] { typeof( IRibbonControl ) }.Concat( parameters.Select( p => typeof( string ) ) ).ToArray()
+				: null;
+
+			var mi = parameters.Any()
+				? typeof( Ribbon ).GetMethod( actionParts[ 0 ], parameterTypes! )
+				: typeof( Ribbon ).GetMethod( actionParts[ 0 ] );
+
+			mi!.Invoke( this, new object[] { control }.Concat( parameters ).ToArray() );
+		}
+		catch ( Exception ex )
+		{
+			LogError( $"Ribbon_OnAction {tag}", ex );
+		}
+		finally
+		{
+			application.Cursor = MSExcel.XlMousePointer.xlDefault;
+		}
+	}
+
+	private void RunRibbonTask( Func<Task> action, [CallerMemberName] string actionName = "" )
+	{
+		Task.Run( async () =>
 		{
 			try
 			{
-				var parameters = actionParts.Skip( 1 ).ToArray();
-				var parameterTypes = parameters.Any()
-					? new[] { typeof( IRibbonControl ) }.Concat( parameters.Select( p => typeof( string ) ) ).ToArray()
-					: null;
-
-				var mi = parameters.Any()
-					? typeof( Ribbon ).GetMethod( actionParts[ 0 ], parameterTypes! )
-					: typeof( Ribbon ).GetMethod( actionParts[ 0 ] );
-
-				if ( mi!.ReturnType == typeof( Task ) )
-				{
-					await (Task)mi.Invoke( this, new object[] { control }.Concat( parameters ).ToArray() )!;
-				}
-				else
-				{
-					mi.Invoke( this, new object[] { control }.Concat( parameters ).ToArray() );
-				}
+				await action();
 			}
 			catch ( Exception ex )
 			{
-				// I had originally wrapped my call to LogError in *another* QueueAsMacro, but I don't think that is needed.
-				// Leaving it here as documenation.  I've found myself sprinkling QueueAsMacro in many/all of my Async ribbon 
-				// button events to ensure that Excel closes cleanly.  Unfortunately, I don't have my head wrapped around the 
-				// whole async/await and thread context issues.
-				LogError( $"Ribbon_OnAction {control.Tag}", ex );
-				application.Cursor = MSExcel.XlMousePointer.xlDefault;
-				// ExcelAsyncUtil.QueueAsMacro( () => LogError( $"Ribbon_OnAction {control.Tag}", ex ) );
+				LogError( actionName, ex );
+			}
+			finally
+			{
+				ExcelAsyncUtil.QueueAsMacro( () => application.Cursor = MSExcel.XlMousePointer.xlDefault );
 			}
 		} );
 	}
@@ -206,7 +215,7 @@ public partial class Ribbon : ExcelRibbon
 
 	private async Task UpdateAddInCredentialsAsync( string userName, string password )
 	{
-		application.StatusBar = "Saving KAT credentials...";
+		SetStatusBar( "Saving KAT credentials..." );
 
 		// Disable edit notifications...
 		AddIn.settingsProcessor.Disable();
@@ -260,5 +269,74 @@ public partial class Ribbon : ExcelRibbon
 			: new JsonObject();
 
 		return appSettings[ "windowSettings" ]?[ name ] as JsonObject;
+	}
+
+	private bool isSpreadsheetGearLicensed;
+	private async Task<bool> EnsureSpreadsheetGearLicenseAsync()
+	{
+		if ( isSpreadsheetGearLicensed ) return true;
+
+		SetStatusBar( "Checking for SpreadsheetGear License..." );
+
+		var license = await apiService.GetSpreadsheetGearLicenseAsync( AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
+
+		if ( license == null )
+		{
+			ExcelAsyncUtil.QueueAsMacro( () => MessageBox.Show( "KAT dependent license not found.", "KAT License", MessageBoxButtons.OK, MessageBoxIcon.Error ) );
+			return false;
+		}
+
+		SpreadsheetGear.Factory.SetSignedLicense( license );
+		return isSpreadsheetGearLicensed = true;
+	}
+
+	private void SetStatusBar( string message ) => ExcelAsyncUtil.QueueAsMacro( () => application.StatusBar = $"KAT: {message}" );
+	private void ClearStatusBar() => ExcelAsyncUtil.QueueAsMacro( () => {
+		if ( ( (string?)application.StatusBar ?? "" ).StartsWith( "KAT: " ) )
+		{
+			application.StatusBar = "";
+			application.Cursor = MSExcel.XlMousePointer.xlDefault;
+		}
+	} );
+	private void InvalidateRibbon() => ExcelAsyncUtil.QueueAsMacro( () => {
+		ribbon.Invalidate();
+		application.Cursor = MSExcel.XlMousePointer.xlDefault;
+	} );
+
+	private string? DownloadLatestCalcEngineCheck( string calcEngine, string? destination = null )
+	{
+		var managedCalcEngine = application.Workbooks.Cast<MSExcel.Workbook>().FirstOrDefault( w => string.Compare( w.Name, calcEngine, true ) == 0 );
+		var isDirty = !managedCalcEngine?.Saved ?? false;
+		var fullName = Path.Combine( destination ?? Path.GetDirectoryName( ( managedCalcEngine ?? application.ActiveWorkbook ).FullName )!, calcEngine );
+
+		if ( isDirty )
+		{
+			if ( MessageBox.Show( 
+				"You currently have changes in this CalcEngine. If you proceed, all changes will be lost.", 
+				"Download Latest Version", 
+				MessageBoxButtons.YesNo, 
+				MessageBoxIcon.Warning, 
+				MessageBoxDefaultButton.Button2 
+			) != DialogResult.Yes )
+			{
+				return null;
+			}
+		}
+
+		application.Cursor = MSExcel.XlMousePointer.xlWait;
+		managedCalcEngine?.Close( false );
+		return fullName;
+	}
+
+	private async Task DownloadLatestCalcEngineAsync( string? fullName )
+	{
+		if ( string.IsNullOrEmpty( fullName ) ) return;
+		
+		await EnsureAddInCredentialsAsync();
+
+		if ( await apiService.DownloadLatestAsync( fullName, AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() ) )
+		{
+			ExcelAsyncUtil.QueueAsMacro( () => application.Workbooks.Open( fullName ) );
+		}
 	}
 }

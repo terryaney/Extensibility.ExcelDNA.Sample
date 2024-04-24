@@ -1,7 +1,6 @@
 ﻿using ExcelDna.Integration;
 using ExcelDna.Registration;
 using Microsoft.Extensions.Configuration;
-using System.Text.Json.Nodes;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
@@ -9,8 +8,8 @@ public class AddIn : IExcelAddIn
 {
 	internal static string XllName = null!;
 	internal static string XllPath = null!;
-	internal static string ResourcePath => Directory.CreateDirectory( Path.Combine( XllPath, "Resources" ) ).FullName;
-
+	internal static string ResourcesPath => Directory.CreateDirectory( Path.Combine( XllPath, "Resources" ) ).FullName;
+	
 	internal static AddInSettings Settings = new();
 	internal static AddIn CurrentAddin { get; private set; } = null!;
 	internal static FileWatcherNotification settingsProcessor = null!;

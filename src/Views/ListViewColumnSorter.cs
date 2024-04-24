@@ -17,7 +17,7 @@ public class ListViewColumnSorter : IComparer
 	/// <summary>
 	/// Case insensitive comparer object
 	/// </summary>
-	private CaseInsensitiveComparer ObjectCompare;
+	private readonly CaseInsensitiveComparer ObjectCompare;
 
 	/// <summary>
 	/// Class constructor. Initializes various elements
@@ -61,7 +61,7 @@ public class ListViewColumnSorter : IComparer
 		else if ( OrderOfSort == SortOrder.Descending )
 		{
 			// Descending sort is selected, return negative result of compare operation
-			return ( -compareResult );
+			return  -compareResult;
 		}
 		else
 		{

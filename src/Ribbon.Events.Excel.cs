@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Nodes;
+﻿using ExcelDna.Integration;
 using KAT.Camelot.Domain.Extensions;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
@@ -6,7 +6,6 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
-	private CalcEngineUploadInfo? calcEngineUploadInfo;
 	private bool skipHistoryUpdateOnMoveSpecFromDownloads;
 
 	private void Application_WorkbookOpen( MSExcel.Workbook wb )
@@ -47,17 +46,26 @@ public partial class Ribbon
 		}
 	}
 	
-	private async void Application_WorkbookActivate( MSExcel.Workbook wb )
+	private void Application_WorkbookActivate( MSExcel.Workbook wb )
 	{
 		try
 		{
-			await EnsureAddInCredentialsAsync();
-			await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
-			ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
+			application.Cursor = MSExcel.XlMousePointer.xlWait;
+
+			var wbName = application.ActiveWorkbook.Name;
+			WorkbookState.UpdateWorkbook( wb );
+			
+			RunRibbonTask( async () => 
+			{
+				await EnsureAddInCredentialsAsync();
+				await WorkbookState.UpdateCalcEngineInfoAsync( wbName );
+				ExcelAsyncUtil.QueueAsMacro( () => ribbon.Invalidate() ); // .InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
+			} );
 		}
 		catch ( Exception ex )
 		{
 			LogError( $"Application_WorkbookActivate", ex );
+			application.Cursor = MSExcel.XlMousePointer.xlDefault;
 		}
 	}
 
@@ -65,8 +73,6 @@ public partial class Ribbon
 	{
 		try
 		{
-			calcEngineUploadInfo = null;
-
 			if ( auditShowLogBadgeCount > 0 )
 			{
 				Kat_ShowLog( null );
@@ -88,8 +94,6 @@ public partial class Ribbon
 				Cancel = true;
 				return;
 			}
-
-			calcEngineUploadInfo = Task.Run( () => ProcessSaveHistoryAsync( wb ) ).GetAwaiter().GetResult();
 		}
 		catch ( Exception ex )
 		{
@@ -97,22 +101,8 @@ public partial class Ribbon
 		}
 	}
 
-	private async void Application_WorkbookAfterSave( MSExcel.Workbook wb, bool Success )
-	{
-		try
-		{
-			await UploadCalcEngineToManagementSiteAsync();
-
-		}
-		catch ( Exception ex )
-		{
-			LogError( $"Application_WorkbookAfterSave", ex );
-		}
-		finally
-		{
-			calcEngineUploadInfo = null;
-		}
-	}
+	private void Application_WorkbookAfterSave( MSExcel.Workbook wb, bool Success ) =>
+		RunRibbonTask( () => UploadCalcEngineToManagementSiteAsync( wb ) );
 
 	private void Application_SheetActivate( object sheet )
 	{
@@ -145,6 +135,11 @@ public partial class Ribbon
 
 	private DialogResult AuditCalcEngineTabs( MSExcel.Workbook workbook )
 	{
+		if ( !WorkbookState.IsCalcEngine )
+		{
+			return DialogResult.Yes;
+		}
+		
 		var rblSheets = 
 			workbook.Worksheets.Cast<MSExcel.Worksheet>()
 				.Where( s => s.Names.Cast<MSExcel.Name>().Any( n => n.Name.EndsWith( "!SheetType" ) && Constants.CalcEngines.SheetTypes.Contains( (string)s.Range[ "SheetType" ].Text ) ) );
@@ -250,8 +245,10 @@ public partial class Ribbon
 		return null;
 	}
 
-	private async Task UploadCalcEngineToManagementSiteAsync()
+	private async Task UploadCalcEngineToManagementSiteAsync( MSExcel.Workbook wb )
 	{
+		var calcEngineUploadInfo = await ProcessSaveHistoryAsync( wb );
+
 		if ( calcEngineUploadInfo != null )
 		{
 			try
@@ -261,21 +258,26 @@ public partial class Ribbon
 					await UpdateAddInCredentialsAsync( calcEngineUploadInfo.UserName, calcEngineUploadInfo.Password );
 				}
 
-				application.StatusBar = "Uploading CalcEngine to Management Site...";
+				SetStatusBar( "Uploading CalcEngine to Management Site..." );
 
 				var ceContent = await File.ReadAllBytesAsync( application.ActiveWorkbook.FullName );
 
 				// TODO: Upload ceContent, need to pass userName, password, expectedVersion, forceUpload (boolean) and confirm it can be done
 
-				application.StatusBar = "CalcEngine successfully uploaded to Management Site.";
+				SetStatusBar( "CalcEngine successfully uploaded to Management Site." );
 
-				WorkbookState.UpdateVersion( application.ActiveWorkbook );
-				ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
+				ExcelAsyncUtil.QueueAsMacro( () =>
+				{
+					WorkbookState.UpdateVersion( application.ActiveWorkbook );
+					ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
+				} );
 			}
 			catch ( Exception ex )
 			{
-				application.StatusBar = "";
-				MessageBox.Show( "Uploading CalcEngine to Management Site FAILED. " + ex.Message, "Upload Failed", MessageBoxButtons.OK, MessageBoxIcon.Error );
+				ClearStatusBar();
+				ExcelAsyncUtil.QueueAsMacro( () => {
+					MessageBox.Show( "Uploading CalcEngine to Management Site FAILED. " + ex.Message, "Upload Failed", MessageBoxButtons.OK, MessageBoxIcon.Error );
+				} );
 				throw;
 			}
 		}

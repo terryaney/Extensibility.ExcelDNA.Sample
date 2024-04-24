@@ -155,6 +155,7 @@ Below is a summary of the code locations that faced thread context issues and wh
 | `Ribbon_OnAction` | `Camelot.Api.Excel`<br/>`Async Functionality`<br/>`Long Running Task` | `ExcelAsyncUtil.QueueAsMacro` |
 | `KatDataStore_DownloadLatestCalcEngine` | `Camelot.Api.Excel`<br/>`Excel COM Access` | `ExcelAsyncUtil.QueueAsMacro` |
 | `KatDataStore_DownloadDebugFile` | `Camelot.Api.Excel`<br/>`Excel COM Access` | `ExcelAsyncUtil.QueueAsMacro` |
+| `Audit_SearchLocalCalcEngines` | 'Long Running Task' | `ExcelAsyncUtil.QueueAsMacro` |
 
 Back to [Features listing](#features).
 

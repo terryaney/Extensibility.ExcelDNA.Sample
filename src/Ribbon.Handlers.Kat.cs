@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.Reflection;
+using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
@@ -29,14 +30,7 @@ public partial class Ribbon
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public async Task Kat_RefreshRibbon( IRibbonControl _ )
-	{
-		await EnsureAddInCredentialsAsync();
-		application.Cursor = MSExcel.XlMousePointer.xlWait;
-		await WorkbookState.UpdateWorkbookAsync( application.ActiveWorkbook );
-		ribbon.Invalidate();
-		application.Cursor = MSExcel.XlMousePointer.xlDefault;
-	}
+	public void Kat_RefreshRibbon( IRibbonControl _ ) => Application_WorkbookActivate( application.ActiveWorkbook );
 
 	public void Kat_HelpAbout( IRibbonControl _ )
 	{

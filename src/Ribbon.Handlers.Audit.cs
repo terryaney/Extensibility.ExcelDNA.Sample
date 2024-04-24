@@ -1,5 +1,4 @@
-﻿using System.Text;
-using ExcelDna.Integration;
+﻿using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 using KAT.Camelot.Domain.Extensions;
 using KAT.Camelot.RBLe.Core.Calculations;
@@ -79,17 +78,22 @@ public partial class Ribbon
 
 		SaveWindowConfiguration( nameof( SearchLocalCalcEngines ), searchLocalCalcEnginesInfo.WindowConfiguration );
 
-		MessageBox.Show( $"The KAT Addin will search all Excel files in {searchLocalCalcEnginesInfo.Folder} and will display results when complete.", "Search Local CalcEngines", MessageBoxButtons.OK, MessageBoxIcon.Information );
+		// MessageBox.Show( $"The KAT Addin will search all Excel files in {searchLocalCalcEnginesInfo.Folder} and will display results when complete.", "Search Local CalcEngines", MessageBoxButtons.OK, MessageBoxIcon.Information );
 
-		application.StatusBar = "Searching CalcEngines...";
-		
-		ExcelAsyncUtil.QueueAsMacro( async () =>
+		var currentFilePaths = application.Workbooks.Cast<MSExcel.Workbook>().Select( w => w.FullName ).ToArray();
+		var csvFile = Path.Combine( AddIn.ResourcesPath, "SearchLocalCalcEngines.csv" );
+		var csvWorkbook = application.Workbooks.Cast<MSExcel.Workbook>().FirstOrDefault( w => string.Compare( csvFile, w.FullName, true ) == 0 );
+		csvWorkbook?.Close( false );
+
+		RunRibbonTask( async () =>
 		{
-			// Search...
-			var sb = new StringBuilder();
+			if ( await EnsureSpreadsheetGearLicenseAsync() == false ) return;
+
+			SetStatusBar( "Searching Local CalcEngines..." );
+
+			var results = new List<(string CalcEngine, string Tab, string Address, string Formula)>();
 			var ssg = SpreadsheetGear.Factory.GetWorkbookSet();
 
-			var currentFilePaths = application.Workbooks.Cast<MSExcel.Workbook>().Select( w => w.FullName ).ToArray();
 			var calcEngines = new DirectoryInfo( searchLocalCalcEnginesInfo.Folder ).GetFiles()
 					.Where( f => new[] { ".xls", ".xlsm" }.Contains( f.Extension, StringComparer.InvariantCultureIgnoreCase ) )
 					.Where( f => !f.Name.StartsWith( "~" ) )
@@ -103,50 +107,61 @@ public partial class Ribbon
 
 			if ( openCalcEngines.Any() )
 			{
-				sb.AppendLine(
-					$"{Environment.NewLine}***WARNING***{Environment.NewLine}Current CalcEngine will *not* be searched.  Any CalcEngines open in Excel can not be searched with the Audit feature." +
-					$"{Environment.NewLine}{string.Join( Environment.NewLine, openCalcEngines.Select( c => $"- {c}" ) )}{Environment.NewLine}{Environment.NewLine}" );
+				results.AddRange( openCalcEngines.Select( c => (c, "N/A", "N/A", "CalcEngines open in Excel can not be searched with the Audit feature.") ) );
 			}
 
 			foreach ( var file in calcEngines.Where( c => !openCalcEngines.Contains( c.FullName ) ) )
 			{
-				/*
 				var wb = ssg.Workbooks.Open( file.FullName );
 
-				SpreadsheetGear.IRange? lastOccur = null;
-				foreach ( SpreadsheetGear.IWorksheet ws in wb.Worksheets )
+				try
 				{
-					foreach ( var token in searchLocalCalcEnginesInfo.Tokens )
+					SpreadsheetGear.IRange? lastOccur = null;
+					foreach ( SpreadsheetGear.IWorksheet ws in wb.Worksheets )
 					{
-						var locationsFound = new HashSet<string>();
-
-						while ( ( lastOccur = ws.Range.Find( token, lastOccur, SpreadsheetGear.FindLookIn.Formulas, SpreadsheetGear.LookAt.Part, SpreadsheetGear.SearchOrder.ByRows, SpreadsheetGear.SearchDirection.Next, false ) ) != null )
+						foreach ( var token in searchLocalCalcEnginesInfo.Tokens )
 						{
-							// Once the new instance loops back to the first instance, out of the loop.
-							if ( locationsFound.Contains( lastOccur.Address ) )
-								break;
+							var locationsFound = new HashSet<string>();
 
-							sb.AppendLine( $"{file.Name}: {ws.Name}!{lastOccur.Address} - {lastOccur.Formula ?? lastOccur.Text}" );
+							while ( ( lastOccur = ws.Range.Find( token, lastOccur, SpreadsheetGear.FindLookIn.Formulas, SpreadsheetGear.LookAt.Part, SpreadsheetGear.SearchOrder.ByRows, SpreadsheetGear.SearchDirection.Next, false ) ) != null )
+							{
+								// Once the new instance loops back to the first instance, out of the loop.
+								if ( locationsFound.Contains( lastOccur.Address ) )
+									break;
 
-							locationsFound.Add( lastOccur.Address );
+								results.Add( (file.Name, ws.Name, lastOccur.Address, $"'{lastOccur.Formula}") );
+
+								locationsFound.Add( lastOccur.Address );
+							}
 						}
 					}
 				}
-
-				wb.Close();
-				*/
+				finally
+				{
+					wb.Close();
+				}
 			}
 
-			if ( sb.Length > 0 )
+			ClearStatusBar();
+
+			if ( results.Count > 0 )
 			{
-				ExcelDna.Logging.LogDisplay.Clear();
-				ExcelDna.Logging.LogDisplay.WriteLine( "*****Local CalcEngines Search Results*****" );
-				ExcelDna.Logging.LogDisplay.WriteLine( sb.ToString() );
-				ExcelDna.Logging.LogDisplay.Show();
+				await results.DumpCsvAsync( 
+					csvFile,
+					getHeader: m => m.Name switch
+					{
+						"Item1" => "CalcEngine",
+						"Item2" => "Tab",
+						"Item3" => "Address",
+						"Item4" => "Formula",
+						_ => throw new ArgumentException( "Unknown member", m.Name )
+					}
+				);
+				ExcelAsyncUtil.QueueAsMacro( () => application.Workbooks.Open( csvFile ) );
 			}
 			else
 			{
-				MessageBox.Show( $"No tokens were found in any CalcEngines.", "Search Local CalcEngines", MessageBoxButtons.OK, MessageBoxIcon.Information );
+				ExcelAsyncUtil.QueueAsMacro( () => MessageBox.Show( $"No tokens were found in any CalcEngines.", "Search Local CalcEngines", MessageBoxButtons.OK, MessageBoxIcon.Information ) );
 			}
 		} );
 	}

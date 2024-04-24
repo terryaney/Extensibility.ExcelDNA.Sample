@@ -1,7 +1,6 @@
 using ExcelDna.Integration;
 using KAT.Camelot.RBLe.Core;
 using KAT.Camelot.RBLe.Core.Calculations;
-using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
