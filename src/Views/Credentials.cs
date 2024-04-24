@@ -17,9 +17,6 @@ internal partial class Credentials : Form
 		tUserName.Text = userName;
 		tPassword.Text = password;
 
-		Location = new Point { X = (int?)windowConfiguration[ "left" ] ?? Left, Y = (int?)windowConfiguration[ "top" ] ?? Top };
-		Size = new Size { Width = (int?)windowConfiguration[ "width" ] ?? Width, Height = (int?)windowConfiguration[ "height" ] ?? Height };
-
 		var dialogResult = ShowDialog();
 
 		if ( dialogResult != DialogResult.OK )
@@ -38,6 +35,12 @@ internal partial class Credentials : Form
 			Password = tPassword.Text,
 			WindowConfiguration = windowConfiguration
 		};
+	}
+
+	private void Credentials_Load( object sender, EventArgs e )
+	{
+		Location = new Point { X = (int?)windowConfiguration[ "left" ] ?? Left, Y = (int?)windowConfiguration[ "top" ] ?? Top };
+		Size = new Size { Width = (int?)windowConfiguration[ "width" ] ?? Width, Height = (int?)windowConfiguration[ "height" ] ?? Height };
 	}
 
 	private void Ok_Click( object sender, EventArgs e )

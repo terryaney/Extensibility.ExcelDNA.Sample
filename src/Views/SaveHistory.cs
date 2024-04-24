@@ -100,10 +100,6 @@ internal partial class SaveHistory : Form
 
 		description.Select();
 
-		WindowState = Enum.TryParse( (string?)windowConfiguration[ "state" ], out FormWindowState state) ? state : FormWindowState.Normal;
-		Location = new Point { X = (int?)windowConfiguration[ "left" ] ?? Left, Y = (int?)windowConfiguration[ "top" ] ?? Top };
-		Size = new Size { Width = (int?)windowConfiguration[ "width" ] ?? Width, Height = (int?)windowConfiguration[ "height" ] ?? Height };
-
 		var dialogResult = ShowDialog();
 
 		windowConfiguration[ "state" ] = WindowState.ToString();
@@ -133,6 +129,13 @@ internal partial class SaveHistory : Form
 
 			WindowConfiguration = windowConfiguration
 		};
+	}
+
+	private void SaveHistory_Load( object sender, EventArgs e )
+	{
+		WindowState = Enum.TryParse( (string?)windowConfiguration[ "state" ], out FormWindowState state) ? state : FormWindowState.Normal;
+		Location = new Point { X = (int?)windowConfiguration[ "left" ] ?? Left, Y = (int?)windowConfiguration[ "top" ] ?? Top };
+		Size = new Size { Width = (int?)windowConfiguration[ "width" ] ?? Width, Height = (int?)windowConfiguration[ "height" ] ?? Height };
 	}
 
 	private void Ok_Click( object sender, EventArgs e )

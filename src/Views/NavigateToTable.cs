@@ -26,15 +26,6 @@ internal partial class NavigateToTable : Form
 
 	public NavigationInfo? GetTarget()
 	{
-		WindowState = Enum.TryParse( (string?)windowConfiguration[ "state" ], out FormWindowState state) ? state : FormWindowState.Normal;
-		Location = new Point { X = (int?)windowConfiguration[ "left" ] ?? Left, Y = (int?)windowConfiguration[ "top" ] ?? Top };
-		Size = new Size { Width = (int?)windowConfiguration[ "width" ] ?? Width, Height = (int?)windowConfiguration[ "height" ] ?? Height };
-
-		foreach ( ColumnHeader c in availableTables.Columns )
-		{
-			c.Width = (int?)windowConfiguration[ nameof( availableTables ) ]?[ ( c.Tag as string )! ] ?? c.Width;
-		}
-
 		var dialogResult = ShowDialog();
 
 		if ( dialogResult != DialogResult.OK )
@@ -64,6 +55,18 @@ internal partial class NavigateToTable : Form
 			Target = ( availableTables.SelectedItems[ 0 ].Tag as NavigationTable )!.Address,
 			WindowConfiguration = windowConfiguration
 		};
+	}
+
+	private void NavigateToTable_Load( object sender, EventArgs e )
+	{
+		WindowState = Enum.TryParse( (string?)windowConfiguration[ "state" ], out FormWindowState state) ? state : FormWindowState.Normal;
+		Location = new Point { X = (int?)windowConfiguration[ "left" ] ?? Left, Y = (int?)windowConfiguration[ "top" ] ?? Top };
+		Size = new Size { Width = (int?)windowConfiguration[ "width" ] ?? Width, Height = (int?)windowConfiguration[ "height" ] ?? Height };
+
+		foreach ( ColumnHeader c in availableTables.Columns )
+		{
+			c.Width = (int?)windowConfiguration[ nameof( availableTables ) ]?[ ( c.Tag as string )! ] ?? c.Width;
+		}
 	}
 
 	private void Ok_Click( object sender, EventArgs e )

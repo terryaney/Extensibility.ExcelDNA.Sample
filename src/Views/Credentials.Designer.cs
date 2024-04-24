@@ -127,6 +127,7 @@ internal partial class Credentials
 		SizeGripStyle = SizeGripStyle.Hide;
 		Text = "KAT Credentials";
 		( (System.ComponentModel.ISupportInitialize)errorProvider ).EndInit();
+		this.Load += new System.EventHandler( this.Credentials_Load );
 		ResumeLayout( false );
 		PerformLayout();
 	}

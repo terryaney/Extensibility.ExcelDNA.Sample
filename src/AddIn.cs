@@ -67,10 +67,17 @@ public class AddIn : IExcelAddIn
 	{
 		var caller = ExcelApi.GetCaller();
 
-		// Calculation error is happening on Excel calculation thread, so need to QueueAsMacro to get back to main Excel UI thread.
-		// https://groups.google.com/d/msg/exceldna/cHD8Tx56Msg/MdPa2PR13hkJ
-		// Explains why needs caller other XlCall methods inside
-		ExcelAsyncUtil.QueueAsMacro( () => Ribbon.CurrentRibbon.LogFunctionError( caller, exception ) );
+		if ( caller != null )
+		{
+			// Calculation error is happening on Excel calculation thread, so need to QueueAsMacro to get back to main Excel UI thread.
+			// https://groups.google.com/d/msg/exceldna/cHD8Tx56Msg/MdPa2PR13hkJ
+			// Explains why needs caller other XlCall methods inside
+			ExcelAsyncUtil.QueueAsMacro( () => Ribbon.CurrentRibbon.LogFunctionError( caller, exception ) );
+		}
+		else
+		{
+			Ribbon.LogError( "Unhandled exception in macro.", ( exception as Exception )! );
+		}
 
 		return ExcelError.ExcelErrorValue;
 	}

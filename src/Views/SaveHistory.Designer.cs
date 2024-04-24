@@ -234,6 +234,7 @@ internal partial class SaveHistory
 		this.ShowInTaskbar = false;
 		this.Text = "KAT Version History";
 		( (System.ComponentModel.ISupportInitialize)( this.errorProvider ) ).EndInit();
+		this.Load += new System.EventHandler( this.SaveHistory_Load );
 		this.ResumeLayout( false );
 		this.PerformLayout();
 	}

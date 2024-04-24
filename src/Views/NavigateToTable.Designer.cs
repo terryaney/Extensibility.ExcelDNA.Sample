@@ -119,6 +119,7 @@ partial class NavigateToTable
 		this.ShowInTaskbar = false;
 		this.SizeGripStyle = System.Windows.Forms.SizeGripStyle.Show;
 		this.Text = "Navigate To Table";
+		this.Load += new System.EventHandler( this.NavigateToTable_Load );
 		this.ResumeLayout( false );
 	}
 

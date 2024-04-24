@@ -40,17 +40,17 @@ public class ListViewColumnSorter : IComparer
 	/// <param name="x">First object to be compared</param>
 	/// <param name="y">Second object to be compared</param>
 	/// <returns>The result of the comparison. "0" if equal, negative if 'x' is less than 'y' and positive if 'x' is greater than 'y'</returns>
-	public int Compare( object x, object y )
+	public int Compare( object? x, object? y )
 	{
 		int compareResult;
-		ListViewItem listviewX, listviewY;
+		ListViewItem? listviewX, listviewY;
 
 		// Cast the objects to be compared to ListViewItem objects
-		listviewX = (ListViewItem)x;
-		listviewY = (ListViewItem)y;
+		listviewX = x as ListViewItem;
+		listviewY = y as ListViewItem;
 
 		// Compare the two items
-		compareResult = ObjectCompare.Compare( listviewX.SubItems[ ColumnToSort ].Text, listviewY.SubItems[ ColumnToSort ].Text );
+		compareResult = ObjectCompare.Compare( listviewX?.SubItems[ ColumnToSort ].Text, listviewY?.SubItems[ ColumnToSort ].Text );
 
 		// Calculate correct return value based on object comparison
 		if ( OrderOfSort == SortOrder.Ascending )
@@ -75,14 +75,8 @@ public class ListViewColumnSorter : IComparer
 	/// </summary>
 	public int SortColumn
 	{
-		set
-		{
-			ColumnToSort = value;
-		}
-		get
-		{
-			return ColumnToSort;
-		}
+		set => ColumnToSort = value;
+		get => ColumnToSort;
 	}
 
 	/// <summary>
@@ -90,13 +84,7 @@ public class ListViewColumnSorter : IComparer
 	/// </summary>
 	public SortOrder Order
 	{
-		set
-		{
-			OrderOfSort = value;
-		}
-		get
-		{
-			return OrderOfSort;
-		}
+		set => OrderOfSort = value;
+		get => OrderOfSort;
 	}
 }

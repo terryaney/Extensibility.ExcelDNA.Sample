@@ -28,7 +28,11 @@ public static class ExcelApi
 		ActiveWorkbook = 88
 	}
 
-	public static ExcelReference GetCaller() => (ExcelReference)XlCall.Excel( XlCall.xlfCaller );
+	public static ExcelReference? GetCaller()
+	{
+		var caller = XlCall.Excel( XlCall.xlfCaller );
+		return caller is ExcelReference reference ? reference : null;
+	}
 
 	public static string ActiveWorkbookName() => (string)XlCall.Excel( XlCall.xlfGetDocument, (int)GetDocumentType.ActiveWorkbook );
 	
