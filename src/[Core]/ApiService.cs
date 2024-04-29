@@ -1,4 +1,7 @@
+using System.IO.Compression;
 using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Responses;
 using KAT.Camelot.Domain.Extensions;
@@ -93,6 +96,28 @@ public class ApiService
 		await SendRequestWithoutResponseAsync( userName, password, url, HttpMethod.Patch );
 	}
 
+	public async Task UpdateGlobalTablesAsync( JsonObject globalTables, string? userName, string? password )
+	{
+		var ms = new MemoryStream();
+		using ( var zip = new ZipArchive( ms, ZipArchiveMode.Create, true ) )
+		{
+			var entry = zip.CreateEntry( "globalTables.json", CompressionLevel.Fastest );
+
+			using var es = entry.Open();
+			JsonSerializer.Serialize( es, globalTables, new JsonSerializerOptions { WriteIndented = true } );
+		}
+
+		ms.Position = 0;
+
+		using var form = new MultipartFormDataContent
+		{
+			{ new StreamContent( ms ), "file", "globalTables.zip" }
+		};
+
+		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.xDSData.GlobalTables }";
+		await SendRequestWithoutResponseAsync( userName, password, url, HttpMethod.Post, form );
+	}
+
 	private async Task<T?> SendRequestAsync<T>( string? userName, string? password, string url, HttpMethod method ) where T : class
 	{
 		if ( string.IsNullOrEmpty( userName ) || string.IsNullOrEmpty( password ) )
@@ -111,23 +136,23 @@ public class ApiService
 		}
 	}
 
-	private async Task SendRequestWithoutResponseAsync( string? userName, string? password, string url, HttpMethod method )
+	private async Task SendRequestWithoutResponseAsync( string? userName, string? password, string url, HttpMethod method, HttpContent? content = null )
 	{
 		if ( string.IsNullOrEmpty( userName ) || string.IsNullOrEmpty( password ) )
 		{
 			return;
 		}
-		await SendHttpRequestAsync( userName, password, url, method );
+		await SendHttpRequestAsync( userName, password, url, method, content );
 	}
 
-	private async Task<HttpResponseMessage> SendHttpRequestAsync( string userName, string password, string url, HttpMethod method )
+	private async Task<HttpResponseMessage> SendHttpRequestAsync( string userName, string password, string url, HttpMethod method, HttpContent? content = null )
 	{
 		using var httpClient = httpClientFactory.CreateClient();
 		
 		httpClient.DefaultRequestHeaders.Add( "x-kat-email", userName );
 		httpClient.DefaultRequestHeaders.Add( "x-kat-password", password );
-		
-		using var request = new HttpRequestMessage( method, url );
+
+		using var request = new HttpRequestMessage( method, url ) { Content = content };
 
 		try
 		{

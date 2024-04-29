@@ -120,15 +120,16 @@ public partial class Ribbon
 		if ( WorkbookState.ShowCalcEngineManagement && ( string.IsNullOrEmpty( AddIn.Settings.KatUserName ) || string.IsNullOrEmpty( AddIn.Settings.KatPassword ) ) )
 		{
 			using var credentials = new Credentials( GetWindowConfiguration( nameof( Credentials ) ) );
-			var credentialInfo = credentials.GetCredentials(  
+			
+			var info = credentials.GetInfo(  
 				AddIn.Settings.KatUserName, 
 				await AddIn.Settings.GetClearPasswordAsync() 
 			);
 
-			if ( credentialInfo != null )
+			if ( info != null )
 			{
-				await UpdateAddInCredentialsAsync( credentialInfo.UserName, credentialInfo.Password );
-				SaveWindowConfiguration( nameof( Credentials ), credentialInfo.WindowConfiguration );
+				await UpdateAddInCredentialsAsync( info.UserName, info.Password );
+				SaveWindowConfiguration( nameof( Credentials ), info.WindowConfiguration );
 			}
 		}
 	}
@@ -142,7 +143,7 @@ public partial class Ribbon
 		
 		var rblSheets = 
 			workbook.Worksheets.Cast<MSExcel.Worksheet>()
-				.Where( s => s.Names.Cast<MSExcel.Name>().Any( n => n.Name.EndsWith( "!SheetType" ) && Constants.CalcEngines.SheetTypes.Contains( (string)s.Range[ "SheetType" ].Text ) ) );
+				.Where( s => s.Names.Cast<MSExcel.Name>().Any( n => n.Name.EndsWith( "!SheetType" ) && Constants.CalcEngines.IsRBLeSheet( (string)s.Range[ "SheetType" ].Text ) ) );
 
 		var sheetsWithHiddenColumns = new List<string>();
 
@@ -182,32 +183,32 @@ public partial class Ribbon
 		{
 			using var saveHistory = new SaveHistory( workbook, WorkbookState, GetWindowConfiguration( nameof( SaveHistory ) ) );
 
-			var saveHistoryInfo = saveHistory.GetHistoryInformation( 
+			var info = saveHistory.GetInfo( 
 				AddIn.Settings.SaveHistoryName, 
 				AddIn.Settings.KatUserName, 
 				await AddIn.Settings.GetClearPasswordAsync() 
 			);
 
-			if ( saveHistoryInfo.Result == DialogResult.Ignore )
+			if ( info.Result == DialogResult.Ignore )
 			{
 				return null;
 			}
 
-			SaveWindowConfiguration( nameof( SaveHistory ), saveHistoryInfo.WindowConfiguration );
+			SaveWindowConfiguration( nameof( SaveHistory ), info.WindowConfiguration );
 
-			var currentVersion = (string?)saveHistoryInfo.VersionRange.Text;
+			var currentVersion = (string?)info.VersionRange.Text;
 
-			if ( saveHistoryInfo.Result != DialogResult.Retry )
+			if ( info.Result != DialogResult.Retry )
 			{
 				// Update history log
 				var descriptions = 
-					saveHistoryInfo.Description?
+					info.Description?
 						.Split( new[] { "\r\n", "\n" }, StringSplitOptions.None )
 						.Select( d => d.Replace( "\t", "  " ) )
 						.Reverse()
 						.ToArray() ?? Array.Empty<string>();
 
-				var historyRange = saveHistoryInfo.HistoryRange.Offset[ 2, 0 ];
+				var historyRange = info.HistoryRange.Offset[ 2, 0 ];
 				var historySheet = historyRange.Worksheet;
 
 				for (var i = 0; i < descriptions.Length; i++)
@@ -221,23 +222,23 @@ public partial class Ribbon
 					// If last row...
 					if ( i == descriptions.Length - 1 )
 					{
-						historyRange.Value = saveHistoryInfo.Version;
+						historyRange.Value = info.Version;
 						historyRange.Offset[ 0, 1 ].Value = string.Format( "{0:MM/dd/yyyy hh:mm tt}", DateTime.Now );
-						historyRange.Offset[ 0, 2 ].Value = saveHistoryInfo.Author;
+						historyRange.Offset[ 0, 2 ].Value = info.Author;
 					}
 				}
 
-				saveHistoryInfo.VersionRange.Value = double.Parse( saveHistoryInfo.Version );
+				info.VersionRange.Value = double.Parse( info.Version );
 			}
 
-			return saveHistoryInfo.Result != DialogResult.OK 
+			return info.Result != DialogResult.OK 
 				? new()
 				{
-					UserName = saveHistoryInfo.UserName,
-					Password = saveHistoryInfo.Password,
-					ForceUpload = saveHistoryInfo.ForceUpload,
+					UserName = info.UserName,
+					Password = info.Password,
+					ForceUpload = info.ForceUpload,
 					ExpectedVersion = currentVersion,
-					WindowConfiguration = saveHistoryInfo.WindowConfiguration
+					WindowConfiguration = info.WindowConfiguration
 				} 
 				: null;
 		}
@@ -247,16 +248,13 @@ public partial class Ribbon
 
 	private async Task UploadCalcEngineToManagementSiteAsync( MSExcel.Workbook wb )
 	{
-		var calcEngineUploadInfo = await ProcessSaveHistoryAsync( wb );
+		var info = await ProcessSaveHistoryAsync( wb );
 
-		if ( calcEngineUploadInfo != null )
+		if ( info != null )
 		{
 			try
 			{
-				if ( calcEngineUploadInfo.UserName != AddIn.Settings.KatUserName || calcEngineUploadInfo.Password != await AddIn.Settings.GetClearPasswordAsync() )
-				{
-					await UpdateAddInCredentialsAsync( calcEngineUploadInfo.UserName, calcEngineUploadInfo.Password );
-				}
+				await UpdateAddInCredentialsAsync( info.UserName, info.Password );
 
 				SetStatusBar( "Uploading CalcEngine to Management Site..." );
 

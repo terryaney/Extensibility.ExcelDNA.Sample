@@ -69,14 +69,14 @@ public partial class Ribbon
 	{
 		using var searchLocalCalcEngines = new SearchLocalCalcEngines( GetWindowConfiguration( nameof( SearchLocalCalcEngines ) ) );
 
-		var searchLocalCalcEnginesInfo = searchLocalCalcEngines.Search();
+		var info = searchLocalCalcEngines.GetInfo();
 
-		if ( searchLocalCalcEnginesInfo == null )
+		if ( info == null )
 		{
 			return;
 		}
 
-		SaveWindowConfiguration( nameof( SearchLocalCalcEngines ), searchLocalCalcEnginesInfo.WindowConfiguration );
+		SaveWindowConfiguration( nameof( SearchLocalCalcEngines ), info.WindowConfiguration );
 
 		// MessageBox.Show( $"The KAT Addin will search all Excel files in {searchLocalCalcEnginesInfo.Folder} and will display results when complete.", "Search Local CalcEngines", MessageBoxButtons.OK, MessageBoxIcon.Information );
 
@@ -94,7 +94,7 @@ public partial class Ribbon
 			var results = new List<(string CalcEngine, string Tab, string Address, string Formula)>();
 			var ssg = SpreadsheetGear.Factory.GetWorkbookSet();
 
-			var calcEngines = new DirectoryInfo( searchLocalCalcEnginesInfo.Folder ).GetFiles()
+			var calcEngines = new DirectoryInfo( info.Folder ).GetFiles()
 					.Where( f => new[] { ".xls", ".xlsm" }.Contains( f.Extension, StringComparer.InvariantCultureIgnoreCase ) )
 					.Where( f => !f.Name.StartsWith( "~" ) )
 					.ToArray(); // temp files
@@ -119,7 +119,7 @@ public partial class Ribbon
 					SpreadsheetGear.IRange? lastOccur = null;
 					foreach ( SpreadsheetGear.IWorksheet ws in wb.Worksheets )
 					{
-						foreach ( var token in searchLocalCalcEnginesInfo.Tokens )
+						foreach ( var token in info.Tokens )
 						{
 							var locationsFound = new HashSet<string>();
 

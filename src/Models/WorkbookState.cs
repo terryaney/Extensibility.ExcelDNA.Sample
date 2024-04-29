@@ -76,7 +76,7 @@ public class WorkbookState
 		var isCalcEngine =
 			!isSpecSheet && !isGlobalTablesFile &&
 			 activeWorkbook.Worksheets.Cast<MSExcel.Worksheet>()
-				.Any( s => s.Names.Cast<MSExcel.Name>().Any( n => n.Name.EndsWith( "!SheetType" ) ) && Constants.CalcEngines.SheetTypes.Contains( (string)s.Range[ "SheetType" ].Text ) );
+				.Any( s => s.Names.Cast<MSExcel.Name>().Any( n => n.Name.EndsWith( "!SheetType" ) ) && Constants.CalcEngines.IsRBLeSheet( (string)s.Range[ "SheetType" ].Text ) );
 
 		var hasxDSDataFields = isCalcEngine && bookNames.Any( n => n.Name == "xDSDataFields" );
 
@@ -181,6 +181,7 @@ public class SheetState
 {
 	private readonly WorkbookState workbookState;
 
+	public string? SheetType { get; init; }
 	public bool IsResultSheet { get; init; }
 	public bool IsInputSheet { get; init; }
 	
@@ -204,9 +205,9 @@ public class SheetState
 		}
 
 		var sheetNames = activeSheet.Names.Cast<MSExcel.Name>().ToArray();
-		var sheetType = activeSheet.RangeOrNull<string>( "SheetType" );
+		SheetType = activeSheet.RangeOrNull<string>( "SheetType" );
 
-		var isGlobalTableSheet = Constants.CalcEngines.GlobalTablesSheetTypes.Contains( sheetType );
+		var isGlobalTableSheet = Constants.SpecSheet.IsGlobalTablesSheet( SheetType );
 		var isXmlMappingSheet = ( sheetNames?.Count( n => n.Name.EndsWith( "!MappingLayouts" ) || n.Name.EndsWith( "!PathToProfileElement" ) || n.Name.EndsWith( "!AuthIdElement" ) ) ?? 0 ) == 3;
 		var isUserAccessSheet =
 			activeSheet != null &&
@@ -217,9 +218,9 @@ public class SheetState
 		var rbleMacro = workbookState.bookNames.FirstOrDefault( n => n.Name == "RBLeMacro" );
 
 		canExport = isUserAccessSheet || isExcelJSSheet;
-		CanPreview = Constants.CalcEngines.PreviewSheetTypes.Contains( sheetType );
-		IsInputSheet = sheetType == Constants.CalcEngines.InputSheetType;
-		IsResultSheet = Constants.CalcEngines.ResultSheetTypes.Contains( sheetType );
+		CanPreview = Constants.CalcEngines.IsPreviewSheet( SheetType );
+		IsInputSheet = SheetType == Constants.CalcEngines.SheetTypes.Input;
+		IsResultSheet = Constants.CalcEngines.IsResultSheet( SheetType );
 
 		IsGlobalTableSheet = isGlobalTableSheet;
 		IsUserAccessSheet = isUserAccessSheet;

@@ -4,7 +4,7 @@ using KAT.Camelot.RBLe.Core.Calculations;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
-public static class ExcelApi
+public static partial class ExcelApi
 {
 	enum GetCellType
 	{
@@ -27,6 +27,11 @@ public static class ExcelApi
 		ActiveWorkbook = 88
 	}
 
+	enum GetWorkspaceType
+	{
+		ScreenUpdating = 40
+	}
+
 	public static ExcelReference? GetCaller()
 	{
 		var caller = XlCall.Excel( XlCall.xlfCaller );
@@ -35,55 +40,73 @@ public static class ExcelApi
 
 	public static string ActiveWorkbookName() => (string)XlCall.Excel( XlCall.xlfGetDocument, (int)GetDocumentType.ActiveWorkbook );
 	
-	public static string SheetName( this ExcelReference reference ) => (string)XlCall.Excel( XlCall.xlfGetCell, (int)GetCellType.SheetRef, reference );
-
-	public static string? GetText( this ExcelReference cell )
+	public static bool ScreenUpdating
 	{
-		var value = cell.GetValue();
-		return value.Equals( ExcelEmpty.Value ) ? null : (string)XlCall.Excel( XlCall.xlfGetCell, (int)GetCellType.Text, cell );
+		set { XlCall.Excel( XlCall.xlcEcho, value ); }
+		get { return (bool)XlCall.Excel( XlCall.xlfGetWorkspace, (int)GetWorkspaceType.ScreenUpdating ); }
 	}
 
-	public static string? GetFormula( this ExcelReference cell )
+	public static void RestoreSelection( this ExcelReference reference, Action action )
 	{
-		var f = XlCall.Excel( XlCall.xlfGetCell, (int)GetCellType.Formula, cell );
-		var formula = f is ExcelError check && check == ExcelError.ExcelErrorValue ? null : (string)f;
-		return !string.IsNullOrEmpty( formula ) ? formula : null;
-	}
+		// https://groups.google.com/d/msg/exceldna/h3SqSA8DkPc/X0uxH4pUBgAJ - read comment about his SelectionHelper
 
-	public static string GetAddress( this ExcelReference? reference )
-	{
+		var updating = ScreenUpdating;
+
 		try
 		{
-			var address = (string)XlCall.Excel( XlCall.xlfReftext, reference, true /* true - A1, false - R1C1 */ );
-			return address;
+			if ( updating ) ScreenUpdating = false;
+
+			//remember the current active cell
+			var current = new
+			{
+				Selection = XlCall.Excel( XlCall.xlfSelection ),
+				Cell = XlCall.Excel( XlCall.xlfActiveCell )
+			};
+
+			if ( reference != null )
+			{
+				//select caller worksheet containing range caller desires to be active
+				// (need to do this before reading selection/cell on this sheet)
+				var rangeSheet = (string)XlCall.Excel( XlCall.xlSheetNm, reference );
+				XlCall.Excel( XlCall.xlcWorkbookSelect, new object[] { rangeSheet } );
+			}
+
+			// record selection and active cell on the sheet we want to select
+			var sheetCurrent = reference != null
+				? new
+				{
+					Selection = XlCall.Excel( XlCall.xlfSelection ),
+					Cell = XlCall.Excel( XlCall.xlfActiveCell ),
+					OriginalSheet = (string)XlCall.Excel( XlCall.xlSheetNm, current.Selection )
+				}
+				: null;
+
+			if ( reference != null )
+			{
+				// Select the range caller desires to be active...
+				XlCall.Excel( XlCall.xlcSelect, reference );
+			}
+
+			action();
+
+			// Now restore everything...
+
+			if ( reference != null )
+			{
+				// Reset the selection on the target sheet
+				XlCall.Excel( XlCall.xlcSelect, sheetCurrent!.Selection, sheetCurrent.Cell );
+
+				// Reset the sheet originally selected
+				XlCall.Excel( XlCall.xlcWorkbookSelect, new object[] { sheetCurrent.OriginalSheet } );
+			}
+
+			// Reset the selection in the active sheet (some bugs make this change sometimes too)
+			XlCall.Excel( XlCall.xlcSelect, current.Selection, current.Cell );
 		}
-		catch ( Exception ex )
+		finally
 		{
-			throw new ApplicationException( $"GetAddress failed.  reference.RowFirst:{reference?.RowFirst}, reference.RowLast:{reference?.RowLast}, reference.ColumnFirst:{reference?.ColumnFirst}, reference.ColumnLast:{reference?.ColumnLast}", ex );
+			if ( updating ) ScreenUpdating = true;
 		}
-	}
-
-	public static ExcelReference Offset( this ExcelReference reference, int rows, int cols )
-	{
-		return new ExcelReference(
-			reference.RowFirst + rows,
-			reference.RowLast + rows,
-			reference.ColumnFirst + cols,
-			reference.ColumnLast + cols,
-			reference.SheetId );
-	}
-
-	public static ExcelReference Corner( this ExcelReference reference, CornerType corner )
-	{
-		var row = corner == CornerType.UpperLeft || corner == CornerType.UpperRight
-			? reference.RowFirst
-			: reference.RowLast;
-
-		var column = corner == CornerType.UpperLeft || corner == CornerType.LowerLeft
-			? reference.ColumnFirst
-			: reference.ColumnLast;
-
-		return new ExcelReference( row, row, column, column, reference.SheetId );
 	}
 
 	public static ExcelReference GetReference( this string address ) => GetWorkbookReference( null, address );

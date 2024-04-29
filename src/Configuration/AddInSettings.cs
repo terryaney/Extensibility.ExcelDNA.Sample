@@ -16,24 +16,25 @@ public class AddInSettings
 	public string? KatUserName { get; set; }
 	public string? KatPassword { get; set; }
 
-	public void SetCredentials( string? userName, string? password )
+	public async Task<string?> SetCredentialsAsync( string userName, string password )
 	{
 		KatUserName = userName;
-		KatPassword = password;
-		clearPassword = null;
+
+		var macAddress = GetMacAddress();
+		var encryptedPassword = await Cryptography3DES.DefaultEncryptAsync( password );
+		var macAddressHash = Hash.SHA256Hash( macAddress );
+		return KatPassword = await Cryptography3DES.DefaultEncryptAsync( macAddressHash + encryptedPassword );
 	}
 
-	private string? clearPassword = null;
+	string? clearPassword;
 	public async Task<string?> GetClearPasswordAsync()
 	{
 		if ( clearPassword != null ) return clearPassword;
-
-		var macAddress = GetMacAddress();
-
-		if ( KatPassword == null || macAddress == null ) return null;
+		if ( KatPassword == null ) return null;
 
 		try
 		{
+			var macAddress = GetMacAddress();
 			var decryptedSetting = await Cryptography3DES.DefaultDecryptAsync( KatPassword );
 			var macAddressHash = Hash.SHA256Hash( macAddress );
 			
@@ -43,22 +44,11 @@ public class AddInSettings
 		}
 		catch ( CryptographicException ex ) when ( ex.Message == "The input data is not a complete block." )
 		{
-			return KatPassword;
+			return KatPassword; // password is in clear text (debugging)
 		}
 	}
 
-	public static async Task<string?> EncryptPasswordAsync( string password )
-	{
-		var macAddress = GetMacAddress();
-
-		if ( macAddress == null ) return null;
-
-		var encryptedPassword = await Cryptography3DES.DefaultEncryptAsync( password );
-		var macAddressHash = Hash.SHA256Hash( macAddress );
-		return await Cryptography3DES.DefaultEncryptAsync( macAddressHash + encryptedPassword );
-	}
-
-	private static string? GetMacAddress()
+	private static string GetMacAddress()
 	{
 		foreach ( var nic in NetworkInterface.GetAllNetworkInterfaces() )
 		{
@@ -68,7 +58,7 @@ public class AddInSettings
 				return nic.GetPhysicalAddress().ToString();
 			}
 		}
-		return null;
+		throw new InvalidOperationException( "No Ethernet network interfaces found." );
 	}
 }
 

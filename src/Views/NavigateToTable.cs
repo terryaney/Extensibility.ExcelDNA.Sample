@@ -24,7 +24,7 @@ internal partial class NavigateToTable : Form
 		this.windowConfiguration = windowConfiguration ?? new JsonObject();
 	}
 
-	public NavigationInfo? GetTarget()
+	public NavigationInfo? GetInfo()
 	{
 		var dialogResult = ShowDialog();
 

@@ -40,9 +40,8 @@ public partial class Ribbon
 		{
 			return control.Id switch
 			{
-				"configurationExportingSheet" => WorkbookState.SheetState.CanExport,
 				"configurationExportingWorkbook" => WorkbookState.IsSpecSheetFile || WorkbookState.IsGlobalTablesFile || WorkbookState.IsRTCFile,
-				"configurationExportingGlobalTables" => !WorkbookState.IsGlobalTablesFile,
+				"configurationExportingSheet" => WorkbookState.SheetState.CanExport,
 
 				"katDataStoreManage" => WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( WorkbookState.UploadedVersion ),
 				"katDataStoreDownloadLatest" => WorkbookState.IsCalcEngine && !WorkbookState.IsLatestVersion,
@@ -60,7 +59,7 @@ public partial class Ribbon
 				"auditShowDependencies" or "auditHideDependencies" or "auditCellsWithEmptyDependencies" => application.ActiveWorkbook != null,
 				"auditCalcEngine" or "auditCalcEngineTab" or "auditInputResultTabs" => WorkbookState.IsCalcEngine,
 
-				"navigationTable" => WorkbookState.IsCalcEngine || WorkbookState.IsSpecSheetFile,
+				"navigationTable" => WorkbookState.IsCalcEngine || WorkbookState.IsSpecSheetFile || WorkbookState.SheetState.IsGlobalTableSheet,
 				"navigationToBTRCellAddressDestination" => WorkbookState.SheetState.IsMacroSheet,
 				"navigationToRBLeMacro" => WorkbookState.HasRBLeMacro && !WorkbookState.SheetState.IsMacroSheet,
 				"navigationInputs" or "navigationInputData"or "navigationCalculationInputs" or "navigationFrameworkInputs" or "navigationInputTables" => WorkbookState.IsCalcEngine,
@@ -175,7 +174,7 @@ public partial class Ribbon
 		return await apiService.GetDebugFilesAsync( 
 			WorkbookState.ManagementName, 
 			AddIn.Settings.KatUserName, 
-			await AddIn.Settings.GetClearPasswordAsync() 
+			await AddIn.Settings.GetClearPasswordAsync()
 		);
 	}
 

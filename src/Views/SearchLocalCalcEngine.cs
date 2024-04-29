@@ -12,7 +12,7 @@ internal partial class SearchLocalCalcEngines : Form
 		this.windowConfiguration = windowConfiguration ?? new JsonObject();
 	}
 
-	public SearchLocalCalcEnginesInfo? Search()
+	public SearchLocalCalcEnginesInfo? GetInfo()
 	{
 		searchLocation.Text = (string?)windowConfiguration[ "searchLocation" ] ?? string.Empty;
 		tokensToFind.Text = (string?)windowConfiguration[ "tokensToFind" ] ?? string.Empty;

@@ -12,6 +12,28 @@ using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
+/*
+ConfigurationExporting_ProcessGlobalTables (send to api)
+Kat_OpenHelp
+Kat_BlastEmail
+ConfigurationExporting_ExportSheet
+CalcEngineUtilities_ConfigureHighCharts
+CalcEngineUtilities_ImportBrdSettings
+DataExporting_AuditDataExportHeaders
+DataExporting_ExportMappedXmlData
+DataExporting_ExportXmlData
+DataExporting_ExportJsonData
+ConfigurationExporting_ExportWorkbook
+Audit_CalcEngineTabs
+CalcEngineUtilities_PopulateInputTab
+CalcEngineUtilities_ProcessWorkbook
+DataExporting_ExportResultDocGenXml
+DataExporting_ExportResultJsonData
+CalcEngineUtilities_PreviewResults
+CalcEngineUtilities_LocalBatchCalc
+CalcEngineUtilities_ConvertToRBLe
+*/
+
 /// <summary>
 /// KAT Add-In ribbon implementation to support Excel ribbon functionality.
 /// 
@@ -217,30 +239,31 @@ public partial class Ribbon : ExcelRibbon
 	{
 		SetStatusBar( "Saving KAT credentials..." );
 
-		// Disable edit notifications...
-		AddIn.settingsProcessor.Disable();
-
-		var appSettingsPath = Path.Combine( AddIn.XllPath, "appsettings.json" );
-		var appSecretsPath = Path.Combine( AddIn.XllPath, "appsettings.secrets.json" );
-		var encryptedPassword = await AddInSettings.EncryptPasswordAsync( password );
-
-		static void updateSetting( string path, string key, string value )
+		if ( userName != AddIn.Settings.KatUserName || password != await AddIn.Settings.GetClearPasswordAsync() )
 		{
-			var appSettings = File.Exists( path )
-				? ( JsonNode.Parse( File.ReadAllText( path ) ) as JsonObject )!
-				: new JsonObject();
+			// Disable edit notifications...
+			AddIn.settingsProcessor.Disable();
 
-			var addInSettings = ( ( appSettings[ "addInSettings" ] ?? appSettings.AddOrUpdate( "addInSettings", new JsonObject() ) ) as JsonObject )!;
-			addInSettings.AddOrUpdate( key, value );
-			appSettings.Save( path );
+			var appSettingsPath = Path.Combine( AddIn.XllPath, "appsettings.json" );
+			var appSecretsPath = Path.Combine( AddIn.XllPath, "appsettings.secrets.json" );
+			var encryptedPassword = await AddIn.Settings.SetCredentialsAsync( userName, password );
+
+			static void updateSetting( string path, string key, string value )
+			{
+				var appSettings = File.Exists( path )
+					? ( JsonNode.Parse( File.ReadAllText( path ) ) as JsonObject )!
+					: new JsonObject();
+
+				var addInSettings = ( ( appSettings[ "addInSettings" ] ?? appSettings.AddOrUpdate( "addInSettings", new JsonObject() ) ) as JsonObject )!;
+				addInSettings.AddOrUpdate( key, value );
+				appSettings.Save( path );
+			}
+
+			updateSetting( appSettingsPath, "katUserName", userName );
+			updateSetting( appSecretsPath, "katPassword", encryptedPassword! );
+
+			AddIn.settingsProcessor.Enable();
 		}
-
-		updateSetting( appSettingsPath, "katUserName", userName );
-		updateSetting( appSecretsPath, "katPassword", encryptedPassword! );
-
-		AddIn.settingsProcessor.Enable();
-
-		AddIn.Settings.SetCredentials( userName, encryptedPassword );
 	}
 
 	private static void SaveWindowConfiguration( string name, JsonObject windowConfiguration )
@@ -305,7 +328,7 @@ public partial class Ribbon : ExcelRibbon
 
 	private string? DownloadLatestCalcEngineCheck( string calcEngine, string? destination = null )
 	{
-		var managedCalcEngine = application.Workbooks.Cast<MSExcel.Workbook>().FirstOrDefault( w => string.Compare( w.Name, calcEngine, true ) == 0 );
+		var managedCalcEngine = application.GetWorkbook( calcEngine );
 		var isDirty = !managedCalcEngine?.Saved ?? false;
 		var fullName = Path.Combine( destination ?? Path.GetDirectoryName( ( managedCalcEngine ?? application.ActiveWorkbook ).FullName )!, calcEngine );
 

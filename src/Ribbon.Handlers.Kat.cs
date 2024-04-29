@@ -25,11 +25,6 @@ public partial class Ribbon
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public void Kat_OpenTemplate( IRibbonControl control )
-	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
-	}
-
 	public void Kat_RefreshRibbon( IRibbonControl _ ) => Application_WorkbookActivate( application.ActiveWorkbook );
 
 	public void Kat_HelpAbout( IRibbonControl _ )

@@ -22,7 +22,7 @@ internal partial class SaveHistory : Form
 	/// If an Excel file has 'RBLInfo' history log, this prompts the user to enter information about the changes they are making and allows uploading to Management Site if it is a CalcEngine.
 	/// </summary>
 	/// <returns>Returns action to perform when saving Excel file that has 'RBLInfo' history log.  Ignore - do nothing, simply allow save to occur.  OK - Update history log.  Continue - Update history log and upload to Management Site.  Retry - Do not update history log, just attempt to re-upload to Management Site.</returns>
-	public SaveHistoryInfo GetHistoryInformation( string name, string? userName, string? password )
+	public SaveHistoryInfo GetInfo( string name, string? userName, string? password )
 	{
 		var sheets = workbook.Worksheets.Cast<MSExcel.Worksheet>();
 		var historySheet =

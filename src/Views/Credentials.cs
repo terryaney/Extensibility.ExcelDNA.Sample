@@ -12,7 +12,7 @@ internal partial class Credentials : Form
 		this.windowConfiguration = windowConfiguration ?? new JsonObject();
 	}
 
-	public CredentialInfo? GetCredentials( string? userName, string? password )
+	public CredentialInfo? GetInfo( string? userName, string? password )
 	{
 		tUserName.Text = userName;
 		tPassword.Text = password;

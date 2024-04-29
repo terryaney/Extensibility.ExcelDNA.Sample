@@ -6,8 +6,10 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public static class ExcelExtensions
 {
+	public static MSExcel.Workbook? GetWorkbook( this MSExcel.Application application, string name ) => application.Workbooks.Cast<MSExcel.Workbook>().FirstOrDefault( w => string.Compare( w.Name, name, true ) == 0 );
 	private static MSExcel.Application Application => ( ExcelDnaUtil.Application as MSExcel.Application )!;
 	public static MSExcel.Worksheet ActiveWorksheet( this MSExcel.Application application ) => ( application.ActiveSheet as MSExcel.Worksheet )!;
+	public static MSExcel.Worksheet? GetWorksheet( this MSExcel.Workbook workbook, string name ) => workbook.Worksheets.Cast<MSExcel.Worksheet>().FirstOrDefault( w => string.Compare( w.Name, name, true ) == 0 );
 
 	public static void InvalidateControls( this IRibbonUI ribbon, params string[] controlIds )
 	{
@@ -17,7 +19,7 @@ public static class ExcelExtensions
 		}
 	}
 
-	public static T? RangeOrNull<T>( this MSExcel.Workbook workbook, string name )
+	public static MSExcel.Range? RangeOrNull( this MSExcel.Workbook workbook, string name )
 	{
 		MSExcel.Name? namedRange = null;
 		try
@@ -27,11 +29,7 @@ public static class ExcelExtensions
 					.Where( n => n.Name == name )
 					.FirstOrDefault();
 
-			var range = namedRange?.RefersToRange;
-
-			return typeof( T ) == typeof( string )
-				? (T?)range?.Text
-				: (T?)range;
+			return namedRange?.RefersToRange;
 		}
 		catch ( Exception ex )
 		{
@@ -42,7 +40,24 @@ public static class ExcelExtensions
 		}
 	}
 
-	public static T? RangeOrNull<T>( this MSExcel.Worksheet worksheet, string name )
+	public static T? RangeOrNull<T>( this MSExcel.Workbook workbook, string name )
+	{
+		try
+		{
+			var range = workbook.RangeOrNull( name );
+
+			return typeof( T ) == typeof( string )
+				? (T?)range?.Text
+				: (T?)range;
+		}
+		catch ( ApplicationException ) { throw; }
+		catch ( Exception ex )
+		{
+			throw new ApplicationException( $"Unable to get global named range value from {name}.", ex );
+		}
+	}
+
+	public static MSExcel.Range? RangeOrNull( this MSExcel.Worksheet worksheet, string name )
 	{
 		var sheetName = "Unavailable";
 		MSExcel.Name? namedRange = null;
@@ -53,18 +68,31 @@ public static class ExcelExtensions
 						.Where( n => n.Name.EndsWith( "!" + name ) )
 						.FirstOrDefault();
 
-			var range = namedRange?.RefersToRange;
-
-			return typeof( T ) == typeof( string )
-				? (T?)range?.Text
-				: (T?)range;
+			return namedRange?.RefersToRange;
 		}
 		catch ( Exception ex )
 		{
 			throw new ApplicationException(
 				namedRange != null
-					? $"Unable to get global named range of {sheetName}!{name}.  Currently refers to {namedRange.RefersTo}."
-					: $"Unable to get global named range of {sheetName}!{name}.", ex );
+					? $"Unable to get worksheet named range of {sheetName}!{name}.  Currently refers to {namedRange.RefersTo}."
+					: $"Unable to get worksheet named range of {sheetName}!{name}.", ex );
+		}
+	}
+
+	public static T? RangeOrNull<T>( this MSExcel.Worksheet worksheet, string name )
+	{
+		try
+		{
+			var range = worksheet.RangeOrNull( name );
+
+			return typeof( T ) == typeof( string )
+				? (T?)range?.Text
+				: (T?)range;
+		}
+		catch ( ApplicationException ) { throw; }
+		catch ( Exception ex )
+		{
+			throw new ApplicationException( $"Unable to get worksheet named range value from {name}.", ex );
 		}
 	}
 
