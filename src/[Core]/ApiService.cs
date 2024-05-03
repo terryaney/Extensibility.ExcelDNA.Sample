@@ -5,16 +5,19 @@ using System.Text.Json.Nodes;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Responses;
 using KAT.Camelot.Domain.Extensions;
+using KAT.Camelot.Domain.Services;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public class ApiService
 {
 	private readonly IHttpClientFactory httpClientFactory;
+	private readonly IxDSRepository xDSRepository;
 
-	public ApiService( IHttpClientFactory httpClientFactory )
+	public ApiService( IHttpClientFactory httpClientFactory, IxDSRepository xDSRepository )
 	{
 		this.httpClientFactory = httpClientFactory;
+		this.xDSRepository = xDSRepository;
 	}
 
 	public async Task<string?> GetSpreadsheetGearLicenseAsync( string? userName, string? password )
@@ -96,26 +99,45 @@ public class ApiService
 		await SendRequestWithoutResponseAsync( userName, password, url, HttpMethod.Patch );
 	}
 
-	public async Task UpdateGlobalTablesAsync( JsonObject globalTables, string? userName, string? password )
+	public async Task UpdateGlobalTablesAsync( string? clientName, string[] targets, JsonObject globalTables, string? userName, string? password, CancellationToken cancellationToken = default )
 	{
-		var ms = new MemoryStream();
-		using ( var zip = new ZipArchive( ms, ZipArchiveMode.Create, true ) )
+		var client = clientName ?? "Global";
+		if ( targets.Any( t => string.Compare( t, "LOCAL", true ) == 0 ) )
 		{
-			var entry = zip.CreateEntry( "globalTables.json", CompressionLevel.Fastest );
-
-			using var es = entry.Open();
-			JsonSerializer.Serialize( es, globalTables, new JsonSerializerOptions { WriteIndented = true } );
+			if ( !( userName?.Contains( '@' ) ?? false ) )
+			{
+				throw new InvalidOperationException( "You must provide your email address to update global tables." );
+			}
+			await xDSRepository.UpdateGlobalLookupsAsync( client, globalTables, userName[ userName.IndexOf( "@" ).. ], cancellationToken );
 		}
 
-		ms.Position = 0;
+		var remotes = targets.Where( t => string.Compare( t, "LOCAL", true ) != 0 );
 
-		using var form = new MultipartFormDataContent
+		if ( remotes.Any() )
 		{
-			{ new StreamContent( ms ), "file", "globalTables.zip" }
-		};
+			var ms = new MemoryStream();
+			using ( var zip = new ZipArchive( ms, ZipArchiveMode.Create, true ) )
+			{
+				var entry = zip.CreateEntry( "globalTables.json", CompressionLevel.Fastest );
 
-		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.xDSData.GlobalTables }";
-		await SendRequestWithoutResponseAsync( userName, password, url, HttpMethod.Post, form );
+				using var es = entry.Open();
+				JsonSerializer.Serialize( es, globalTables, new JsonSerializerOptions { WriteIndented = true } );
+			}
+
+			ms.Position = 0;
+
+			using var form = new MultipartFormDataContent
+			{
+				{ new StreamContent( ms ), "file", "globalTables.zip" },
+				{ new StringContent( client ), "clientName" },
+				{ new StringContent( $"[ {string.Join( ", ", remotes.Select( t => $"\"{t}\"" ))} ]" ), "targets" }
+			};
+
+			globalTables.Save( @"c:\btr\temp\globalTables.json" );
+
+			var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.xDSData.GlobalTables }";
+			await SendRequestWithoutResponseAsync( userName, password, url, HttpMethod.Post, form );
+		}
 	}
 
 	private async Task<T?> SendRequestAsync<T>( string? userName, string? password, string url, HttpMethod method ) where T : class
@@ -154,9 +176,10 @@ public class ApiService
 
 		using var request = new HttpRequestMessage( method, url ) { Content = content };
 
+		HttpResponseMessage? response = null;
 		try
 		{
-			var response = await httpClient.SendConduentAsync( request );
+			response = await httpClient.SendConduentAsync( request );
 
 			response.EnsureSuccessStatusCode();
 
@@ -164,6 +187,12 @@ public class ApiService
 		}
 		catch ( Exception ex )
 		{			
+			if ( response != null )
+			{
+				var result = await response.Content.ReadAsStringAsync();
+				Console.WriteLine( result );
+			}
+
 			throw new ApplicationException( $"Unable to send request to {url}.", ex );
 		}
 	}

@@ -13,6 +13,10 @@ internal partial class ProcessGlobalTables : Form
 
 		this.targets.Items.Clear();
 		this.targets.Items.AddRange( targets );
+		if ( targets.Contains( "LOCAL" ) )
+		{
+			this.targets.SetItemChecked( this.targets.Items.IndexOf( "LOCAL" ), true );
+		}
 		this.requireClient = requireClient;
 		this.windowConfiguration = windowConfiguration ?? new JsonObject();
 	}
@@ -43,6 +47,7 @@ internal partial class ProcessGlobalTables : Form
 
 		return new()
 		{
+			ClientName = requireClient ? clientName.Text : null,
 			Targets = targets.CheckedItems.Cast<string>().ToArray(),
 			UserName = emailAddress.Text,
 			Password = this.password.Text,

@@ -28,13 +28,24 @@ partial class NavigateToTable
 	/// </summary>
 	private void InitializeComponent()
 	{
-		this.availableTables = new System.Windows.Forms.ListView();
+		this.components = new System.ComponentModel.Container();
+		System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager( typeof( NavigateToTable ) );
+		this.imageList = new System.Windows.Forms.ImageList(this.components);
+		this.availableTables = new System.Windows.Forms.TreeView();
 		this.colName = ( (System.Windows.Forms.ColumnHeader)( new System.Windows.Forms.ColumnHeader() ) );
 		this.colAddress = ( (System.Windows.Forms.ColumnHeader)( new System.Windows.Forms.ColumnHeader() ) );
 		this.colDescription = ( (System.Windows.Forms.ColumnHeader)( new System.Windows.Forms.ColumnHeader() ) );
 		this.cancel = new System.Windows.Forms.Button();
 		this.ok = new System.Windows.Forms.Button();
 		this.SuspendLayout();
+
+		// 
+		// imageList
+		// 
+		this.imageList.ImageStream = ((System.Windows.Forms.ImageListStreamer)(resources.GetObject("imageList.ImageStream")));
+		this.imageList.TransparentColor = System.Drawing.Color.Transparent;
+		this.imageList.Images.SetKeyName(0, "Table");
+		this.imageList.Images.SetKeyName(1, "Row");
 		// 
 		// availableTables
 		// 
@@ -42,21 +53,25 @@ partial class NavigateToTable
 		| System.Windows.Forms.AnchorStyles.Left )
 		| System.Windows.Forms.AnchorStyles.Right ) ) );
 		this.availableTables.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+		this.availableTables.Name = "availableTables";
+		this.availableTables.Location = new System.Drawing.Point( 12, 12 );
+		this.availableTables.Size = new System.Drawing.Size( 460, 178 );
+		this.availableTables.TabIndex = 30;
+		this.availableTables.ShowNodeToolTips = true;
+		this.availableTables.NodeMouseDoubleClick += this.AvailableTables_NodeMouseDoubleClick;
+		/*
 		this.availableTables.Columns.AddRange( new System.Windows.Forms.ColumnHeader[] {
 			this.colName,
 			this.colAddress,
 			this.colDescription} );
 		this.availableTables.FullRowSelect = true;
 		this.availableTables.HideSelection = false;
-		this.availableTables.Location = new System.Drawing.Point( 12, 12 );
 		this.availableTables.MultiSelect = false;
-		this.availableTables.Name = "availableTables";
-		this.availableTables.Size = new System.Drawing.Size( 460, 178 );
-		this.availableTables.TabIndex = 30;
 		this.availableTables.UseCompatibleStateImageBehavior = false;
 		this.availableTables.View = System.Windows.Forms.View.Details;
 		this.availableTables.ColumnClick += new System.Windows.Forms.ColumnClickEventHandler( this.AvailableTables_ColumnClick );
 		this.availableTables.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler( this.AvailableTables_MouseDoubleClick );
+		*/
 		// 
 		// colName
 		// 
@@ -125,7 +140,8 @@ partial class NavigateToTable
 
 	#endregion
 
-	private System.Windows.Forms.ListView availableTables;
+	private System.Windows.Forms.ImageList imageList;
+	private System.Windows.Forms.TreeView availableTables;
 	private System.Windows.Forms.ColumnHeader colAddress;
 	private System.Windows.Forms.ColumnHeader colName;
 	private System.Windows.Forms.ColumnHeader colDescription;

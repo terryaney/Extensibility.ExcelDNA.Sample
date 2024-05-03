@@ -102,15 +102,6 @@ partial class ExcelApi
 		return new ExcelReference( row, row, column, column, reference.SheetId );
 	}
 
-	/// <summary>
-	/// Given a 2 dimensional object array, it converts it into T array for typed used.
-	/// </summary>
-	/// <typeparam name="T"></typeparam>
-	/// <param name="data"><see cref="object"/> parameter passed in that is either of type <see cref="double"/> or <see cref="object[,]"/>.</param>
-	/// <returns>An T[,] array of the same dimensions as <paramref name="data"/>'s object[,] array.</returns>
-	/// <remarks>
-	/// <para>If <paramref name="data"/> is double, then a new double[,] array is constructed with only that element in it.</para>
-	/// </remarks>
 	public static T?[,] GetArray<T>( this ExcelReference reference )
 	{
 		// Information about decisions made on how to read bulk data
@@ -168,7 +159,7 @@ partial class ExcelApi
 
 	private static T? FromInteropValue<T>( Type type, object value, bool allowCast )
 	{
-		if ( value == null ) return default( T );
+		if ( value == null ) return default;
 
 		value.ThrowOnInteropError( value.GetType() );
 

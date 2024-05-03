@@ -24,7 +24,7 @@ public partial class Ribbon
 			tables.AddRange( 
 				GetCodeTables( 
 					activeSheet.Range[ "A5" ],
-					start => start.End[ MSExcel.XlDirection.xlToRight ].Offset[ 0, 2 ]
+					start => start.Offset[ 0, 1 ].End[ MSExcel.XlDirection.xlToRight ]
 				) 
 			);
 		}
@@ -63,7 +63,8 @@ public partial class Ribbon
 			{
 				Name = start.GetText(),
 				Address = start.Address,
-				Description = GetTableDescription( description ) ?? description
+				Description = GetTableDescription( description ) ?? description,
+				Columns = GetColumns( start.Offset[ 1, -1 ] )
 			};
 
 			start = getNextTable( start );
@@ -88,7 +89,8 @@ public partial class Ribbon
 			{
 				Name = start.Offset[ 0, 1 ].GetText(),
 				Address = start.Offset[ 4, 0 ].Address,
-				Description = GetTableDescription( description ) ?? description
+				Description = GetTableDescription( description ) ?? description,
+				Columns = GetColumns( start.Offset[ 4, 0 ], false )
 			};
 
 			start = start.End[ MSExcel.XlDirection.xlDown ].Offset[ 2, 0 ];
@@ -98,7 +100,7 @@ public partial class Ribbon
 	private static IEnumerable<NavigationTable> GetCalcEngineTables( MSExcel.Worksheet activeSheet )
 	{
 		var start = activeSheet.Range[ "StartTables" ].Offset[ 1, 0 ];
-		string? name = null;
+		string? name;
 
 		while ( !string.IsNullOrEmpty( name = start.GetText().Split( '/' )[ 0 ] ) )
 		{
@@ -121,11 +123,34 @@ public partial class Ribbon
 			{
 				Name = name.Split( '/' )[ 0 ] + suffix,
 				Address = start.Address,
-				Description = GetTableDescription( description )
+				Description = GetTableDescription( description ),
+				Columns = GetColumns( start.Offset[ 1, 0 ] )
 			};
 
 			start = start.Offset[ 1, 0 ].End[ MSExcel.XlDirection.xlToRight ].Offset[ -1, 2 ];
 		}
+	}
+
+	private static NavigationTarget[] GetColumns( MSExcel.Range start, bool isHorizontal = true )
+	{
+		var columns = new List<NavigationTarget>();
+		var colStart = start;
+		string? colName;
+
+		while ( !string.IsNullOrEmpty( colName = colStart.GetText() ) )
+		{
+			columns.Add( new NavigationTarget
+			{
+				Name = colName,
+				Address = colStart.Address
+			} );
+
+			colStart = isHorizontal
+				? colStart.Offset[ 0, 1 ]
+				: colStart.Offset[ 1, 0 ];
+		}
+
+		return columns.ToArray();
 	}
 
 	public void Navigation_GoToInputs( IRibbonControl _ ) => GotoInputNamedRange( "StartData" );

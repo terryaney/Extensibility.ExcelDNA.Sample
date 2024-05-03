@@ -4,6 +4,7 @@ using ExcelDna.Integration.CustomUI;
 using System.Text.Json.Nodes;
 using KAT.Camelot.RBLe.Core.Calculations;
 using KAT.Camelot.Domain.Extensions;
+using System.Globalization;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
@@ -94,31 +95,38 @@ public partial class Ribbon
 					? l.RangeOrNull( Constants.SpecSheet.RangeNames.ResourceTable )
 					: null;
 
-				var localization = GetGlobalResourceStrings( resourceTable );
+				var globalSpecifications = new JsonObject();
 
-				var globalSpecifications = new JsonObject
+				static JsonObject getGlobalTables( MSExcel.Worksheet worksheet )
 				{
-					{ "localization", localization }
-				};
+					var tables = GetGlobalLookupTables( worksheet ).ToJsonArray();
+					var version = worksheet.RangeOrNull<string>( Constants.SpecSheet.RangeNames.SheetVersion );
+
+					return new JsonObject
+					{
+						{ "version", version },
+						{ "tables", tables }
+					};
+				}
 
 				if ( currentSheet )
 				{
 					var worksheet = application.ActiveWorksheet();
 					
 					var propertyName = worksheet.RangeOrNull<string>( Constants.SpecSheet.RangeNames.SheetType ) == Constants.SpecSheet.SheetTypes.GlobalLookupTables
-						? "lookupTables"
+						? "dataTables"
 						: "rateTable";
 
-					globalSpecifications[ propertyName ] = GetLookupTables( worksheet ).ToJsonArray();
+					globalSpecifications[ propertyName ] = getGlobalTables( worksheet );
 				}
 				else
 				{
-					globalSpecifications[ "lookupTables" ] = GetLookupTables( sheets[ Constants.SpecSheet.TabNames.DataLookupTables ] ).ToJsonArray();
-					globalSpecifications[ "rateTables" ] = GetLookupTables( sheets[ Constants.SpecSheet.TabNames.RateTables ] ).ToJsonArray();
+					globalSpecifications[ "dataTables" ] = getGlobalTables( sheets[ Constants.SpecSheet.TabNames.DataLookupTables ] );
+					globalSpecifications[ "rateTables" ] = getGlobalTables( sheets[ Constants.SpecSheet.TabNames.RateTables ] );
 				}
 
 				RunRibbonTask( async () => {
-					await Task.Delay( 1000 );
+					await apiService.UpdateGlobalTablesAsync( info.ClientName, info.Targets, globalSpecifications, info.UserName, info.Password );
 
 					ExcelAsyncUtil.QueueAsMacro( () =>
 					{
@@ -133,7 +141,7 @@ public partial class Ribbon
 		} );
 	}
 
-	private static IEnumerable<JsonObject> GetLookupTables( MSExcel.Worksheet worksheet )
+	private static IEnumerable<JsonObject> GetGlobalLookupTables( MSExcel.Worksheet worksheet )
 	{
 		var configurationType = worksheet.RangeOrNull<string>( Constants.SpecSheet.RangeNames.SheetType ) switch
 		{
@@ -144,7 +152,6 @@ public partial class Ribbon
 
 		var headerOffset = configurationType == LookupConfigurationType.DataTables ? 2 : 1;
 
-		var sheetVersion = worksheet.RangeOrNull<string>( Constants.SpecSheet.RangeNames.SheetVersion );
 		var firstColumn = 
 			worksheet.Range[ worksheet.RangeOrNull<string>( Constants.SpecSheet.RangeNames.TableStartAddress ) ]
 				.GetReference()
@@ -165,13 +172,16 @@ public partial class Ribbon
 						.Extend( lastRow )
 						.GetValueArray();
 
+				if ( tableInclude.Contains( "/customize" ) )
+				{
+					throw new NotImplementedException( $"No support for /customize. {tableName} used this flag.  See if it is needed." );
+				}
+
 				yield return new JsonObject
 				{
 					{ "name", tableName },
-					{ "version", sheetVersion },
-					{ "customizeGlobal", tableInclude.Contains( "/customize" ) },
-					{ "columns", new JsonArray().AddItems( data.Rows.First().Select( c => c?.ToString() ) ) },
-					{ "rows", data.Rows.Skip( 1 ).Select( r => new JsonArray().AddItems( r.Select( c => c?.ToString() ), includeNulls: true ) ).ToJsonArray() }
+					{ "columns", new JsonArray().AddItems( data.Rows.First() ) },
+					{ "rows", data.Rows.Skip( 1 ).Select( r => new JsonArray().AddItems( r.Select( GetExportValue ), includeNulls: true ) ).ToJsonArray() }
 				};
 			}
 
@@ -179,38 +189,37 @@ public partial class Ribbon
 		}
 	}
 
-	private static JsonObject? GetGlobalResourceStrings( MSExcel.Range? resourceTable )
+	private static string? GetExportValue( object value )
 	{
-		if ( resourceTable == null ) return null;
+		if ( value == ExcelEmpty.Value ) return null;
 
-		var upperLeft = resourceTable.GetReference();
-		var upperRight = upperLeft.End( DirectionType.ToRight );
-		var lowerLeft = upperLeft.End( DirectionType.Down );
-
-		var headersRange = upperLeft.Extend( upperRight );
-		var dataRange = upperRight.Offset( 1, 0 ).Extend( lowerLeft );
-
-		// 1 row by N columns
-		var headers = headersRange.GetArray<string>();
-		// X rows by N columns
-		var data = dataRange.GetValueArray();
-		var rows = data.RowCount;
-		var columns = data.ColumnCount;
-
-		return new JsonObject
+		var d = value as double?;
+		if ( d != null )
 		{
-			{ "version", resourceTable.Worksheet.RangeOrNull<string>( Constants.SpecSheet.RangeNames.SheetVersion ) },
-			{ "data", Enumerable.Range( 0, rows )
-				.Select( row =>
-					new JsonObject
-					{
-						{ "key", (string?)data[ row, 0 ] }
-					}.AddProperties(
-						Enumerable.Range( 1, columns - 1 ) // all columns except the key/first
-							.Select( col => new JsonKeyProperty( headers[ 0, col ]!, data[ row, col ]?.ToString() ) )
-					)
-				).ToJsonArray()
-			}
-		};
+			// .NET Core changed in the underlying implementation of the Double.ToString() method. 
+			// In .NET Core, the method has been updated to produce a round-trippable result by default, 
+			// which means it will always return a string that, when parsed, will produce the original number.
+			// To reproduce what we had in .NET Framework it is suggested to use the G15 format.  
+			// The "G" format specifier stands for "general", and it formats the number in the most compact, human-readable form.
+			// In .NET Framework, the default precision for double.ToString() without any format specifier is up to 15 digits, 
+			// which can be either to the left or right of the decimal point. This means it can include up to 15 significant digits, 
+			// and the remaining digits are replaced with zeros.
+			return d.Value.ToString( "G15", CultureInfo.InvariantCulture );
+
+			// I was going to count the number of decimal places and use that + 6, but it seems to be a bit overkill.
+			// var decimalValues = ( (int)Math.Floor( Math.Abs( d.Value ) ) ).ToString().Length;
+			// return d.Value.ToString( $"G{decimalValues + 6}", CultureInfo.InvariantCulture );
+		}
+
+		var dt = value as DateTime?;
+		if ( dt != null ) return dt.Value.ToString( "yyyy-MM-dd" );
+
+		var s = (string)value;
+
+		// Excel does all caps for these.
+		if ( s == "TRUE" ) s = "true";
+		else if ( s == "FALSE" ) s = "false";
+
+		return s;
 	}
 }

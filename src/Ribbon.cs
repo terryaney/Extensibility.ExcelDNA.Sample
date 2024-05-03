@@ -1,8 +1,16 @@
 ﻿using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 using ExcelDna.Integration.Extensibility;
+using KAT.Camelot.Data;
+using KAT.Camelot.Data.Repositories;
+using KAT.Camelot.Domain.Configuration;
 using KAT.Camelot.Domain.Extensions;
+using KAT.Camelot.Domain.Services;
+using KAT.Camelot.Infrastructure.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Runtime.CompilerServices;
@@ -60,6 +68,7 @@ public partial class Ribbon : ExcelRibbon
 
 	private readonly WorkbookState WorkbookState;
 	private readonly ApiService apiService;
+	private readonly IConfiguration secretsConfiguration;
 
 	public Ribbon()
 	{
@@ -77,11 +86,49 @@ public partial class Ribbon : ExcelRibbon
 		customUi = sr.ReadToEnd();
 
 		// Create service collection
+        var csPath = Environment.GetEnvironmentVariable( "CAMELOT_CONFIGURATION_PATH" ) ?? @"C:\BTR\GlobalConfiguration";
+        var csEnvironment = Environment.GetEnvironmentVariable( "CAMELOT_SECRETS_ENVIRONMENT" );
+
+		secretsConfiguration = new ConfigurationBuilder()
+            .AddJsonFile( Path.Combine( csPath, "Camelot.Secrets.json" ), optional: true, reloadOnChange: true )
+            .AddJsonFile( Path.Combine( csPath, $"Camelot.Secrets.Development.json" ), optional: true, reloadOnChange: true )
+			.Build();
+
+		var theKeepSection = secretsConfiguration.GetSection( "TheKeep" );
+
 		var services = new ServiceCollection();
+
 		services.AddHttpClient();
+		services
+			.Configure<Domain.Localization.LocalizationOptions>(
+				options =>
+				{
+					options.AssemblyNames =
+						new [] { 
+							typeof( EmailService ), // Infrastructure namespace
+							typeof( xDSRepository ), // Data namespace
+							typeof( IDateTimeService ), // Domain
+						}
+						.Select( t => new AssemblyName( t.Assembly.FullName! ).Name! )
+						.ToArray();
+				}
+			)
+			.AddLocalization(options => options.ResourcesPath = "Resources")
+			.AddTransient( typeof( IStringLocalizer<> ), typeof( Domain.Localization.StringLocalizer<> ) );
+
+		services.Configure<TheKeepSettings>( theKeepSection );
+		
 		var serviceProvider = services.BuildServiceProvider();
-		var clientFactory = serviceProvider.GetService<IHttpClientFactory>()!;
-		apiService = new ApiService( clientFactory );
+
+		var clientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+		var theKeepSettings = serviceProvider.GetRequiredService<IOptionsSnapshot<TheKeepSettings>>();
+		var localizer = serviceProvider.GetRequiredService<IStringLocalizer<xDSRepository>>();
+
+		IDbConnectionForge connectionForge = new DbConnectionForge( theKeepSettings );
+		IDateTimeService dateTimeService = new DateTimeService();
+		IxDSRepository xDSRepository = new xDSRepository( connectionForge, dateTimeService, localizer );
+
+		apiService = new ApiService( clientFactory, xDSRepository );
 		WorkbookState = new WorkbookState( apiService );
 	}
 
@@ -202,9 +249,7 @@ public partial class Ribbon : ExcelRibbon
 
 	internal static void LogError( string message, Exception ex )
 	{
-		var exDisplay =
-			ex.InnerException ?? // Exception in ribbon handler method
-			ex; // Exception in try clause above discovering the method to invoke.
+		var exDisplay = ex; 
 
 		ExcelDna.Logging.LogDisplay.WriteLine( $"{message} Exception: {exDisplay.Message}{Environment.NewLine}{exDisplay.StackTrace}" );
 
