@@ -101,22 +101,33 @@ public class WorkbookState
 		UpdateSheet( ( activeWorkbook.ActiveSheet as MSExcel.Worksheet )! );
 	}
 
-	public async Task UpdateCalcEngineInfoAsync( string activeWorkbookName )
+	public async Task<ApiValidation[]?> UpdateCalcEngineInfoAsync( string activeWorkbookName )
 	{
-		var calcEngineInfo = IsCalcEngine
-			? await apiService.GetCalcEngineInfoAsync(
-				ManagementName,
-				AddIn.Settings.KatUserName,
-				await AddIn.Settings.GetClearPasswordAsync()
-			)
-			: null;
+		if ( !IsCalcEngine )
+		{
+			isUploadable = false;
+			return null;
+		}
 
-		isUploadable =
-			calcEngineInfo != null &&
-			( string.Compare( ManagementName, activeWorkbookName, true ) == 0 || string.Compare( TestManagementName, activeWorkbookName, true ) == 0 );
+		var response = await apiService.GetCalcEngineInfoAsync(
+			ManagementName,
+			AddIn.Settings.KatUserName,
+			await AddIn.Settings.GetClearPasswordAsync()
+		);
 
-		CheckedOutBy = calcEngineInfo?.CheckedOutBy;
-		UploadedVersion = calcEngineInfo?.Version.ToString();
+		if ( response.Validations != null )
+		{
+			return response.Validations;
+		}
+
+		var calcEngineInfo = response.Response!;
+
+		isUploadable = string.Compare( ManagementName, activeWorkbookName, true ) == 0 || string.Compare( TestManagementName, activeWorkbookName, true ) == 0;
+
+		CheckedOutBy = calcEngineInfo.CheckedOutBy;
+		UploadedVersion = calcEngineInfo.Version.ToString();
+
+		return null;
 	}
 
 	public void UpdateVersion( MSExcel.Workbook activeWorkbook ) => UploadedVersion = activeWorkbook.RangeOrNull<string>( "Version" );

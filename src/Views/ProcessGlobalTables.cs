@@ -21,14 +21,14 @@ internal partial class ProcessGlobalTables : Form
 		this.windowConfiguration = windowConfiguration ?? new JsonObject();
 	}
 
-	public ProcessGlobalTablesInfo? GetInfo( string? userName, string? password )
+	public ProcessGlobalTablesInfo? GetInfo( string? userName, string? password, NativeWindow? owner = null )
 	{
 		targets.Select();
 		emailAddress.Text = userName;
 		this.password.Text = password;
 		clientName.Enabled = clientNameLabel.Enabled = requireClient;
 
-		var dialogResult = ShowDialog();
+		var dialogResult = ShowDialog( owner );
 
 		if ( dialogResult != DialogResult.OK )
 		{

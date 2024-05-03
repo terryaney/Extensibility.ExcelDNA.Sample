@@ -247,6 +247,20 @@ public partial class Ribbon : ExcelRibbon
 		} );
 	}
 
+	internal static void ShowValidations( ApiValidation[] validations )
+	{
+		LogValidations( validations );
+		ExcelDna.Logging.LogDisplay.Show();
+	}
+
+	internal static void LogValidations( ApiValidation[] validations )
+	{
+		foreach ( var validation in validations )
+		{
+			ExcelDna.Logging.LogDisplay.WriteLine( $"{validation.Name}: {validation.Message}" );
+		}
+	}
+
 	internal static void LogError( string message, Exception ex )
 	{
 		var exDisplay = ex; 
@@ -346,15 +360,19 @@ public partial class Ribbon : ExcelRibbon
 
 		SetStatusBar( "Checking for SpreadsheetGear License..." );
 
-		var license = await apiService.GetSpreadsheetGearLicenseAsync( AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
+		var response = await apiService.GetSpreadsheetGearLicenseAsync( AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
 
-		if ( license == null )
+		if ( response.Validations != null )
 		{
-			ExcelAsyncUtil.QueueAsMacro( () => MessageBox.Show( "KAT dependent license not found.", "KAT License", MessageBoxButtons.OK, MessageBoxIcon.Error ) );
+			ExcelAsyncUtil.QueueAsMacro( () =>
+			{
+				LogValidations( response.Validations );
+				MessageBox.Show( "KAT dependent license not found.", "KAT License", MessageBoxButtons.OK, MessageBoxIcon.Error );
+			} );
 			return false;
 		}
 
-		SpreadsheetGear.Factory.SetSignedLicense( license );
+		SpreadsheetGear.Factory.SetSignedLicense( response.Response! );
 		return isSpreadsheetGearLicensed = true;
 	}
 
@@ -402,9 +420,14 @@ public partial class Ribbon : ExcelRibbon
 		
 		await EnsureAddInCredentialsAsync();
 
-		if ( await apiService.DownloadLatestAsync( fullName, AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() ) )
+		var response = await apiService.DownloadLatestAsync( fullName, AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
+
+		if ( response != null )
 		{
-			ExcelAsyncUtil.QueueAsMacro( () => application.Workbooks.Open( fullName ) );
+			ShowValidations( response );
+			return;
 		}
+
+		ExcelAsyncUtil.QueueAsMacro( () => application.Workbooks.Open( fullName ) );
 	}
 }

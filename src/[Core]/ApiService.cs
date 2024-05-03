@@ -20,42 +20,48 @@ public class ApiService
 		this.xDSRepository = xDSRepository;
 	}
 
-	public async Task<string?> GetSpreadsheetGearLicenseAsync( string? userName, string? password )
+	public async Task<ApiResponse<string>> GetSpreadsheetGearLicenseAsync( string? userName, string? password )
 	{
-		if ( string.IsNullOrEmpty( userName ) || string.IsNullOrEmpty( password ) )
+		var url = $"{AddIn.Settings.ApiEndpoint}{ApiEndpoints.License.SpreadsheetGear}";
+		
+		var (httpResponse, validations) = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get );
+		
+		if ( validations != null )
 		{
-			return null;
+			return new() { Validations = validations };
 		}
 
-		var url = $"{AddIn.Settings.ApiEndpoint}{ApiEndpoints.License.SpreadsheetGear}";
-		using var response = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get );
+		using var response = httpResponse!;
 
-		if ( !response.IsSuccessStatusCode ) return null;
-
-		return await response.Content.ReadAsStringAsync();
+		return new() { Response = await response.Content.ReadAsStringAsync() };
 	}
 
-	public async Task<IEnumerable<DebugFile>> GetDebugFilesAsync( string calcEngine, string? userName, string? password )
+	public async Task<ApiResponse<IEnumerable<DebugFile>>> GetDebugFilesAsync( string calcEngine, string? userName, string? password )
 	{
 		var url = $"{AddIn.Settings.ApiEndpoint}{ApiEndpoints.CalcEngines.Build.DebugListing( calcEngine )}";
-		return await SendRequestAsync<DebugFile[]>( userName, password, url, HttpMethod.Get ) ?? Array.Empty<DebugFile>();
+		var (httpResponse, validations) = await SendRequestAsync<DebugFile[]>( userName, password, url, HttpMethod.Get );
+		return new() { Response = httpResponse, Validations = validations };
 	}
 
-	public async Task<CalcEngineInfo?> GetCalcEngineInfoAsync( string calcEngine, string? userName, string? password )
+	public async Task<ApiResponse<CalcEngineInfo>> GetCalcEngineInfoAsync( string calcEngine, string? userName, string? password )
 	{
 		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.Get( Path.GetFileNameWithoutExtension( calcEngine ) )}";
-		return await SendRequestAsync<CalcEngineInfo>( userName, password, url, HttpMethod.Get );
+		var (httpResponse, validations) = await SendRequestAsync<CalcEngineInfo>( userName, password, url, HttpMethod.Get );
+		return new() { Response = httpResponse, Validations = validations };
 	}
 
-	public async Task<string?> DownloadDebugAsync( string calcEngine, int versionKey, string? userName, string? password )
+	public async Task<ApiResponse<string>> DownloadDebugAsync( string calcEngine, int versionKey, string? userName, string? password )
 	{
-		if ( string.IsNullOrEmpty( userName ) || string.IsNullOrEmpty( password ) )
-		{
-			return null;
-		}
-
 		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.DebugDownload( Path.GetFileNameWithoutExtension( calcEngine ), versionKey )}";
-		using var response = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get );
+		
+		var (httpResponse, validations) = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get );
+		
+		if ( validations != null )
+		{
+			return new() { Validations = validations };
+		}
+		
+		using var response = httpResponse!;
 
 		var downloadFolder = Path.Combine( Environment.GetFolderPath( Environment.SpecialFolder.UserProfile ), "Downloads" );
 		var fileName = Path.Combine( downloadFolder, response.Content.Headers.ContentDisposition!.FileName!.Replace( "\"", "" ) );
@@ -64,19 +70,22 @@ public class ApiService
 		using var dest = File.Create( fileName );
 		await source.CopyToAsync( dest );
 
-		return fileName;
+		return new() { Response = fileName };
 	}
 
-	public async Task<bool> DownloadLatestAsync( string path, string? userName, string? password )
+	public async Task<ApiValidation[]?> DownloadLatestAsync( string path, string? userName, string? password )
 	{
-		if ( string.IsNullOrEmpty( userName ) || string.IsNullOrEmpty( password ) )
-		{
-			return false;
-		}
-
 		var calcEngine = Path.GetFileNameWithoutExtension( path );
 		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.DownloadLatest( calcEngine )}";
-		using var response = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get );
+		
+		var (httpResponse, validations) = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get );
+
+		if ( validations != null )
+		{
+			return validations;
+		}
+
+		using var response = httpResponse!;
 
 		Directory.CreateDirectory( Path.GetDirectoryName( path )! );
 
@@ -84,7 +93,7 @@ public class ApiService
 		using var dest = File.Create( path );
 		await source.CopyToAsync( dest );
 
-		return true;
+		return null;
 	}
 
 	public async Task CheckinAsync( string calcEngine, string? userName, string? password )
@@ -99,14 +108,14 @@ public class ApiService
 		await SendRequestWithoutResponseAsync( userName, password, url, HttpMethod.Patch );
 	}
 
-	public async Task UpdateGlobalTablesAsync( string? clientName, string[] targets, JsonObject globalTables, string? userName, string? password, CancellationToken cancellationToken = default )
+	public async Task<ApiValidation[]?> UpdateGlobalTablesAsync( string? clientName, string[] targets, JsonObject globalTables, string? userName, string? password, CancellationToken cancellationToken = default )
 	{
 		var client = clientName ?? "Global";
 		if ( targets.Any( t => string.Compare( t, "LOCAL", true ) == 0 ) )
 		{
 			if ( !( userName?.Contains( '@' ) ?? false ) )
 			{
-				throw new InvalidOperationException( "You must provide your email address to update global tables." );
+				return CredentialsMissing;
 			}
 			await xDSRepository.UpdateGlobalLookupsAsync( client, globalTables, userName[ userName.IndexOf( "@" ).. ], cancellationToken );
 		}
@@ -133,24 +142,27 @@ public class ApiService
 				{ new StringContent( $"[ {string.Join( ", ", remotes.Select( t => $"\"{t}\"" ))} ]" ), "targets" }
 			};
 
-			globalTables.Save( @"c:\btr\temp\globalTables.json" );
-
 			var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.xDSData.GlobalTables }";
-			await SendRequestWithoutResponseAsync( userName, password, url, HttpMethod.Post, form );
+
+			return await SendRequestWithoutResponseAsync( userName, password, url, HttpMethod.Post, form );
 		}
+
+		return null;
 	}
 
-	private async Task<T?> SendRequestAsync<T>( string? userName, string? password, string url, HttpMethod method ) where T : class
+	private async Task<(T? Response, ApiValidation[]? Validations)> SendRequestAsync<T>( string? userName, string? password, string url, HttpMethod method ) where T : class
 	{
-		if ( string.IsNullOrEmpty( userName ) || string.IsNullOrEmpty( password ) )
+		var (httpResponse, validations) = await SendHttpRequestAsync( userName, password, url, method );
+
+		if ( validations != null )
 		{
-			return null;
+			return (null, validations);
 		}
 
-		using var response = await SendHttpRequestAsync( userName, password, url, method );
+		using var response = httpResponse!;
 		try
 		{
-			return await response.Content.ReadFromJsonAsync<T>();
+			return (await response.Content.ReadFromJsonAsync<T>(), null);
 		}
 		catch ( Exception ex )
 		{
@@ -158,17 +170,18 @@ public class ApiService
 		}
 	}
 
-	private async Task SendRequestWithoutResponseAsync( string? userName, string? password, string url, HttpMethod method, HttpContent? content = null )
+	private static ApiValidation[] CredentialsMissing => new[] { new ApiValidation { Name = "userName", Message = "You must provide your KAT Management credentials to use this functionality." } };
+
+	private async Task<ApiValidation[]?> SendRequestWithoutResponseAsync( string? userName, string? password, string url, HttpMethod method, HttpContent? content = null ) =>
+		( await SendHttpRequestAsync( userName, password, url, method, content ) ).Validations;
+
+	private async Task<(HttpResponseMessage? Response, ApiValidation[]? Validations)> SendHttpRequestAsync( string? userName, string? password, string url, HttpMethod method, HttpContent? content = null )
 	{
 		if ( string.IsNullOrEmpty( userName ) || string.IsNullOrEmpty( password ) )
 		{
-			return;
+			return (null, CredentialsMissing);
 		}
-		await SendHttpRequestAsync( userName, password, url, method, content );
-	}
 
-	private async Task<HttpResponseMessage> SendHttpRequestAsync( string userName, string password, string url, HttpMethod method, HttpContent? content = null )
-	{
 		using var httpClient = httpClientFactory.CreateClient();
 		
 		httpClient.DefaultRequestHeaders.Add( "x-kat-email", userName );
@@ -181,19 +194,37 @@ public class ApiService
 		{
 			response = await httpClient.SendConduentAsync( request );
 
+			if ( response.StatusCode == System.Net.HttpStatusCode.BadRequest )
+			{
+				var problemDetails = ( await response.Content.ReadFromJsonAsync<JsonNode>() )!;
+
+				if ( problemDetails[ "errors" ] is JsonObject errors )
+				{
+					var validations =
+						errors.SelectMany( e => 
+							( e.Value as JsonArray ?? new JsonArray { e.Value } )
+								.Select( m => new ApiValidation { Name = e.Key, Message = (string)m! } )
+						).ToArray();
+					return (null, validations);
+				}
+
+				return (null, new[] { new ApiValidation { Name = "Excel Api", Message = (string)problemDetails[ "title" ]! } });
+			}
+
 			response.EnsureSuccessStatusCode();
 
-			return response;
+			return (response, null);
 		}
 		catch ( Exception ex )
-		{			
+		{
+			string? result = null;
 			if ( response != null )
 			{
-				var result = await response.Content.ReadAsStringAsync();
+				result = await response.Content.ReadAsStringAsync();
 				Console.WriteLine( result );
 			}
 
-			throw new ApplicationException( $"Unable to send request to {url}.", ex );
+			throw new ApplicationException( $"Unable to send request to {url}.  Response: {result ?? "Not Available."}", ex );
 		}
 	}
 }

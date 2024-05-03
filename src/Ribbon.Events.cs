@@ -171,11 +171,20 @@ public partial class Ribbon
 	private async Task<IEnumerable<DebugFile>> GetDebugCalcEnginesAsync()
 	{
 		await EnsureAddInCredentialsAsync();
-		return await apiService.GetDebugFilesAsync( 
-			WorkbookState.ManagementName, 
-			AddIn.Settings.KatUserName, 
+
+		var response = await apiService.GetDebugFilesAsync(
+			WorkbookState.ManagementName,
+			AddIn.Settings.KatUserName,
 			await AddIn.Settings.GetClearPasswordAsync()
 		);
+
+		if ( response.Validations != null )
+		{
+			LogValidations( response.Validations );
+			return Enumerable.Empty<DebugFile>();
+		}
+
+		return response.Response!;
 	}
 
 	private int auditShowLogBadgeCount;

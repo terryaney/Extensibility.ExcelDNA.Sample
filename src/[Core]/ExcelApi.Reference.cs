@@ -1,5 +1,4 @@
 using ExcelDna.Integration;
-using KAT.Camelot.RBLe.Core;
 using KAT.Camelot.RBLe.Core.Calculations;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;

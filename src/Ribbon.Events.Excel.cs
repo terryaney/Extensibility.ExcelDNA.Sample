@@ -58,8 +58,15 @@ public partial class Ribbon
 			RunRibbonTask( async () => 
 			{
 				await EnsureAddInCredentialsAsync();
-				await WorkbookState.UpdateCalcEngineInfoAsync( wbName );
-				ExcelAsyncUtil.QueueAsMacro( () => ribbon.Invalidate() ); // .InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
+				var validations = await WorkbookState.UpdateCalcEngineInfoAsync( wbName );
+				ExcelAsyncUtil.QueueAsMacro( () =>
+				{
+					ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnWorkbookChange );
+					if ( validations != null )
+					{
+						ShowValidations( validations );
+					}
+				} );
 			} );
 		}
 		catch ( Exception ex )

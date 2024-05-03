@@ -60,17 +60,21 @@ public partial class Ribbon
 
 	private void ExportGlobalTables( string? downloadName = null, bool currentSheet = false )
 	{
+		var owner = new NativeWindow();
+		owner.AssignHandle( new IntPtr( application.Hwnd ) );
+
 		RunRibbonTask( async () =>
 		{
 			using var processGlobalTables = new ProcessGlobalTables( 
 				currentSheet,
 				AddIn.Settings.DataServices,
-				GetWindowConfiguration( nameof( ProcessGlobalTables ) ) 
+				GetWindowConfiguration( nameof( ProcessGlobalTables ) )				
 			);
 
 			var info = processGlobalTables.GetInfo( 
 				AddIn.Settings.KatUserName, 
-				await AddIn.Settings.GetClearPasswordAsync() 
+				await AddIn.Settings.GetClearPasswordAsync(),
+				owner
 			);
 
 			if ( info == null ) return;
@@ -126,11 +130,18 @@ public partial class Ribbon
 				}
 
 				RunRibbonTask( async () => {
-					await apiService.UpdateGlobalTablesAsync( info.ClientName, info.Targets, globalSpecifications, info.UserName, info.Password );
+					var validations = await apiService.UpdateGlobalTablesAsync( info.ClientName, info.Targets, globalSpecifications, info.UserName, info.Password );
+
+					if ( validations != null )
+					{
+						ShowValidations( validations );
+						return;
+					}
 
 					ExcelAsyncUtil.QueueAsMacro( () =>
 					{
-						MessageBox.Show( "Done Processing" );
+						MessageBox.Show( owner, $"Successfully updated Global Tables on following environments.{Environment.NewLine + Environment.NewLine + string.Join( ", ", info.Targets )}", "Update Global Tables" );
+						
 						if ( downloadName != null )
 						{
 							existing.Close( SaveChanges: false );

@@ -74,11 +74,17 @@ public partial class Ribbon
 		RunRibbonTask( async () => 
 		{
 			await EnsureAddInCredentialsAsync();
-			var fileName = await apiService.DownloadDebugAsync( WorkbookState.ManagementName, int.Parse( versionKey ), AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
-			if ( !string.IsNullOrEmpty( fileName ) )
-			{
-				ExcelAsyncUtil.QueueAsMacro( () => application.Workbooks.Open( fileName ) );
-			}
+			var response = await apiService.DownloadDebugAsync( WorkbookState.ManagementName, int.Parse( versionKey ), AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
+
+			ExcelAsyncUtil.QueueAsMacro( () => {
+				if ( response.Validations != null )
+				{
+					LogValidations( response.Validations );
+					return;
+				}
+
+				application.Workbooks.Open( response.Response! );
+			} );
 		} );
 	}
 }

@@ -1,5 +1,3 @@
-using System.CodeDom;
-
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public static class Constants
