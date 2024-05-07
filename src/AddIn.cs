@@ -95,6 +95,7 @@ public class AddIn : IExcelAddIn
 
 	private static ExcelFunctionRegistration UpdateHelpTopic( ExcelFunctionRegistration funcReg )
 	{
+		// TODO: Ability to run markdown help files locally.
 		funcReg.FunctionAttribute.HelpTopic = "http://www.bing.com";
 		return funcReg;
 	}

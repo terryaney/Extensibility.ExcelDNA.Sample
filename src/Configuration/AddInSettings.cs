@@ -12,6 +12,7 @@ public class AddInSettings
 	public string? SaveHistoryName { get; init; }
 	public DataExport DataExport { get; init; } = new();
 	public Features Features { get; init; } = new();
+	public Help Help { get; init; } = new();
 
 	public string? KatUserName { get; set; }
 	public string? KatPassword { get; set; }
@@ -67,6 +68,13 @@ public class DataExport
 	public string? Path { get; init; }
 	public bool AppendDateToName { get; init; } = false;
 
+}
+
+public class Help
+{
+	public string Url { get; init; } = "https://github.com/terryaney/Extensibility.ExcelDNA.Sample";
+	public string OfflineUrl { get; init; } = "file:///" + Path.Combine( AddIn.XllPath, "Resources", "Help", "readme.md" );
+	public bool Offline { get; init; }
 }
 
 public class Features

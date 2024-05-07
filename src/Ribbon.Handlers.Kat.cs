@@ -149,10 +149,8 @@ public partial class Ribbon
 		ribbon.InvalidateControl( "katShowDiagnosticLog" );
 	}
 
-	public void Kat_OpenHelp( IRibbonControl control )
-	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
-	}
+	public void Kat_OpenHelp( IRibbonControl _ ) =>
+		OpenUrl( AddIn.Settings.Help.Offline ? AddIn.Settings.Help.OfflineUrl : AddIn.Settings.Help.Url );
 
 	public void Kat_RefreshRibbon( IRibbonControl _ ) => Application_WorkbookActivate( application.ActiveWorkbook );
 

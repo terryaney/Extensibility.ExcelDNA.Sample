@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -21,8 +22,6 @@ using MSExcel = Microsoft.Office.Interop.Excel;
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 /*
-Kat_BlastEmail - Excel Part done, code Api
-
 ConfigurationExporting_ExportSheet - IsUserAccessSheet
 CalcEngineUtilities_PopulateInputTab
 CalcEngineUtilities_ProcessWorkbook
@@ -450,5 +449,19 @@ public partial class Ribbon : ExcelRibbon
 		}
 
 		ExcelAsyncUtil.QueueAsMacro( () => application.Workbooks.Open( fullName ) );
+	}
+
+	private static void OpenUrl( string url )
+	{
+		var psi = new ProcessStartInfo
+		{
+			FileName = "cmd",
+			WindowStyle = ProcessWindowStyle.Hidden,
+			UseShellExecute = false,
+			RedirectStandardOutput = true,
+			// First \"\" is treated as the window title
+			Arguments = $"/c start \"\" \"{url}\""
+		};
+		Process.Start( psi );
 	}
 }
