@@ -6,7 +6,7 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
 {
-	private bool skipHistoryUpdateOnMoveSpecFromDownloads;
+	private bool skipProcessSaveHistory;
 
 	private void Application_WorkbookOpen( MSExcel.Workbook wb )
 	{
@@ -78,6 +78,8 @@ public partial class Ribbon
 
 	private void Application_WorkbookBeforeSave( MSExcel.Workbook wb, bool SaveAsUI, ref bool Cancel )
 	{
+		if ( skipProcessSaveHistory ) return;
+
 		try
 		{
 			if ( auditShowLogBadgeCount > 0 )
@@ -108,8 +110,27 @@ public partial class Ribbon
 		}
 	}
 
-	private void Application_WorkbookAfterSave( MSExcel.Workbook wb, bool Success ) =>
-		RunRibbonTask( () => UploadCalcEngineToManagementSiteAsync( wb ) );
+	private void Application_WorkbookAfterSave( MSExcel.Workbook wb, bool Success )
+	{
+		if ( skipProcessSaveHistory ) return;
+
+		RunRibbonTask( async () =>
+		{
+			var password = await AddIn.Settings.GetClearPasswordAsync();
+
+			ExcelAsyncUtil.QueueAsMacro( () =>
+			{
+				var info = ProcessSaveHistory( wb, password );
+
+				if ( info != null )
+				{
+					skipProcessSaveHistory = true;
+					wb.Save();
+					RunRibbonTask( () => UploadCalcEngineToManagementSiteAsync( info ) );
+				}
+			} );
+		} );
+	}
 
 	private void Application_SheetActivate( object sheet )
 	{
@@ -120,25 +141,6 @@ public partial class Ribbon
 		// functionality, but SSG does not support that so only use Highcharts/Apex now.
 
 		// Used to update 'validation lists' in Tahiti spec sheets, but no longer use Tahiti.
-	}
-
-	private async Task EnsureAddInCredentialsAsync()
-	{
-		if ( WorkbookState.ShowCalcEngineManagement && ( string.IsNullOrEmpty( AddIn.Settings.KatUserName ) || string.IsNullOrEmpty( AddIn.Settings.KatPassword ) ) )
-		{
-			using var credentials = new Credentials( GetWindowConfiguration( nameof( Credentials ) ) );
-			
-			var info = credentials.GetInfo(  
-				AddIn.Settings.KatUserName, 
-				await AddIn.Settings.GetClearPasswordAsync() 
-			);
-
-			if ( info != null )
-			{
-				await UpdateAddInCredentialsAsync( info.UserName, info.Password );
-				SaveWindowConfiguration( nameof( Credentials ), info.WindowConfiguration );
-			}
-		}
 	}
 
 	private DialogResult AuditCalcEngineTabs( MSExcel.Workbook workbook )
@@ -184,16 +186,16 @@ public partial class Ribbon
 		return DialogResult.Yes;
 	}
 
-	private async Task<CalcEngineUploadInfo?> ProcessSaveHistoryAsync( MSExcel.Workbook workbook )
+	private CalcEngineUploadInfo? ProcessSaveHistory( MSExcel.Workbook workbook, string? password )
 	{
-		if ( !string.IsNullOrEmpty( AddIn.Settings.SaveHistoryName ) && !skipHistoryUpdateOnMoveSpecFromDownloads )
+		if ( !string.IsNullOrEmpty( AddIn.Settings.SaveHistoryName ) && !skipProcessSaveHistory )
 		{
 			using var saveHistory = new SaveHistory( workbook, WorkbookState, GetWindowConfiguration( nameof( SaveHistory ) ) );
 
 			var info = saveHistory.GetInfo( 
 				AddIn.Settings.SaveHistoryName, 
 				AddIn.Settings.KatUserName, 
-				await AddIn.Settings.GetClearPasswordAsync() 
+				password 
 			);
 
 			if ( info.Result == DialogResult.Ignore )
@@ -245,46 +247,44 @@ public partial class Ribbon
 					Password = info.Password,
 					ForceUpload = info.ForceUpload,
 					ExpectedVersion = currentVersion,
-					WindowConfiguration = info.WindowConfiguration
+					WindowConfiguration = info.WindowConfiguration, // not needed but my class derived from requirement
+					FullName = application.ActiveWorkbook.FullName
 				} 
 				: null;
 		}
 
+		skipProcessSaveHistory = false;
 		return null;
 	}
 
-	private async Task UploadCalcEngineToManagementSiteAsync( MSExcel.Workbook wb )
+	private async Task UploadCalcEngineToManagementSiteAsync( CalcEngineUploadInfo info )
 	{
-		var info = await ProcessSaveHistoryAsync( wb );
-
-		if ( info != null )
+		try
 		{
-			try
+			await UpdateAddInCredentialsAsync( info.UserName, info.Password );
+
+			var ceContent = await File.ReadAllBytesAsync( info.FullName );
+
+			SetStatusBar( "Uploading CalcEngine to Management Site..." );
+
+			// TODO: Upload ceContent, need to pass userName, password, expectedVersion, forceUpload (boolean) and confirm it can be done
+
+			SetStatusBar( "CalcEngine successfully uploaded to Management Site." );
+
+			ExcelAsyncUtil.QueueAsMacro( () =>
 			{
-				await UpdateAddInCredentialsAsync( info.UserName, info.Password );
-
-				SetStatusBar( "Uploading CalcEngine to Management Site..." );
-
-				var ceContent = await File.ReadAllBytesAsync( application.ActiveWorkbook.FullName );
-
-				// TODO: Upload ceContent, need to pass userName, password, expectedVersion, forceUpload (boolean) and confirm it can be done
-
-				SetStatusBar( "CalcEngine successfully uploaded to Management Site." );
-
-				ExcelAsyncUtil.QueueAsMacro( () =>
-				{
-					WorkbookState.UpdateVersion( application.ActiveWorkbook );
-					ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
-				} );
-			}
-			catch ( Exception ex )
+				WorkbookState.UpdateVersion( application.ActiveWorkbook );
+				ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
+			} );
+		}
+		catch ( Exception ex )
+		{
+			ClearStatusBar();
+			ExcelAsyncUtil.QueueAsMacro( () =>
 			{
-				ClearStatusBar();
-				ExcelAsyncUtil.QueueAsMacro( () => {
-					MessageBox.Show( "Uploading CalcEngine to Management Site FAILED. " + ex.Message, "Upload Failed", MessageBoxButtons.OK, MessageBoxIcon.Error );
-				} );
-				throw;
-			}
+				MessageBox.Show( "Uploading CalcEngine to Management Site FAILED. " + ex.Message, "Upload Failed", MessageBoxButtons.OK, MessageBoxIcon.Error );
+			} );
+			throw;
 		}
 	}
 }

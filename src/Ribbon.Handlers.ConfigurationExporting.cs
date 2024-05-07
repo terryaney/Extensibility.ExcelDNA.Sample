@@ -20,7 +20,7 @@ public partial class Ribbon
 {
 	public void ConfigurationExporting_ExportWorkbook( IRibbonControl _ )
 	{
-		skipHistoryUpdateOnMoveSpecFromDownloads = true;
+		skipProcessSaveHistory = true;
 
 		if ( WorkbookState.IsGlobalTablesFile )
 		{

@@ -9,6 +9,7 @@ public static class ExcelExtensions
 	public static MSExcel.Workbook? GetWorkbook( this MSExcel.Application application, string name ) => application.Workbooks.Cast<MSExcel.Workbook>().FirstOrDefault( w => string.Compare( w.Name, name, true ) == 0 );
 	private static MSExcel.Application Application => ( ExcelDnaUtil.Application as MSExcel.Application )!;
 	public static MSExcel.Worksheet ActiveWorksheet( this MSExcel.Application application ) => ( application.ActiveSheet as MSExcel.Worksheet )!;
+	public static MSExcel.Range ActiveRange( this MSExcel.Application application ) => ( application.Selection as MSExcel.Range )!;
 	public static MSExcel.Worksheet? GetWorksheet( this MSExcel.Workbook workbook, string name ) => workbook.Worksheets.Cast<MSExcel.Worksheet>().FirstOrDefault( w => string.Compare( w.Name, name, true ) == 0 );
 
 	public static void InvalidateControls( this IRibbonUI ribbon, params string[] controlIds )
@@ -68,7 +69,9 @@ public static class ExcelExtensions
 						.Where( n => n.Name.EndsWith( "!" + name ) )
 						.FirstOrDefault();
 
-			return namedRange?.RefersToRange;
+			return !( (string?)namedRange?.RefersTo ?? "" ).Contains( "#REF!" )
+				? namedRange?.RefersToRange
+				: null;
 		}
 		catch ( Exception ex )
 		{
@@ -79,15 +82,15 @@ public static class ExcelExtensions
 		}
 	}
 
-	public static T? RangeOrNull<T>( this MSExcel.Worksheet worksheet, string name )
+	public static T? RangeOrNull<T>( this MSExcel.Worksheet? worksheet, string name )
 	{
 		try
 		{
-			var range = worksheet.RangeOrNull( name );
+			var range = worksheet?.RangeOrNull( name );
 
 			return typeof( T ) == typeof( string )
 				? (T?)range?.Text
-				: (T?)range;
+				: (T?)range?.Value;
 		}
 		catch ( ApplicationException ) { throw; }
 		catch ( Exception ex )

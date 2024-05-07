@@ -60,7 +60,7 @@ public class AddIn : IExcelAddIn
 	/// Global exception handler for all unhandled exceptions in ExcelDna functions.
 	/// </summary>
 	/// <remarks>
-	/// This only is triggered for errors from [ExcelFunction] functions in Excel cells (not called in VBA calls to VBAHelpers or errors from Ribbon).
+	/// This only is triggered for errors from [ExcelFunction] functions in Excel cells or code blocks running fro ExcelAsyncUtil.QueueAsMacro.
 	/// </remarks>
 	private object UnhandledExceptionHandler( object exception )
 	{

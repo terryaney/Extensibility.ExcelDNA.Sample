@@ -45,6 +45,8 @@ public static partial class ExcelApi
 		get { return (bool)XlCall.Excel( XlCall.xlfGetWorkspace, (int)GetWorkspaceType.ScreenUpdating ); }
 	}
 
+	public static ExcelReference Selection => ( XlCall.Excel( XlCall.xlfSelection ) as ExcelReference )!;
+
 	public static void RestoreSelection( this ExcelReference reference, Action action )
 	{
 		// https://groups.google.com/d/msg/exceldna/h3SqSA8DkPc/X0uxH4pUBgAJ - read comment about his SelectionHelper

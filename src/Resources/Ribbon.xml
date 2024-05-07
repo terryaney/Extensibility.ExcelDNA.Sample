@@ -84,7 +84,7 @@
 				</group>
 
 				<group id="groupKat" label="KAT">
-					<button id="katEmailBlast" keytip="B" label="Email Blast Utility" imageMso="EmailMergeWizard" onAction="Ribbon_OnAction" tag="Kat_BlastEmail" size="large"/>
+					<button id="katEmailBlast" keytip="B" label="Email Blast Utility" imageMso="EmailMergeWizard" onAction="Ribbon_OnAction" getEnabled="Ribbon_GetEnabled" tag="Kat_BlastEmail" size="large"/>
 					<button id="katShowDiagnosticLog" keytip="L" screentip="Show Diagnostics Log" label="Show Log" getImage="Ribbon_GetImage" onAction="Ribbon_OnAction" tag="Kat_ShowLog" size="large" />
 					<button id="katRefreshRibbon" label="Refresh Ribbon" imageMso="Refresh" size="large" onAction="Ribbon_OnAction" tag="Kat_RefreshRibbon" />
 					<menu id="katHelp" keytip="H" label="Help" imageMso="Help" size="large">

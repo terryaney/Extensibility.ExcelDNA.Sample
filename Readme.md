@@ -114,48 +114,42 @@ Back to [Features listing](#features).
 The following requirements were some of the challenges I faced regarding Excel thread context switching.  In some cases, the code would not function correctly (or at all), but in many cases, the code would execute as I expected, but when I closed Excel, it attempts to shutdown but the `msexcel.exe` process is not terminated and after the current Excel window is closed it immediately launches a new window with no spreadsheet and the add-in is not displayed.  Attempting to view the add-in in Excel's add-in dialog caused Excel to GPF and shutdown, requiring the user to re-add the add-in via Excel's dialog.
 
 
-1. **Api Functionality via HttpClient** - The `Camelot.Api.Excel` api project is used both to manage state of the ribbon as well as provide functionality for some of the button events.  See [`WorkbookState.RefreshAsync`](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Models/WorkbookState.cs) or [`Ribbon.KatDataStore_DownloadLatestCalcEngine`](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Ribbon.Handlers.KatDataStore.cs) for some examples.
+1. **Api Functionality via HttpClient** - The `Camelot.Api.Excel` api project is used both to manage state of the ribbon as well as provide functionality for some of the button events.  See [`WorkbookState.UpdateCalcEngineInfoAsync`](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Models/WorkbookState.cs) or [`Ribbon.KatDataStore_DownloadLatestCalcEngine`](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Ribbon.Handlers.KatDataStore.cs) for some examples.
 2. **Long Running Tasks** - Some ribbon handlers require launching a long running task that can be cancelled if needed, does not block the main Excel threads, and then reports back information to the main thread (i.e. Local Batch Processes).
 3. **async/await Support in Handlers** - The ability to run async code in Ribbon button handlers and follow up interactions with Excel COM objects to manipulate the Excel application in some fashion (i.e. `ribbon.Invalidate()` or other `application.*` methods (`application.Workbooks.Open`)).
 4. **FileSystemWatcher Event Support** - A `FileSystemWatcher` that is monitoring `appsettings*.json` file(s) for changes triggers change events when necessary that need to reload settings and then invalid the ribbon.  See [AddIn.AutoOpen](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/AddIn.cs) for more detail.
 5. **Global Exception Handler** - A global exception handler is added via `ExcelIntegration.RegisterUnhandledExceptionHandler` to provide the ability to catch all formula/calculation exceptions.  In the registered [UnhandledExceptionHandler](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/AddIn.cs) handler, the error is logged and a ribbon badge is updated with current count of errors.  See the [ExcelIntegration.RegisterUnhandledExceptionHandler](#excelintegrationregisterunhandledexceptionhandler) section for more detail.
 
-**Reference Links for Thread Context and async/await Issues**
+After a [long discussion](https://groups.google.com/g/exceldna/c/_pKphutWbvo/m/aaH_Z-QZAAAJ) and answers from Govert, I finally wrapped my head around support for async/await in Excel-DNA.  In the simplest terms, the `ExcelAsyncUtil.QueueAsMacro` method **must be** used to [access all 'UI' and 'Excel COM' objects on the main Excel thread](https://groups.google.com/g/exceldna/c/_pKphutWbvo/m/-Xl3imi5AAAJ) (vs the calculation thread(s)) otherwise unexpected results will occur - most notably/frustrating is Excel not closing gracefully after improper code flow.  To initial any async/await code from the add-in, the use of `Task.Run( () => { } )` is used.  I created [RunRibbonTask](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Ribbon.cs) as a helper to wrap this that also logs exceptions to the `ExcelDna.Logging.LogDisplay` window and toggles the main UI thread's cursor.
+
+At times, following the pattern described above required a different approach/flow of code than I would have preferred.
+
+1. When modals or `MessageBox` messages are displayed I still wanted Excel to be the 'owner' of the window.  To accomplish this, I followed the [Creating a Threaded Modal Dialog](https://excel-dna.net/docs/tips-n-tricks/creating-a-threaded-modal-dialog) example.  I didn't follow the exact pattern in the sample because I was surprised that `Application.Hwnd` was accessed on a new thread.  I've [asked Excel-DNA](https://groups.google.com/g/exceldna/c/lY5e-CtgFiI) and will update this section when I get an answer.  You can see a demonstration of my suggested pattern in [ExportGlobalTables](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Ribbon.Handlers.ConfigurationExporting.cs).  This pattern was used whenever a dialog was displayed from with the context of `RunRibbonTask`.
+
+2. Nested calls of `RunRibbonTask` and `QueueAsMacro`. In some cases, I needed to call `RunRibbonTask` to start an async method, then later call `QueueAsMacro` to access UI/COM components, then start another `RunRibbonTask` to support async support.  This was done in the `ExportGlobalTables`.
+	1. Use `RunRibbonTask` to display my custom form/dialog.  Almost all my dialogs were prompting for user credentials that would be used, and async support was required to decrypt a local secret.
+	1. If the dialog was confirmed, I would then call `QueueAsMacro` to access `UI` components or `Excel COM` objects to perform my task (in this case multiple times, first to toggle the cursor, then to do the work).
+	1. After performing the above mentioned work (building an api payload from current worksheet information), I needed to call async api methods, so started a nested `RunRibbonTask` delegate.
+	1. From this context, I needed to call `QueueAsMacro` to display a message box and conditionally close a `Workbook` object.
+
+Obviously, this is not as clean as straight forward linear code, but it is not terribly difficult to following.  Mostly it is just a matter of indentation in the code.
+
+Note: I started to refactor code that used current password to instead have a variable that was ready to use without async requirement (except upon password updates) but all dialogs usually resulted in async work when confirmed, so I didn't bother.  *At time of writing*, this example was only 'nested' flow problem that I had.  I may revisit.
+
+3. I have some helpers in `Ribbon.cs` that wrap some common UI thread access `QueueAsMacro` calls (i.e. `InvalidateRibbon`, `ClearStatusBar`, etc.) and there are times when the 'common helper' was only part of the work flow so I called the common helper then immediately made another call to `QueueAsMacro` to access other UI/COM components.  Govert mentioned that these multiple calls should be ok.  This was done in the [UploadCalcEngineToManagementSiteAsync](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Ribbon.Events.Excel.cs) method where I used multiple calls to `SetStatusBar` along with direct calls to `QueueAsMacro`.
+
+4. The`System.Windows.Forms.OpenFileDialog` control (and other Windows Forms controls) requires that the thread it is created and used on is marked as a Single Threaded Apartment (STA) thread. This is typically done by adding the `[STAThread]` attribute to the Main method of your application.  However, since I'm not in a position to control the Main method, I need to make sure that any dialogs that use this control are opened within a `QueueAsMacro` delegate.  See [EmailBlast](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Views/EmailBlast.cs) for example.
+
+There was one location where I did not follow the best practices advice from Govert.  In the [Ribbon_GetContent](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Ribbon.Events.cs) handler, I call our async api to get list of debug CalcEngines to populate a dropdown ribbon menu.  Govert [described](https://groups.google.com/g/exceldna/c/_pKphutWbvo/m/ae_0hSR_AAAJ) how any 'blocking' technique was not the best approach and that I should return immediately from this handler providing 'empty' menu or something indicating 'work is being' done.  I never tried to change my flow, so I'm not sure how it would have worked/looked in terms of 're-populating' the dropdown to remove the 'empty/working' menu item with the updated list (or none available) of CalcEngines menus.
+
+Instead, I used [The Thread Pool Hack](https://learn.microsoft.com/en-us/archive/msdn-magazine/2015/july/async-programming-brownfield-async-development#the-thread-pool-hack) to run the async method from within synchronous code and block and wait.  I decided it was acceptable to have user/Excel blocked/waiting for a response since they understand that it is querying our api and are expecting a slight delay.
+
+**Original Reference Links for Thread Context and async/await Issues**
 
 1. https://groups.google.com/g/exceldna/c/_pKphutWbvo - question asking about my different scenarios
 1. https://groups.google.com/g/exceldna/c/ILgL-dW47A4/m/9HrOyClJAQAJ - Thread about ensuring Excel shuts down properly.
 1. https://stackoverflow.com/a/68303070/166231 - Stephen Cleary's answer about async/await best practices.
 1. https://learn.microsoft.com/en-us/archive/msdn-magazine/2015/july/async-programming-brownfield-async-development - Async Programming article by Stephen Cleary.
-
-The following are some of the specific issues I had to overcome/workaround.  To be honest, I do not have my head wrapped around Thread context switching/blocking.  So if anyone reads this and can explain it better, please contact me.
-
-1. **Availability of await/async** - In some places (i.e. [`Application_WorkbookBeforeSave`](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Ribbon.Events.Excel.cs)), it was impossible to use `await`/`async`.  To work around this, I used [The Thread Pool Hack](https://learn.microsoft.com/en-us/archive/msdn-magazine/2015/july/async-programming-brownfield-async-development#the-thread-pool-hack) to run the async method from within synchronous code.  
-	1. [`Ribbon_GetContent`](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Ribbon.Events.cs)
-		1. Originally, I simply tried changing the handler signature to async (`public async Task<string?> Ribbon_GetContent( IRibbonControl control )`) and use `await` as normal hoping Excel Integration would properly call my method.  The code execution *did* wait until the api call was complete before returning the `menu.ToString(), however, before it completed, Excel had immediately shown a single, empty menu item and never refreshed it.
-		1. I then tried using `ExcelAsyncUtil.QueueAsMacro`, of course this didn't work because I couldn't `await` this method call, so the handler returned back to Excel immediately before the `menu.ToString()` was complete.
-		1. I then tried using `ExcelAsyncTaskScheduler` after reading [this discussion](https://groups.google.com/g/exceldna/c/9OkHWILuFMo/m/RpilXElgAQAJ), but it had similar results to `ExcelAsyncUtil.QueueAsMacro`.
-		1. I then tried [The Blocking Hack](https://learn.microsoft.com/en-us/archive/msdn-magazine/2015/july/async-programming-brownfield-async-development#the-blocking-hack) but if `ExcelDna.Logging.LogDisplay.WriteLine` or `Show` were called, the subsequent call to 'The Blocking Hack' would hang indefinitely.
-		1. Finally, I used 'The Thread Pool Hack' to get the desired behavior (menu populating correctly, and Excel closing gracefully).
-	1. [`Application_WorkbookBeforeSave`](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Ribbon.Events.Excel.cs) - Most of the `public void Application_*` event handlers seemed to function properly simply by placing an `async` keyboard in the method signature.  However, the `Application_WorkbookBeforeSave` handler was a special case because of the `ref bool Cancel` parameter preventing the use of the keyword.
-		1. Originally, I was using the 'The Blocking Hack' and it seemed to run correctly.
-		1. After the 'The Blocking Hack' was replaced in `Ribbon_GetContent`, I decided to use the 'The Thread Pool Hack' in `Application_WorkbookBeforeSave` for consistency and it worked as expected.
-1. **Needing to await asynchronous code** - There were cases where I desired code flow to behave like normal `async/await` code (i.e. code flow pauses until async code is complete).
-	1. `Application_WorkbookBeforeSave` - I needed the `ProcessSaveHistoryAsync` method to complete and assign the `calcEngineUploadInfo` variable before flow returned, allowing `Application_WorkbookBeforeSave` to complete and ultimately call `Application_WorkbookAfterSave` which performs asynchronous code if `calcEngineUploadInfo` is assigned.
-	1. `Ribbon_GetContent` - This same requirement was needed in this method as well, waiting for `menu` to be created before returning the result to Excel.
-1. **Access `ExcelDna.Logging.LogDisplay`/`ribbon.Invalidate()` While On Calculation Thread** - In the `UnhandledExceptionHandler` global exception handler, the use of both of these methods must be from within an `ExcelAsyncUtil.QueueAsMacro` wrapper otherwise Excel would not close gracefully.
-
-Below is a summary of the code locations that faced thread context issues and what was used to overcome them.
-
-| Method | Requirement | Strategy |
-| --- | --- | --- |
-| `AddIn.AutoOpen` | `FileSystemWatcher` | `ExcelAsyncUtil.QueueAsMacro` |
-| `UnhandledExceptionHandler` | `Excel COM Access` | `ExcelAsyncUtil.QueueAsMacro` |
-| `Ribbon_GetContent` | `Camelot.Api.Excel` | `Task.Run( () => *Async() ).GetAwaiter().GetResult()` |
-| `Application_WorkbookBeforeSave` | `Camelot.Api.Excel` | `Task.Run( () => *Async() ).GetAwaiter().GetResult()` |
-| `Ribbon_OnAction` | `Camelot.Api.Excel`<br/>`Async Functionality`<br/>`Long Running Task` | `ExcelAsyncUtil.QueueAsMacro` |
-| `KatDataStore_DownloadLatestCalcEngine` | `Camelot.Api.Excel`<br/>`Excel COM Access` | `ExcelAsyncUtil.QueueAsMacro` |
-| `KatDataStore_DownloadDebugFile` | `Camelot.Api.Excel`<br/>`Excel COM Access` | `ExcelAsyncUtil.QueueAsMacro` |
-| `Audit_SearchLocalCalcEngines` | 'Long Running Task' | `ExcelAsyncUtil.QueueAsMacro` |
 
 Back to [Features listing](#features).
 

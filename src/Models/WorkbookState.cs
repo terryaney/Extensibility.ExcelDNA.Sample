@@ -192,6 +192,8 @@ public class SheetState
 {
 	private readonly WorkbookState workbookState;
 
+	public string? Name { get; init; }
+
 	public string? SheetType { get; init; }
 	public bool IsResultSheet { get; init; }
 	public bool IsInputSheet { get; init; }
@@ -215,6 +217,8 @@ public class SheetState
 			return;
 		}
 
+		Name = activeSheet.Name;
+		
 		var sheetNames = activeSheet.Names.Cast<MSExcel.Name>().ToArray();
 		SheetType = activeSheet.RangeOrNull<string>( "SheetType" );
 

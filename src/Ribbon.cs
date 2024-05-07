@@ -21,22 +21,22 @@ using MSExcel = Microsoft.Office.Interop.Excel;
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 /*
-ConfigurationExporting_ProcessGlobalTables (send to api)
-Kat_OpenHelp
-Kat_BlastEmail
-ConfigurationExporting_ExportSheet
+Kat_BlastEmail - Excel Part done, code Api
+
+ConfigurationExporting_ExportSheet - IsUserAccessSheet
+CalcEngineUtilities_PopulateInputTab
+CalcEngineUtilities_ProcessWorkbook
+Audit_CalcEngineTabs
 CalcEngineUtilities_ConfigureHighCharts
 CalcEngineUtilities_ImportBrdSettings
+ConfigurationExporting_ExportWorkbook  - IsRTCFile
+DataExporting_ExportResultDocGenXml
+DataExporting_ExportResultJsonData
+ConfigurationExporting_ExportWorkbook  - SpecSheet
 DataExporting_AuditDataExportHeaders
 DataExporting_ExportMappedXmlData
 DataExporting_ExportXmlData
 DataExporting_ExportJsonData
-ConfigurationExporting_ExportWorkbook
-Audit_CalcEngineTabs
-CalcEngineUtilities_PopulateInputTab
-CalcEngineUtilities_ProcessWorkbook
-DataExporting_ExportResultDocGenXml
-DataExporting_ExportResultJsonData
 CalcEngineUtilities_PreviewResults
 CalcEngineUtilities_LocalBatchCalc
 CalcEngineUtilities_ConvertToRBLe
@@ -274,6 +274,8 @@ public partial class Ribbon : ExcelRibbon
 			ExcelDna.Logging.LogDisplay.WriteLine( $"Inner Exception: {exDisplay.Message}{Environment.NewLine}Trace: {exDisplay.StackTrace}" );
 			exDisplay = exDisplay.InnerException;
 		}
+
+		ExcelDna.Logging.LogDisplay.Show();
 	}
 
 	private readonly ConcurrentDictionary<string, string?> cellsInError = new();
@@ -291,6 +293,25 @@ public partial class Ribbon : ExcelRibbon
 
 			auditShowLogBadgeCount++;
 			ribbon.InvalidateControl( "katShowDiagnosticLog" );
+		}
+	}
+
+	private async Task EnsureAddInCredentialsAsync()
+	{
+		if ( WorkbookState.ShowCalcEngineManagement && ( string.IsNullOrEmpty( AddIn.Settings.KatUserName ) || string.IsNullOrEmpty( AddIn.Settings.KatPassword ) ) )
+		{
+			using var credentials = new Credentials( GetWindowConfiguration( nameof( Credentials ) ) );
+			
+			var info = credentials.GetInfo(  
+				AddIn.Settings.KatUserName, 
+				await AddIn.Settings.GetClearPasswordAsync() 
+			);
+
+			if ( info != null )
+			{
+				await UpdateAddInCredentialsAsync( info.UserName, info.Password );
+				SaveWindowConfiguration( nameof( Credentials ), info.WindowConfiguration );
+			}
 		}
 	}
 

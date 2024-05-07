@@ -1,8 +1,11 @@
 using System.IO.Compression;
 using System.Net.Http.Json;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1;
+using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Requests;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Responses;
 using KAT.Camelot.Domain.Extensions;
 using KAT.Camelot.Domain.Services;
@@ -22,7 +25,7 @@ public class ApiService
 
 	public async Task<ApiResponse<string>> GetSpreadsheetGearLicenseAsync( string? userName, string? password )
 	{
-		var url = $"{AddIn.Settings.ApiEndpoint}{ApiEndpoints.License.SpreadsheetGear}";
+		var url = $"{AddIn.Settings.ApiEndpoint}{ApiEndpoints.Utility.SpreadsheetGear}";
 		
 		var (httpResponse, validations) = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get );
 		
@@ -106,6 +109,104 @@ public class ApiService
 	{
 		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.Checkout( Path.GetFileNameWithoutExtension( calcEngine ) )}";
 		await SendRequestWithoutResponseAsync( userName, password, url, HttpMethod.Patch );
+	}
+
+	public async Task<ApiValidation[]?> WaitForEmailBlastAsync( string token, string userName, string password )
+	{
+		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.Utility.Build.WaitEmailBlastComplete( token ) }";
+		return await SendRequestWithoutResponseAsync( userName, password, url, HttpMethod.Get );
+	}
+
+	public async Task<ApiResponse<string>> EmailBlastAsync( string contentFile, EmailBlastRequest reqeust, string? userName, string? password, CancellationToken cancellationToken = default )
+	{
+		var ms = new MemoryStream();
+		using ( var zip = new ZipArchive( ms, ZipArchiveMode.Create, true ) )
+		{
+			var emailBody = await File.ReadAllTextAsync( contentFile, cancellationToken: cancellationToken );
+
+			var currentDirectory = Path.GetDirectoryName( contentFile )!;
+			var matches = Regex.Matches(emailBody, @"<img[^>]+src=(?<src>[""'][^""']+[""'])[^>]*>");
+			var imageAttachments = new List<EmailBlastAttachment>();
+
+			foreach ( var match in matches.Cast<Match>() )
+			{
+				var originalSrc = match.Groups[ "src" ].Value;
+				var src = originalSrc.Trim('"', '\'');
+
+				if ( !src.StartsWith( "http", StringComparison.OrdinalIgnoreCase ) )
+				{
+					var contentId = Guid.NewGuid().ToString();
+					var fi = new FileInfo( Path.Combine( currentDirectory, src ) );
+
+					var attachment = fi.Exists
+						? new EmailBlastAttachment { Id = contentId, Name = fi.FullName, ContentId = contentId }
+						: new EmailBlastAttachment { Id = contentId, Name = src };
+
+					src = fi.Exists ? $"cid:{contentId}" : src;
+
+					imageAttachments.Add( attachment );
+				}
+
+				emailBody = emailBody.Replace( originalSrc, $"\"{src}\"" );
+			}
+
+			if ( imageAttachments.Any( a => a.ContentId == null ) )
+			{
+				return new() 
+				{ 
+					Validations = 
+						imageAttachments.Where( a => a.ContentId == null )
+							.Select( a => new ApiValidation { Name = "Image Attachment", Message = $"{a.Name} is used as an image source but could not be found." } )
+							.ToArray()
+				};
+			}
+
+			reqeust.Attachments = reqeust.Attachments.Concat( imageAttachments ).ToArray();
+
+			var entry = zip.CreateEntry( ".content.html", CompressionLevel.Fastest );
+			using var contentStream = entry.Open();
+			using var contentMs = new MemoryStream( Encoding.UTF8.GetBytes( emailBody ) );
+			await contentMs.CopyToAsync( contentStream, cancellationToken );
+			await contentStream.DisposeAsync();
+			await contentMs.DisposeAsync();
+
+			entry = zip.CreateEntry( ".configuration.json", CompressionLevel.Fastest );
+			using var es = entry.Open();
+			JsonSerializer.Serialize( es, reqeust, new JsonSerializerOptions { WriteIndented = true } );
+			await es.DisposeAsync();
+
+			foreach ( var attachment in reqeust.Attachments )
+			{
+				entry = zip.CreateEntry( attachment.Id, CompressionLevel.Fastest );
+				using var attachmentStream = entry.Open();
+				using var afs = File.OpenRead( attachment.Name );
+				await afs.CopyToAsync( attachmentStream, cancellationToken );
+				await attachmentStream.DisposeAsync();
+				await afs.DisposeAsync();
+			}
+		}
+
+		ms.Position = 0;
+
+		using var form = new MultipartFormDataContent
+		{
+			{ new StreamContent( ms ), "file", "emailBlast.zip" }
+		};
+
+		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.Utility.EmailBlast }";
+
+		var (httpResponse, validations) = await SendHttpRequestAsync( userName, password, url, HttpMethod.Post, form );
+		
+		if ( validations != null )
+		{
+			return new() { Validations = validations };
+		}
+
+		using var response = httpResponse!;
+
+		var token = await response.Content.ReadAsStringAsync( cancellationToken );
+
+		return new () { Response = token };
 	}
 
 	public async Task<ApiValidation[]?> UpdateGlobalTablesAsync( string? clientName, string[] targets, JsonObject globalTables, string? userName, string? password, CancellationToken cancellationToken = default )
@@ -208,7 +309,7 @@ public class ApiService
 					return (null, validations);
 				}
 
-				return (null, new[] { new ApiValidation { Name = "Excel Api", Message = (string)problemDetails[ "title" ]! } });
+				return (null, new[] { new ApiValidation { Name = "Excel Api", Message = (string)problemDetails[ "detail" ]! } });
 			}
 
 			response.EnsureSuccessStatusCode();

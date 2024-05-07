@@ -64,6 +64,8 @@ public partial class Ribbon
 				"navigationToRBLeMacro" => WorkbookState.HasRBLeMacro && !WorkbookState.SheetState.IsMacroSheet,
 				"navigationInputs" or "navigationInputData"or "navigationCalculationInputs" or "navigationFrameworkInputs" or "navigationInputTables" => WorkbookState.IsCalcEngine,
 
+				"katEmailBlast" => !string.IsNullOrEmpty( WorkbookState.SheetState.Name ),
+
 				_ => true,
 			};
 		}
