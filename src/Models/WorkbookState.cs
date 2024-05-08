@@ -204,7 +204,6 @@ public class SheetState
 
 	public bool IsGlobalTableSheet { get; init; }
 	public bool IsXmlMappingSheet { get; init; }
-	public bool IsUserAccessSheet { get; init; }
 	public bool IsExcelJsSheet { get; init; }
 	public bool IsMacroSheet { get; init; }
 
@@ -224,21 +223,16 @@ public class SheetState
 
 		var isGlobalTableSheet = Constants.SpecSheet.IsGlobalTablesSheet( SheetType );
 		var isXmlMappingSheet = ( sheetNames?.Count( n => n.Name.EndsWith( "!MappingLayouts" ) || n.Name.EndsWith( "!PathToProfileElement" ) || n.Name.EndsWith( "!AuthIdElement" ) ) ?? 0 ) == 3;
-		var isUserAccessSheet =
-			activeSheet != null &&
-			( new[] { "Site Access", "Site Access Delete", "Delete Site Access" }.Contains( activeSheet.Name ) || activeSheet.Name.StartsWith( "Code Tables" ) ) &&
-			( sheetNames?.Any( n => n.Name.EndsWith( "!SheetVersion" ) ) ?? false );
 		var isExcelJSSheet = ( sheetNames?.Count( n => n.Name.EndsWith( "!Constants" ) || n.Name.EndsWith( "!Inputs" ) || n.Name.EndsWith( "!OutputtedValues" ) ) ?? 0 ) == 3;
 
 		var rbleMacro = workbookState.bookNames.FirstOrDefault( n => n.Name == "RBLeMacro" );
 
-		canExport = isUserAccessSheet || isExcelJSSheet;
+		canExport = isExcelJSSheet;
 		CanPreview = Constants.CalcEngines.IsPreviewSheet( SheetType );
 		IsInputSheet = SheetType == Constants.CalcEngines.SheetTypes.Input;
 		IsResultSheet = Constants.CalcEngines.IsResultSheet( SheetType );
 
 		IsGlobalTableSheet = isGlobalTableSheet;
-		IsUserAccessSheet = isUserAccessSheet;
 		IsXmlMappingSheet = isXmlMappingSheet;
 
 		IsExcelJsSheet = isExcelJSSheet;

@@ -22,7 +22,6 @@ using MSExcel = Microsoft.Office.Interop.Excel;
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 /*
-ConfigurationExporting_ExportSheet - IsUserAccessSheet
 CalcEngineUtilities_PopulateInputTab
 CalcEngineUtilities_ProcessWorkbook
 Audit_CalcEngineTabs

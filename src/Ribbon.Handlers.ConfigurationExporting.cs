@@ -46,17 +46,9 @@ public partial class Ribbon
 		ExportGlobalTables( downloadName );
 	}
 
-	public void ConfigurationExporting_ExportSheet( IRibbonControl _ )
-	{
-		if ( WorkbookState.SheetState.IsGlobalTableSheet )
-		{
-			ExportGlobalTables( currentSheet: !WorkbookState.IsGlobalTablesFile );
-		}
-		else if ( WorkbookState.SheetState.IsUserAccessSheet )
-		{
-			MessageBox.Show( "// TODO: Process UserAccessSheet" );
-		}
-	}
+	public void ConfigurationExporting_ExportSheet( IRibbonControl _ ) =>
+		ExportGlobalTables( currentSheet: !WorkbookState.IsGlobalTablesFile );
+	
 
 	private void ExportGlobalTables( string? downloadName = null, bool currentSheet = false )
 	{
