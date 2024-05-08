@@ -73,8 +73,9 @@ public class DataExport
 public class Help
 {
 	public string Url { get; init; } = "https://github.com/terryaney/Extensibility.ExcelDNA.Sample";
-	public string OfflineUrl { get; init; } = "file:///" + Path.Combine( AddIn.XllPath, "Resources", "Help", "readme.md" );
+	public string? OfflineUrl { get; init; }
 	public bool Offline { get; init; }
+	public string GetOfflineUrl() => OfflineUrl ?? "file:///" + Path.Combine( AddIn.XllPath, "Resources", "Help", "readme.md" );
 }
 
 public class Features

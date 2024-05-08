@@ -101,6 +101,40 @@ partial class ExcelApi
 		return new ExcelReference( row, row, column, column, reference.SheetId );
 	}
 
+	/// <summary>
+	/// Given a 2 dimensional object array, it converts it into single dimensional T array for typed used.
+	/// </summary>
+	public static T?[] GetValues<T>( this ExcelReference reference )
+	{
+		var type = typeof( T );
+		var allowCast = typeof( string ) != type && typeof( int ) != type;
+		var data = reference.GetValueArray(); // dates are preserved as DateTime
+		var rows = data.RowCount;
+		var columns = data.ColumnCount;
+		var size = Math.Max( rows, columns );
+		var isVertical = rows == size;
+
+		var result = new T?[ size ];
+
+		for ( var i = 0; i < size; i++ )
+		{
+			var v = isVertical
+				? data[ i, 0 ]
+				: data[ 0, i ];
+
+			try
+			{
+				result[ i ] = FromInteropValue<T>( type, v, allowCast );
+			}
+			catch ( InvalidOperationException ex )
+			{
+				throw new ApplicationException( string.Format( "{0}: {1}", reference.Offset( i, 0 ).GetAddress(), ex.Message ), ex );
+			}
+		}
+
+		return result;
+	}
+
 	public static T?[,] GetArray<T>( this ExcelReference reference )
 	{
 		// Information about decisions made on how to read bulk data

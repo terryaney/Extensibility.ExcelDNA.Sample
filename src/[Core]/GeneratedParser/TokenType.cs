@@ -1,0 +1,63 @@
+namespace KAT.Camelot.Extensibility.Excel.AddIn.GeneratedParser;
+
+public enum TokenType
+{
+	//Non terminal tokens:
+	_NONE_ = 0,
+	_UNDETERMINED_ = 1,
+
+	//Non terminal tokens:
+	Start = 2,
+	Assignment = 3,
+	CompareExpr = 4,
+	AddExpr = 5,
+	MultExpr = 6,
+	Params = 7,
+	Constructor = 8,
+	Method = 9,
+	String = 10,
+	Sheet = 11,
+	Range = 12,
+	Identifier = 13,
+	Eval = 14,
+	Data = 15,
+	Sign = 16,
+	Atom = 17,
+
+	//Terminal tokens:
+	PLUSMINUS = 18,
+	MULTDIV = 19,
+	BROPEN = 20,
+	BRCLOSE = 21,
+	SBROPEN = 22,
+	SBRCLOSE = 23,
+	COMMA = 24,
+	PERIOD = 25,
+	COLON = 26,
+	SHEETBEGIN = 27,
+	SHEETEND = 28,
+	QUOTEBEGIN = 29,
+	QUOTEEND = 30,
+	QUOTED = 31,
+	SNGQUOTEBEGIN = 32,
+	SNGQUOTEEND = 33,
+	SNGQUOTED = 34,
+	TRUE = 35,
+	FALSE = 36,
+	NULL = 37,
+	CELLID = 38,
+	CONSTRUCTOR = 39,
+	METHODNAME = 40,
+	IDENTIFIER = 41,
+	EVAL = 42,
+	DATA = 43,
+	ASSIGNID = 44,
+	INTEGER = 45,
+	NUMBER = 46,
+	COMPARE = 47,
+	EQUALS = 48,
+	SIGN = 49,
+	INVALID = 50,
+	EOF = 51,
+	WHITESPACE = 52
+}
