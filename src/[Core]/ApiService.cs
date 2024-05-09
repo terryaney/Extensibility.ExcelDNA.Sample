@@ -111,13 +111,13 @@ public class ApiService
 		await SendRequestWithoutResponseAsync( userName, password, url, HttpMethod.Patch );
 	}
 
-	public async Task<ApiValidation[]?> WaitForEmailBlastAsync( string token, string userName, string password )
+	public async Task<ApiValidation[]?> WaitForEmailBlastAsync( int id, string userName, string password )
 	{
-		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.Utility.Build.WaitEmailBlastComplete( token ) }";
+		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.Utility.Build.WaitEmailBlastComplete( id ) }";
 		return await SendRequestWithoutResponseAsync( userName, password, url, HttpMethod.Get );
 	}
 
-	public async Task<ApiResponse<string>> EmailBlastAsync( string contentFile, EmailBlastRequest reqeust, string? userName, string? password, CancellationToken cancellationToken = default )
+	public async Task<ApiResponse<int>> EmailBlastAsync( string contentFile, EmailBlastRequest reqeust, string? userName, string? password, CancellationToken cancellationToken = default )
 	{
 		var ms = new MemoryStream();
 		using ( var zip = new ZipArchive( ms, ZipArchiveMode.Create, true ) )
@@ -204,9 +204,9 @@ public class ApiService
 
 		using var response = httpResponse!;
 
-		var token = await response.Content.ReadAsStringAsync( cancellationToken );
+		var jobId = int.Parse( await response.Content.ReadAsStringAsync( cancellationToken ) );
 
-		return new () { Response = token };
+		return new () { Response = jobId };
 	}
 
 	public async Task<ApiValidation[]?> UpdateGlobalTablesAsync( string? clientName, string[] targets, JsonObject globalTables, string? userName, string? password, CancellationToken cancellationToken = default )

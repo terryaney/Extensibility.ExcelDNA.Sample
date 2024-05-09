@@ -82,6 +82,8 @@ public partial class Ribbon
 
 				if ( info == null ) return;
 				
+				application.Cursor = MSExcel.XlMousePointer.xlWait;
+
 				SaveWindowConfiguration( nameof( EmailBlast ), info.WindowConfiguration );
 
 				RunRibbonTask( async () =>
