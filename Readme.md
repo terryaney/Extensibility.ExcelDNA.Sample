@@ -83,6 +83,7 @@ My add-in has a CustomUI ribbon and to enable intellisense in the `Ribbon.xml` f
 1. [Changing Visible/Enabled State of Ribbon Controls](#changing-visibleenabled-state-of-ribbon-controls)
 1. [Using Windows Form Dialogs](#using-windows-form-dialogs)
 1. [Fixing Workbook Links](#fixing-workbook-links)
+1. [Extending Optional Parameters and Default Values](#extending-optional-parameters-and-default-values)
 
 ### Ribbon Organization
 
@@ -593,5 +594,23 @@ During the original creation of addin (.NET Framework and/or *.xla files) we oft
 For example, assume there is an addin named `rbl.xla` that exposed a function called `CalculateProjection`.  If the user had a formula of `=CalculateProjection(A1)` in their workbook all worked fine.  But when they uploaded file to be used in KAT services, and the rbl.xla file was not in the same location on the server as it was for user, the link would be broken **and the formula would be modified** to `=c:\user\installation\path\to\rbl.xla!CalculateProjection(A1)`.  If not corrected upon opening, this was compounded when the formula used several functions from `rbl.xla` because the length of the formula (after the path injections) would sometimes exceed the allowed limit for a formula expression and simply lose chunks of the formula.
 
 To combat this, our 'calculation servers' would run a function like the [UpdateWorkbookLinks](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/Ribbon.Handlers.CalcEngineUtilities.cs) when a workbook was opened, *before it was prcoessed*.  This process has continued to live on in the Excel-DNA add-in as a utility for users, but is no longer required in KAT services since Excel automation is no longer the server functionaliy used to process spreadsheets.
+
+Back to [Features listing](#features).
+
+### Extending Optional Parameters and Default Values
+
+Just wanted to note an updated method of handling optional parameters and default values in Excel-DNA.  See [`OptionalValues.Check`](https://github.com/terryaney/Extensibility.Camelot.Excel.KAT/blob/main/src/[Functions]/OptionalValues.cs) for the implementation.  It is based on Excel-DNA guide of [Optional Parameters and Default Values
+](https://excel-dna.net/docs/guides-basic/optional-parameters-and-default-values) but it reduces the functions into a single C# generic function and also handles converting Excel 'numbers' (always doubles) to `int` if that is the requested type.  The signature of the function includes the name of the variable simply for diagnostic purposes.
+
+```csharp
+// Function Signature
+static T Check<T>( this object? arg, string argumentName, T defaultValue ) { }
+
+// Usage
+[ExcelFunction()]
+public static int MapOrdinal( 
+	[ExcelArgument( "Value to return to make coding specification formulas easier." )] object? defaultValue = null
+) => defaultValue.Check( nameof( defaultValue ), 1 );
+```
 
 Back to [Features listing](#features).

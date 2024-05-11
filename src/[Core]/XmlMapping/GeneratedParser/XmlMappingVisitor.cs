@@ -18,11 +18,26 @@ public class XmlMappingVisitor : ExpressionParseTreeVisitor
 
 		if ( method != null )
 		{
+			var methodParameters = method.GetParameters();
+			var parametersCount = parameters.Count();
+
+			// Optional 'scopeDepth' parameter for MapOrdinal
+			if ( name == "MapOrdinal" && parametersCount == 0 )
+			{
+				parameters = new[] { Expression.Constant( 1 ) };
+				parametersCount++;
+			}
+
+			// Last parameter to mapping functions is a 'default' value for Excel usability.  It might be omitted so need to appened a null
+			var parsedParameters = parametersCount == methodParameters.Length - 1
+				? parameters.Append( GetNullExpression() )
+				: parameters;
+
 			return Expression.Call(
 				Context,
 				method,
-				method.GetParameters().Zip(
-					parameters,
+				methodParameters.Zip(
+					parsedParameters,
 					( p, a ) => EnsureType( a, p.ParameterType ) ).ToArray() );
 		}
 

@@ -2,13 +2,13 @@ using System.Text.RegularExpressions;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn.GeneratedParser;
 
-public struct CellId
+public readonly struct CellId
 {
-	private static Regex columnId = new Regex( @"([a-zA-Z]+)(?=[0-9]+)" );
-	private static Regex rowId = new Regex( @"(?<=[a-zA-Z]*)([0-9]+)" );
+	private static readonly Regex columnId = new( @"([a-zA-Z]+)(?=[0-9]+)" );
+	private static readonly Regex rowId = new( @"(?<=[a-zA-Z]*)([0-9]+)" );
 
-	private int column;
-	private int row;
+	private readonly int column;
+	private readonly int row;
 
 	public int Column => column;
 	public int Row => row;

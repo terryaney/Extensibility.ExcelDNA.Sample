@@ -2,31 +2,21 @@ using System.Xml.Linq;
 using System.Xml.XPath;
 using KAT.Camelot.RBLe.Core.Calculations.Functions;
 
+#pragma warning disable CA1822 // Mark members as static
+
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 class XmlContext
 {
 	public required XElement Element { get; init; }
+	
+	public DateTime MapToDate( string value, object? _ = null ) =>
+		DateTime.FromOADate( Validation.ParseDate( value, "en-US" ) );
+	
+	public double MapToNumber( string value, object? _ = null ) => 
+		Validation.ParseDecimal( value, "en-US" );
 
-	public DateTime BTRParseDate( string value ) => BTRParseDate( value, "en-US", null );
-	public DateTime BTRParseDate( string value, string culture ) => BTRParseDate( value, culture, null );
-
-	public DateTime BTRParseDate( string value, string culture, string? allowedFormats )
-	{
-		var formats = string.IsNullOrEmpty( allowedFormats )
-			? null
-			: allowedFormats.Split( '|' );
-
-		return DateTime.FromOADate( Validation.ParseDate( value, culture ?? "en-US", formats ) );
-	}
-
-	public double BTRParseInteger( string value ) => BTRParseInteger( value, "en-US" );
-	public double BTRParseInteger( string value, string culture ) => Validation.ParseInteger( value, culture ?? "en-US" );
-
-	public double BTRParseDecimal( string value ) => BTRParseDecimal( value, "en-US" );
-	public double BTRParseDecimal( string value, string culture ) => Validation.ParseDecimal( value, culture );
-
-	public string? BTRGetMappingValue( string xpath )
+	public string? MapValue( string xpath, object? _ = null )
 	{
 		try
 		{
@@ -48,8 +38,7 @@ class XmlContext
 		}
 	}
 
-	public int BTRGetMappingOrdinal() => BTRGetScopedMappingOrdinal( 1 );
-	public int BTRGetScopedMappingOrdinal( int scopeDepth )
+	public int MapOrdinal( int scopeDepth = 1, object? _ = null )
 	{
 		if ( scopeDepth <= 1 )
 		{
@@ -74,12 +63,25 @@ class XmlContext
 		}
 	}
 
-	public string BTRNumberFormat( double value, string format ) => BTRNumberFormat( value, format, "en-US" );
-	public string BTRNumberFormat( double value, string format, string culture ) =>  Utility.LocaleFormat( value, format, culture );
+	public string MapFormatValue( object? value, string format, object? _ )
+	{
+		if ( value == null ) return string.Empty;
 
-	public string BTRDateFormat( DateTime value, string format ) => BTRDateFormat( value, format, "en-US" );
-	public string BTRDateFormat( DateTime value, string format, string culture ) => Utility.LocaleFormat( ( value < new DateTime( 1900, 3, 1 ) ? value.AddDays( 1 ) : value ), format, culture );
-	
+		var parsed = value is string s ? ParseValue( s ) : value;
+
+		return Type.GetTypeCode( parsed.GetType() ) switch
+		{
+			TypeCode.String => (string)parsed,
+			TypeCode.Int16 or TypeCode.Int32 => ( (int)parsed ).ToString( format ),
+			TypeCode.Int64 => ( (long)parsed ).ToString( format ),
+			TypeCode.UInt16 or TypeCode.UInt32 => ( (uint)parsed ).ToString( format ),
+			TypeCode.UInt64 => ( (ulong)parsed ).ToString( format ),
+			TypeCode.Single => ( (float)parsed ).ToString( format ),
+			TypeCode.Double => ( (double)parsed ).ToString( format ),
+			TypeCode.DateTime => ( (DateTime)parsed < new DateTime( 1900, 3, 1 ) ? ( (DateTime)parsed ).AddDays( 1 ) : (DateTime)parsed ).ToString( format ),
+			_ => string.Empty,
+		};
+	}
 
 	public object ChangeType( object value, Type type ) => Convert.ChangeType( value, type );
 

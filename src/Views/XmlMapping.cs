@@ -18,12 +18,11 @@ internal partial class XmlMapping : Form
 		Size = new Size { Width = (int?)windowConfiguration[ "width" ] ?? Width, Height = (int?)windowConfiguration[ "height" ] ?? Height };
 	}
 
-	public XmlMappingInfo? GetInfo( NativeWindow owner )
+	public XmlMappingInfo? GetInfo( string? clientName, string? inputFile, string? outputFile, NativeWindow owner )
 	{
-
-		this.clientName.Text = (string?)windowConfiguration[ "clientName" ];
-		this.inputFileName.Text = (string?)windowConfiguration[ "inputFile" ];
-		this.outputFileName.Text = (string?)windowConfiguration[ "outputFile" ];
+		this.clientName.Text = clientName;
+		this.inputFileName.Text = inputFile;
+		this.outputFileName.Text = outputFile;
 		
 		var dialogResult = ShowDialog( owner );
 
@@ -31,10 +30,6 @@ internal partial class XmlMapping : Form
 		{
 			return null;
 		}
-
-		windowConfiguration[ "clientName" ] = this.clientName.Text;
-		windowConfiguration[ "inputFile" ] = this.inputFileName.Text;
-		windowConfiguration[ "ouputFile" ] = this.outputFileName.Text;
 
 		windowConfiguration[ "top" ] = Location.Y;
 		windowConfiguration[ "left" ] = Location.X;
