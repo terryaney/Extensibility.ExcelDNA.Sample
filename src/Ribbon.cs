@@ -25,14 +25,11 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn;
 CalcEngineUtilities_PopulateInputTab
 CalcEngineUtilities_ProcessWorkbook
 Audit_CalcEngineTabs
-CalcEngineUtilities_ConfigureHighCharts
-CalcEngineUtilities_ImportBrdSettings
 ConfigurationExporting_ExportWorkbook  - IsRTCFile
 DataExporting_ExportResultDocGenXml
 DataExporting_ExportResultJsonData
 ConfigurationExporting_ExportWorkbook  - SpecSheet
 DataExporting_AuditDataExportHeaders
-DataExporting_ExportMappedXmlData
 DataExporting_ExportXmlData
 DataExporting_ExportJsonData
 CalcEngineUtilities_PreviewResults
@@ -157,8 +154,6 @@ public partial class Ribbon : ExcelRibbon
 		RemoveEventHandlers();
 		showRibbon = AddIn.Settings.ShowRibbon;
 		AddEventHandlers();
-
-		WorkbookState.UpdateFeatures();
 		ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnFeatureChange );
 	}
 
@@ -296,7 +291,7 @@ public partial class Ribbon : ExcelRibbon
 
 	private async Task EnsureAddInCredentialsAsync()
 	{
-		if ( WorkbookState.ShowCalcEngineManagement && ( string.IsNullOrEmpty( AddIn.Settings.KatUserName ) || string.IsNullOrEmpty( AddIn.Settings.KatPassword ) ) )
+		if ( string.IsNullOrEmpty( AddIn.Settings.KatUserName ) || string.IsNullOrEmpty( AddIn.Settings.KatPassword ) )
 		{
 			using var credentials = new Credentials( GetWindowConfiguration( nameof( Credentials ) ) );
 			

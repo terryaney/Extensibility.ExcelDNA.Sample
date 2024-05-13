@@ -78,7 +78,7 @@ internal partial class SaveHistory : Form
 		tUserName.Text = userName;
 		tPassword.Text = password;
 
-		if ( !workbookState.ShowCalcEngineManagement || !workbookState.IsCalcEngine )
+		if ( !workbookState.IsCalcEngine )
 		{
 			ok.Text = "A&pply";
 			lManagementSite.Visible = lUserName.Visible = lPassword.Visible = tUserName.Visible = tPassword.Visible = forceUpload.Visible = false;

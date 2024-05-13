@@ -1,27 +1,18 @@
-using System.Security.Cryptography;
-using System.Text;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public class WorkbookState
 {
-	private bool isGlobalTablesFile;
-	public bool IsGlobalTablesFile => ShowGlobalTables && isGlobalTablesFile;
+	public bool IsGlobalTablesFile { get; private set; }
 	public bool IsSpecSheetFile { get; private set; }
 	public bool IsCalcEngine { get; private set; }
-	private bool isRTCFile;
-	public bool IsRTCFile => ShowDeveloperExports && isRTCFile;
-
-	public bool ShowDeveloperExports { get; private set; }
-	public bool ShowCalcEngineManagement { get; private set; }
-	public bool ShowGlobalTables { get; private set; }
+	public bool IsRTCFile { get; private set; }
 
 	public string ManagementName { get; private set; } = null!;
 	public string TestManagementName => $"{Path.GetFileNameWithoutExtension( ManagementName )}_Test{Path.GetExtension( ManagementName )}";
 
-	private bool isUploadable;
-	public bool IsUploadable => ShowCalcEngineManagement && isUploadable;
+	public bool IsUploadable { get; private set; }
 	public bool IsLatestVersion => 
 		!string.IsNullOrEmpty( UploadedVersion ) && !string.IsNullOrEmpty( CurrentVersion ) &&
 		double.TryParse( CurrentVersion, out var version ) &&
@@ -55,10 +46,10 @@ public class WorkbookState
 		}
 
 		bookNames = activeWorkbook.Names.Cast<MSExcel.Name>().ToArray();
-		isGlobalTablesFile = activeWorkbook.Name.StartsWith( Path.GetFileNameWithoutExtension( Constants.FileNames.GlobalTables ), StringComparison.InvariantCultureIgnoreCase );
-		isRTCFile = activeWorkbook.Name.StartsWith( Path.GetFileNameWithoutExtension( Constants.FileNames.RTCData ), StringComparison.InvariantCultureIgnoreCase );
+		IsGlobalTablesFile = activeWorkbook.Name.StartsWith( Path.GetFileNameWithoutExtension( Constants.FileNames.GlobalTables ), StringComparison.InvariantCultureIgnoreCase );
+		IsRTCFile = activeWorkbook.Name.StartsWith( Path.GetFileNameWithoutExtension( Constants.FileNames.RTCData ), StringComparison.InvariantCultureIgnoreCase );
 
-		var planInfo = !isGlobalTablesFile
+		var planInfo = !IsGlobalTablesFile
 			? activeWorkbook
 				.Worksheets
 				.Cast<MSExcel.Worksheet>()
@@ -67,14 +58,14 @@ public class WorkbookState
 			: null;
 
 		var isSpecSheet =
-			!isGlobalTablesFile && planInfo != null &&
+			!IsGlobalTablesFile && planInfo != null &&
 			( 
 				planInfo.Names.Cast<MSExcel.Name>().Count( n => n.Name.EndsWith( "!General_Information" ) || n.Name.EndsWith( "!Search_Indexes" ) ) == 2 ||
 				bookNames.Count( n => n.Name == "General_Information" || n.Name == "Search_Indexes" ) == 2 
 			);
 
 		var isCalcEngine =
-			!isSpecSheet && !isGlobalTablesFile &&
+			!isSpecSheet && !IsGlobalTablesFile &&
 			 activeWorkbook.Worksheets.Cast<MSExcel.Worksheet>()
 				.Any( s => s.Names.Cast<MSExcel.Name>().Any( n => n.Name.EndsWith( "!SheetType" ) ) && Constants.CalcEngines.IsRBLeSheet( (string)s.Range[ "SheetType" ].Text ) );
 
@@ -97,7 +88,6 @@ public class WorkbookState
 		HasLinks = hasLinks;
 		CurrentVersion = activeWorkbook.RangeOrNull<string>( "Version" );
 
-		UpdateFeatures();
 		UpdateSheet( ( activeWorkbook.ActiveSheet as MSExcel.Worksheet )! );
 	}
 
@@ -105,7 +95,7 @@ public class WorkbookState
 	{
 		if ( !IsCalcEngine )
 		{
-			isUploadable = false;
+			IsUploadable = false;
 			return null;
 		}
 
@@ -122,7 +112,7 @@ public class WorkbookState
 
 		var calcEngineInfo = response.Response!;
 
-		isUploadable = string.Compare( ManagementName, activeWorkbookName, true ) == 0 || string.Compare( TestManagementName, activeWorkbookName, true ) == 0;
+		IsUploadable = string.Compare( ManagementName, activeWorkbookName, true ) == 0 || string.Compare( TestManagementName, activeWorkbookName, true ) == 0;
 
 		CheckedOutBy = calcEngineInfo.CheckedOutBy;
 		UploadedVersion = calcEngineInfo.Version.ToString();
@@ -133,13 +123,6 @@ public class WorkbookState
 	public void UpdateVersion( MSExcel.Workbook activeWorkbook ) => UploadedVersion = activeWorkbook.RangeOrNull<string>( "Version" );
 	public void CheckInCalcEngine() => CheckedOutBy = null;
 	public void CheckOutCalcEngine() => CheckedOutBy = AddIn.Settings.KatUserName;
-
-	public void UpdateFeatures()
-	{
-		ShowDeveloperExports = Convert.ToBase64String( SHA256.HashData( Encoding.UTF8.GetBytes( Features.Salt + "ShowDeveloperExports:Allow" ) ) ) == AddIn.Settings.Features.ShowDeveloperExports;
-		ShowGlobalTables = Convert.ToBase64String( SHA256.HashData( Encoding.UTF8.GetBytes( Features.Salt + "GlobalTables:Allow" ) ) ) == AddIn.Settings.Features.GlobalTables;
-		ShowCalcEngineManagement = Convert.ToBase64String( SHA256.HashData( Encoding.UTF8.GetBytes( Features.Salt + "CalcEngineManagement:Allow" ) ) ) == AddIn.Settings.Features.CalcEngineManagement;
-	}
 
 	public void UpdateSheet( MSExcel.Worksheet? activeSheet ) => SheetState = new( this, activeSheet );
 
@@ -170,14 +153,14 @@ public class WorkbookState
 
 	public void ClearState()
 	{
-		isGlobalTablesFile =
+		IsGlobalTablesFile =
 		IsSpecSheetFile =
 		IsCalcEngine =
-		isRTCFile =
+		IsRTCFile =
 		HasxDSDataFields =
 		HasRBLeMacro =
 		HasLinks =
-		isUploadable = false;
+		IsUploadable = false;
 
 		ManagementName =
 		UploadedVersion =
@@ -200,7 +183,7 @@ public class SheetState
 	
 	public bool CanPreview { get; init; }
 	private readonly bool canExport;
-	public bool CanExport => ( workbookState?.ShowDeveloperExports ?? false ) && ( workbookState.IsGlobalTablesFile || canExport );
+	public bool CanExport => workbookState.IsGlobalTablesFile || canExport;
 
 	public bool IsGlobalTableSheet { get; init; }
 	public bool IsXmlMappingSheet { get; init; }

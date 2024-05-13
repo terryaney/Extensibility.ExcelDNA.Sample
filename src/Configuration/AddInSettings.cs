@@ -11,7 +11,6 @@ public class AddInSettings
 	public string[] DataServices { get; init; } = Array.Empty<string>();
 	public string? SaveHistoryName { get; init; }
 	public DataExport DataExport { get; init; } = new();
-	public Features Features { get; init; } = new();
 	public Help Help { get; init; } = new();
 
 	public string? KatUserName { get; set; }
@@ -76,12 +75,4 @@ public class Help
 	public string? OfflineUrl { get; init; }
 	public bool Offline { get; init; }
 	public string GetOfflineUrl() => OfflineUrl ?? "file:///" + Path.Combine( AddIn.XllPath, "Resources", "Help", "readme.md" );
-}
-
-public class Features
-{
-	internal const string Salt = "0fbc569b-f5f9-4a72-8127-ea0a558af5dd";
-	public string? ShowDeveloperExports { get; init; }
-	public string? GlobalTables { get; init; }
-	public string? CalcEngineManagement { get; init; }
 }

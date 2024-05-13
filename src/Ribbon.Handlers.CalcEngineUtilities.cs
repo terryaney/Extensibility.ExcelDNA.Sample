@@ -20,11 +20,6 @@ public partial class Ribbon
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public void CalcEngineUtilities_ConfigureHighCharts( IRibbonControl control )
-	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
-	}
-
 	public void CalcEngineUtilities_LocalBatchCalc( IRibbonControl control )
 	{
 		MessageBox.Show( "// TODO: Process " + control.Id );
@@ -43,11 +38,6 @@ public partial class Ribbon
 	}
 
 	public void CalcEngineUtilities_ConvertToRBLe( IRibbonControl control )
-	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
-	}
-
-	public void CalcEngineUtilities_ImportBrdSettings( IRibbonControl control )
 	{
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}

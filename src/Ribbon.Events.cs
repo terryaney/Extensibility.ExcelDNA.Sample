@@ -14,12 +14,10 @@ public partial class Ribbon
 			return control.Id switch
 			{
 				"tabKat" => showRibbon,
-				"groupConfigurationExporting" => WorkbookState.ShowDeveloperExports || WorkbookState.ShowGlobalTables,
-				"configurationExportingGlobalTables" => WorkbookState.ShowGlobalTables,
 
 				"katDataStoreDebugCalcEnginesMenu" => !string.IsNullOrEmpty( WorkbookState.ManagementName ),
-				"katDataStoreCheckOut" => WorkbookState.ShowCalcEngineManagement && WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( AddIn.Settings.KatUserName ) && string.Compare( WorkbookState.CheckedOutBy, AddIn.Settings.KatUserName, true ) != 0 && !string.IsNullOrEmpty( WorkbookState.UploadedVersion ),
-				"katDataStoreCheckIn" => WorkbookState.ShowCalcEngineManagement && WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( AddIn.Settings.KatUserName ) && string.Compare( WorkbookState.CheckedOutBy, AddIn.Settings.KatUserName, true ) == 0,
+				"katDataStoreCheckOut" => WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( AddIn.Settings.KatUserName ) && string.Compare( WorkbookState.CheckedOutBy, AddIn.Settings.KatUserName, true ) != 0 && !string.IsNullOrEmpty( WorkbookState.UploadedVersion ),
+				"katDataStoreCheckIn" => WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( AddIn.Settings.KatUserName ) && string.Compare( WorkbookState.CheckedOutBy, AddIn.Settings.KatUserName, true ) == 0,
 
 				"navigationInputs" => !WorkbookState.HasxDSDataFields,
 				"navigationInputData" or "navigationCalculationInputs" or "navigationFrameworkInputs" => WorkbookState.HasxDSDataFields,
@@ -47,12 +45,12 @@ public partial class Ribbon
 				"katDataStoreDownloadLatest" => WorkbookState.IsCalcEngine && !WorkbookState.IsLatestVersion,
 				"katDataStoreDebugCalcEnginesMenu" => WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( AddIn.Settings.SaveHistoryName ) && !string.IsNullOrEmpty( WorkbookState.UploadedVersion ),
 
-				"dataExportingDocGenXml" or "dataExportingJsonResultData" or "calcEngineUtilitiesImportBRD" => WorkbookState.SheetState.IsResultSheet,
+				"dataExportingDocGenXml" or "dataExportingJsonResultData" => WorkbookState.SheetState.IsResultSheet,
 				"dataExportingExtras" or "dataExportingxDS" or "dataExportingJsonData" => application.ActiveWorkbook != null && !WorkbookState.IsSpecSheetFile && !WorkbookState.IsGlobalTablesFile && !WorkbookState.IsRTCFile && !WorkbookState.IsCalcEngine,
-				"dataExportingMappedxDSData" => WorkbookState.ShowDeveloperExports && WorkbookState.SheetState.IsXmlMappingSheet,
+				"dataExportingMappedxDSData" => WorkbookState.SheetState.IsXmlMappingSheet,
 
 				"calcEngineUtilitiesLoadData" => WorkbookState.SheetState.IsInputSheet,
-				"calcEngineUtilitiesHighcharts" or "calcEngineUtilitiesPreviewResults" => WorkbookState.SheetState.CanPreview,
+				"calcEngineUtilitiesPreviewResults" => WorkbookState.SheetState.CanPreview,
 				"calcEngineUtilitiesConvertToRBLe" or "calcEngineUtilitiesProcessWorkbook" or "calcEngineUtilitiesLocalBatch" => WorkbookState.IsCalcEngine,
 				"calcEngineUtilitiesLinkToLoadedAddIns" => WorkbookState.HasLinks,
 

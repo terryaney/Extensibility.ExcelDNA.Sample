@@ -2,12 +2,6 @@
 	<ribbon startFromScratch="false">
 		<tabs>
 			<tab id="tabKat" keytip="K" label="KAT Tools" getVisible="Ribbon_GetVisible">
-				<group id="groupConfigurationExporting" keytip="ss" label="Configuration Exporting" imageMso="WorkspaceHtmlProperties" getVisible="Ribbon_GetVisible">
-					<button id="configurationExportingWorkbook" keytip="E" label="Export Configurations" imageMso="WorkspaceHtmlProperties" size="normal" onAction="Ribbon_OnAction" tag="ConfigurationExporting_ExportWorkbook" getEnabled="Ribbon_GetEnabled"/>
-					<button id="configurationExportingGlobalTables" keytip="G" label="Process Global Tables" imageMso="ExportMoreMenu" size="normal" onAction="Ribbon_OnAction" tag="ConfigurationExporting_ProcessGlobalTables" getVisible="Ribbon_GetVisible" getEnabled="Ribbon_GetEnabled"/>
-					<button id="configurationExportingSheet" keytip="U" label="Export Current Sheet" imageMso="DefinePrintStyles" size="normal" onAction="Ribbon_OnAction" tag="ConfigurationExporting_ExportSheet" getEnabled="Ribbon_GetEnabled"/>
-				</group>
-
 				<group id="groupKatDataStore" keytip="ss" label="KAT Store" imageMso="WorkspaceHtmlProperties">
 					<button id="katDataStoreDownloadLatest" keytip="N" label="Download Latest" imageMso="MarkForDownload" onAction="Ribbon_OnAction" tag="KatDataStore_DownloadLatestCalcEngine" size="large" getEnabled="Ribbon_GetEnabled" getScreentip="Ribbon_GetScreentip" />
 					<button id="katDataStoreCheckIn" keytip="C" label="Check In" imageMso="FileCheckIn" onAction="Ribbon_OnAction" tag="KatDataStore_CheckInCalcEngine" size="large" getVisible="Ribbon_GetVisible" />
@@ -40,21 +34,16 @@
 
 					<menu id="calcEngineUtilitiesExtrasMenu" keytip="2" label="Utilities" imageMso="ColumnListSetting" size="large">
 						<button id="calcEngineUtilitiesPreviewResults" keytip="P" label="Preview Results" imageMso="CreateReportWeb" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_PreviewResults" getEnabled="Ribbon_GetEnabled"/>
-						<button id="calcEngineUtilitiesHighcharts" keytip="F" label="Configure HighCharts" imageMso="ChartLayoutGallery" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_ConfigureHighCharts" getEnabled="Ribbon_GetEnabled"/>
-
-						<menuSeparator id="calcEngineUtilitiesExtrasMenuSep1"/>
-
 						<button id="calcEngineUtilitiesLocalBatch" keytip="B" label="Local Batch Calc" imageMso="GroupCreateClient" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_LocalBatchCalc" getEnabled="Ribbon_GetEnabled"/>
 
-						<menuSeparator id="calcEngineUtilitiesExtrasMenuSep2"/>
+						<menuSeparator id="calcEngineUtilitiesExtrasMenuSep1"/>
 
 						<button id="calcEngineUtilitiesDownloadGlobalTables" keytip="T" label="Download Global Tables File" imageMso="ExportMoreMenu" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_DownloadGlobalTables"/>
 						<button id="calcEngineUtilitiesDownloadHelpers" keytip="H" label="Download Helpers CalcEngine" imageMso="DiagramChangeToCycleClassic" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_DownloadHelpersCalcEngine"/>
 
-						<menuSeparator id="calcEngineUtilitiesExtrasMenuSep3"/>
+						<menuSeparator id="calcEngineUtilitiesExtrasMenuSep2"/>
 
 						<button id="calcEngineUtilitiesConvertToRBLe" keytip="R" label="Convert to RBLe Functions" imageMso="ControlWizards" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_ConvertToRBLe" getEnabled="Ribbon_GetEnabled"/>
-						<button id="calcEngineUtilitiesImportBRD" keytip="S" label="Import BRD Settings" imageMso="MultiItemFormGallery" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_ImportBrdSettings" getEnabled="Ribbon_GetEnabled"/>
 						<button id="calcEngineUtilitiesLinkToLoadedAddIns" keytip="K" label="Link to Loaded Add-ins" imageMso="EditLinks" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_LinkToLoadedAddIns" getEnabled="Ribbon_GetEnabled"/>
 					</menu>
 				</group>
@@ -91,6 +80,12 @@
 						<button id="katHelpContents" keytip="C" label="Contents" onAction="Ribbon_OnAction" tag="Kat_OpenHelp" />
 						<button id="katHelpAbout" keytip="A" label="About..." onAction="Ribbon_OnAction" tag="Kat_HelpAbout" />
 					</menu>
+				</group>
+
+				<group id="groupConfigurationExporting" keytip="ss" label="Configuration Exporting" imageMso="WorkspaceHtmlProperties" getVisible="Ribbon_GetVisible">
+					<button id="configurationExportingWorkbook" keytip="E" label="Export Configurations" imageMso="WorkspaceHtmlProperties" size="normal" onAction="Ribbon_OnAction" tag="ConfigurationExporting_ExportWorkbook" getEnabled="Ribbon_GetEnabled"/>
+					<button id="configurationExportingGlobalTables" keytip="G" label="Process Global Tables" imageMso="ExportMoreMenu" size="normal" onAction="Ribbon_OnAction" tag="ConfigurationExporting_ProcessGlobalTables" getVisible="Ribbon_GetVisible" getEnabled="Ribbon_GetEnabled"/>
+					<button id="configurationExportingSheet" keytip="U" label="Export Current Sheet" imageMso="DefinePrintStyles" size="normal" onAction="Ribbon_OnAction" tag="ConfigurationExporting_ExportSheet" getEnabled="Ribbon_GetEnabled"/>
 				</group>
 			</tab>
 		</tabs>
