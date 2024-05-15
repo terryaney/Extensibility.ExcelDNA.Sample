@@ -110,6 +110,10 @@ public static partial class ExcelApi
 		}
 	}
 
+	public static ExcelReference? GetReferenceOrNull( this string address, string sheetName ) => $"'{sheetName}'!{address}".GetReferenceOrNull();
+	public static ExcelReference? GetReferenceOrNull( this string address ) => TryGetWorkbookReference( null, address );
+
+	public static ExcelReference GetReference( this string address, string sheetName ) => $"'{sheetName}'!{address}".GetReference();
 	public static ExcelReference GetReference( this string address ) => GetWorkbookReference( null, address );
 
 	private static ExcelReference GetWorkbookReference( string? workbookName, string address )

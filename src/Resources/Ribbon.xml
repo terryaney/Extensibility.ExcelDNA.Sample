@@ -55,7 +55,6 @@
 						<button id="dataExportingJsonData" keytip="J" label="xDS Json Data..." imageMso="CustomizeXSLTMenu" onAction="Ribbon_OnAction" tag="DataExporting_ExportJsonData"/>
 						<button id="dataExportingJsonResultData" keytip="R" label="Result Json Data..." imageMso="CustomizeXSLTMenu" onAction="Ribbon_OnAction" tag="DataExporting_ExportResultJsonData" getEnabled="Ribbon_GetEnabled"/>
 						<menuSeparator id="dataExportingExtrasSep1"/>
-						<button id="dataExportingAuditHeaders" keytip="X" label="Audit Data Export Sheet" imageMso="HeaderFooterLinkToPrevious" onAction="Ribbon_OnAction" tag="DataExporting_AuditDataExportHeaders" />
 						<button id="dataExportingMappedxDSData" keytip="M" label="Mapped xDS Data..." imageMso="ExportBusinessDataCatalogModel" onAction="Ribbon_OnAction" tag="DataExporting_ExportMappedXmlData" getEnabled="Ribbon_GetEnabled"/>
 					</menu>
 				</group>

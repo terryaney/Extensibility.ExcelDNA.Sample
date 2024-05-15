@@ -10,7 +10,7 @@ public class AddInSettings
 	public string ApiEndpoint { get; init; } = null!;
 	public string[] DataServices { get; init; } = Array.Empty<string>();
 	public string? SaveHistoryName { get; init; }
-	public DataExport DataExport { get; init; } = new();
+	public DataExportSettings DataExport { get; init; } = new();
 	public Help Help { get; init; } = new();
 
 	public string? KatUserName { get; set; }
@@ -62,7 +62,7 @@ public class AddInSettings
 	}
 }
 
-public class DataExport
+public class DataExportSettings
 {
 	public string? Path { get; init; }
 	public bool AppendDateToName { get; init; } = false;
