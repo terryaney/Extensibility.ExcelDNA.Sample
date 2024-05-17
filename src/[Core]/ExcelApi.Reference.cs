@@ -5,6 +5,7 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 partial class ExcelApi
 {
+	public static string WorkbookName( this ExcelReference reference ) => (string)XlCall.Excel( XlCall.xlfGetCell, (int)GetCellType.WorkbookRef, reference );
 	public static string SheetName( this ExcelReference reference ) => (string)XlCall.Excel( XlCall.xlfGetCell, (int)GetCellType.SheetRef, reference );
 
 	public static string? GetText( this ExcelReference cell )

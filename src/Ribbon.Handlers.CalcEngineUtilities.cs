@@ -1,4 +1,9 @@
-﻿using ExcelDna.Integration.CustomUI;
+﻿using ExcelDna.Integration;
+using ExcelDna.Integration.CustomUI;
+using KAT.Camelot.Domain.Telemetry;
+using KAT.Camelot.Extensibility.Excel.AddIn.RBLe;
+using KAT.Camelot.Extensibility.Excel.AddIn.RBLe.Interop;
+using KAT.Camelot.RBLe.Core.Calculations;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
@@ -10,9 +15,78 @@ public partial class Ribbon
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public void CalcEngineUtilities_ProcessWorkbook( IRibbonControl control )
+	public void CalcEngineUtilities_RunMacros( IRibbonControl _ )
 	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
+		var helpersOpen = application.GetWorkbook( Constants.FileNames.Helpers ) != null;
+
+		if ( !helpersOpen && !File.Exists( Path.Combine( AddIn.ResourcesPath, Constants.FileNames.Helpers ) ) )
+		{
+			MessageBox.Show( "The Helpers workbook is missing.  Please download it before processing the workbook.", "Missing Helpers", MessageBoxButtons.OK, MessageBoxIcon.Warning );
+			return;
+		}
+
+		ExcelAsyncUtil.QueueAsMacro( async () =>
+		{
+			try
+			{
+				var configuration = new ExcelCalcEngineConfigurationFactory( application.ActiveWorkbook ).Configuration;
+				using var calcEngine = new ExcelCalcEngine( application.ActiveWorkbook, configuration );
+
+				var helpersWb =
+					application.GetWorkbook( Constants.FileNames.Helpers ) ??
+					application.Workbooks.Open( Path.Combine( AddIn.ResourcesPath, Constants.FileNames.Helpers ) );
+
+				try
+				{
+					using var helpers = new ExcelCalcEngine( helpersWb );
+					var cts = new CancellationTokenSource();
+					var diagnosticTraceLogger = new DiagnosticTraceLogger();
+
+					/*
+					var parameters = new CalculationParameters
+					{
+						CalculationId = Guid.NewGuid(),
+						RequestInfo = request,
+						CalcEngineInfo = new() 
+						{
+							InputTab = configuration.InputTab,
+						},
+						Payload = payload,
+						LookupTables = lookupsConfiguration.Tables,
+						ClearInputs = true,
+						ClearGlobalTables = true
+					};
+					*/
+
+					// TODO: Do I handle helpers severance?
+					// TODO: GetMacroValue - was override that threw error on ExcelErrorRef ... do I want that?
+					// TODO: diagnosticTraceLogger macro logging happens here...TraceMacroAction...figure out how to get them into display
+
+					var appliedDataUpdates = await excelCalculationService.ProcessMacrosAsync( calcEngine, helpers, diagnosticTraceLogger, cts.Token );
+
+					if ( diagnosticTraceLogger.HasTrace )
+					{
+						ExcelDna.Logging.LogDisplay.Clear();
+						foreach ( var t in diagnosticTraceLogger.Trace )
+						{
+							ExcelDna.Logging.LogDisplay.WriteLine( t );
+						}
+						ExcelDna.Logging.LogDisplay.Show();
+					}
+				}
+				finally
+				{
+					if ( !helpersOpen )
+					{
+						helpersWb.Close( false );
+					}
+				}
+			}
+			catch ( Exception ex )
+			{
+				ShowException( ex );
+			}
+		} );
 	}
 
 	public void CalcEngineUtilities_PreviewResults( IRibbonControl control )

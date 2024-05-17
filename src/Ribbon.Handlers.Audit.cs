@@ -1,6 +1,11 @@
-﻿using ExcelDna.Integration;
+﻿using System.Diagnostics;
+using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 using KAT.Camelot.Domain.Extensions;
+using KAT.Camelot.Extensibility.Excel.AddIn.RBLe;
+using KAT.Camelot.Extensibility.Excel.AddIn.RBLe.Dna;
+using KAT.Camelot.Extensibility.Excel.AddIn.RBLe.Interop;
+using KAT.Camelot.RBLe.Core;
 using KAT.Camelot.RBLe.Core.Calculations;
 using XLParser;
 using MSExcel = Microsoft.Office.Interop.Excel;
@@ -166,8 +171,40 @@ public partial class Ribbon
 		} );
 	}
 
-	public void Audit_CalcEngineTabs( IRibbonControl control )
+	public void Audit_CalcEngineTabs( IRibbonControl _ )
 	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
+		ExcelAsyncUtil.QueueAsMacro( () =>
+		{
+			var name = application.ActiveWorkbook.Name;
+
+			try
+			{
+				application.ScreenUpdating = false;
+
+				var sw = Stopwatch.StartNew();
+				var configuration = new ExcelCalcEngineConfigurationFactory( application.ActiveWorkbook ).Configuration;
+				Console.WriteLine( $"ExcelCalcEngineConfigurationFactory configuration took {sw.ElapsedMilliseconds}ms." );
+				sw.Restart();
+				var dnaConfiguration = new DnaCalcEngineConfigurationFactory( application.ActiveWorkbook.Name ).Configuration;
+				Console.WriteLine( $"DnaCalcEngineConfigurationFactory configuration took {sw.ElapsedMilliseconds}ms." );
+
+				MessageBox.Show( $"All RBLe tabs in {name} are correctly configured ({configuration.InputTabs.Length} Input Tab(s) and {configuration.ResultTabs.Length} Result Tab(s)).", "CalcEngine Audit", MessageBoxButtons.OK, MessageBoxIcon.Information );
+			}
+			catch ( CalcEngineConfigurationException ex )
+			{
+				ExcelDna.Logging.LogDisplay.WriteLine( $"The RBLe tabs in {name} are incorrectly configured.  See the issues below for more details." + Environment.NewLine );
+
+				foreach( var error in ex.Errors )
+				{
+					ExcelDna.Logging.LogDisplay.WriteLine( error );
+				}
+
+				ExcelDna.Logging.LogDisplay.Show();
+			}
+			finally
+			{
+				application.ScreenUpdating = true;
+			}
+		} );
 	}
 }

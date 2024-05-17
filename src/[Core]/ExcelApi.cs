@@ -3,34 +3,10 @@ using KAT.Camelot.RBLe.Core;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
+// https://excel-dna.net/docs/guides-basic/excel-programming-interfaces/excel-c-api
+// https://learn.microsoft.com/en-us/office/client-developer/excel/welcome-to-the-excel-software-development-kit
 public static partial class ExcelApi
 {
-	enum GetCellType
-	{
-		Formula = 6,
-		Text = 53,
-		SheetRef = 62
-	}
-
-	enum GetWorkbookType
-	{
-		IsSaved = 24,
-		ActiveSheet = 38
-	}
-
-	enum GetDocumentType
-	{
-		ActiveWorkbookPath = 2,
-		CalculationMode = 14,
-		ActiveSheet = 76, // in the form [Book1]Sheet1
-		ActiveWorkbook = 88
-	}
-
-	enum GetWorkspaceType
-	{
-		ScreenUpdating = 40
-	}
-
 	public static ExcelReference? GetCaller()
 	{
 		var caller = XlCall.Excel( XlCall.xlfCaller );
@@ -153,15 +129,5 @@ public static partial class ExcelApi
 		var reference = XlCall.Excel( XlCall.xlfEvaluate, fullAddress ) as ExcelReference;
 
 		return reference!;
-
-		// http://www.technicana.com/xlftextref.pdf
-		// Could try to get rid of all Interop objects during macro processing and attempt to use item below
-		/*
-		XlCall.Excel(XlCall.xlfTextref, referenceString, a1)
-
-		referenceString is a reference in string format.
-
-		a1 is a boolean value specifying the form the reference is in.  If a1 is TRUE, referenceString should be in A1-style.  If a1 is FALSE, referenceString must be in R1C1 format.  The default is FALSE.
-		*/
 	}
 }

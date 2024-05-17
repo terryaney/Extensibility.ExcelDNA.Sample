@@ -100,6 +100,7 @@ public static class ExcelExtensions
 	}
 
 	public static string GetText( this MSExcel.Range range ) => ( range.Text as string )!;
+	public static string GetFormula( this MSExcel.Range range ) => ( range.Formula as string )!;
 
 	public static ExcelReference GetReference( this MSExcel.Range range )
 	{
