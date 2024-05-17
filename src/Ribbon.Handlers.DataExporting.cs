@@ -5,6 +5,7 @@ using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 using KAT.Camelot.Domain.Extensions;
 using KAT.Camelot.Domain.IO;
+using KAT.Camelot.Extensibility.Excel.AddIn.XmlMappingExport;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 

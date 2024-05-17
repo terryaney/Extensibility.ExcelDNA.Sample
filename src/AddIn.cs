@@ -38,7 +38,7 @@ public class AddIn : IExcelAddIn
 				}
 				catch ( Exception ex )
 				{
-					Ribbon.LogError( "Unable to initialize IConfiguraiton for appsettings.json.  Using default settings.", ex );
+					Ribbon.ShowException( ex, "Unable to initialize IConfiguraiton for appsettings.json.  Using default settings." );
 					Settings = new();
 				}
 
@@ -75,7 +75,7 @@ public class AddIn : IExcelAddIn
 		}
 		else
 		{
-			Ribbon.LogError( "Unhandled exception in macro.", ( exception as Exception )! );
+			Ribbon.ShowException( ( exception as Exception )! );
 		}
 
 		return ExcelError.ExcelErrorValue;

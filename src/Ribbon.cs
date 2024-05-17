@@ -6,10 +6,12 @@ using KAT.Camelot.Data.Repositories;
 using KAT.Camelot.Domain.Configuration;
 using KAT.Camelot.Domain.Extensions;
 using KAT.Camelot.Domain.Services;
+using KAT.Camelot.Domain.Telemetry;
 using KAT.Camelot.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Localization;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -22,9 +24,8 @@ using MSExcel = Microsoft.Office.Interop.Excel;
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 /*
+CalcEngineUtilities_RunMacros
 CalcEngineUtilities_PopulateInputTab
-CalcEngineUtilities_ProcessWorkbook
-Audit_CalcEngineTabs
 DataExporting_ExportResultDocGenXml
 DataExporting_ExportResultJsonData
 ConfigurationExporting_ExportWorkbook  - SpecSheet
@@ -59,6 +60,9 @@ public partial class Ribbon : ExcelRibbon
 
 	private readonly WorkbookState WorkbookState;
 	private readonly ApiService apiService;
+	private readonly RBLe.Interop.ExcelCalculationService excelCalculationService;
+	private readonly IEmailService emailService = new FakeEmailService();
+	private readonly ITextService textService = new FakeTextService();
 	private readonly IConfiguration secretsConfiguration;
 
 	public Ribbon()
@@ -96,9 +100,9 @@ public partial class Ribbon : ExcelRibbon
 				{
 					options.AssemblyNames =
 						new [] { 
-							typeof( EmailService ), // Infrastructure namespace
-							typeof( xDSRepository ), // Data namespace
-							typeof( IDateTimeService ), // Domain
+							typeof( Infrastructure.ICamelotMarker ), // Infrastructure namespace
+							typeof( Data.ICamelotMarker ), // Data namespace
+							typeof( Domain.ICamelotMarker ), // Domain
 						}
 						.Select( t => new AssemblyName( t.Assembly.FullName! ).Name! )
 						.ToArray();
@@ -111,15 +115,20 @@ public partial class Ribbon : ExcelRibbon
 		
 		var serviceProvider = services.BuildServiceProvider();
 
-		var clientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
+		var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
 		var theKeepSettings = serviceProvider.GetRequiredService<IOptionsSnapshot<TheKeepSettings>>();
 		var localizer = serviceProvider.GetRequiredService<IStringLocalizer<xDSRepository>>();
-
+		var logger = serviceProvider.GetRequiredService<ILogger<CalculationSourceContext>>();
+		
 		IDbConnectionForge connectionForge = new DbConnectionForge( theKeepSettings );
 		IDateTimeService dateTimeService = new DateTimeService();
 		IxDSRepository xDSRepository = new xDSRepository( connectionForge, dateTimeService, localizer );
 
-		apiService = new ApiService( clientFactory, xDSRepository );
+		apiService = new ApiService( httpClientFactory, xDSRepository );
+		excelCalculationService = new RBLe.Interop.ExcelCalculationService(
+			httpClientFactory, emailService, textService, theKeepSettings.Value.Jwt.RBLe, logger
+		);
+
 		WorkbookState = new WorkbookState( apiService );
 	}
 
@@ -209,7 +218,7 @@ public partial class Ribbon : ExcelRibbon
 		}
 		catch ( Exception ex )
 		{
-			LogError( $"Ribbon_OnAction {tag}", ex );
+			ShowException( ex, $"Ribbon_OnAction {tag}" );
 		}
 		finally
 		{
@@ -227,7 +236,7 @@ public partial class Ribbon : ExcelRibbon
 			}
 			catch ( Exception ex )
 			{
-				LogError( actionName, ex );
+				ShowException( ex, actionName );
 			}
 			finally
 			{
@@ -250,7 +259,7 @@ public partial class Ribbon : ExcelRibbon
 		}
 	}
 
-	internal static void LogError( string message, Exception ex )
+	internal static void ShowException( Exception ex, string? message = null )
 	{
 		var exDisplay = ex; 
 

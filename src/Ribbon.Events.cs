@@ -27,7 +27,7 @@ public partial class Ribbon
 		}
 		catch ( Exception ex )
 		{
-			LogError( $"Ribbon_GetVisible {control.Tag}", ex );
+			ShowException( ex, $"Ribbon_GetVisible {control.Tag}" );
 			return false;
 		}
 	}
@@ -51,7 +51,7 @@ public partial class Ribbon
 
 				"calcEngineUtilitiesLoadData" => WorkbookState.SheetState.IsInputSheet,
 				"calcEngineUtilitiesPreviewResults" => WorkbookState.SheetState.CanPreview,
-				"calcEngineUtilitiesConvertToRBLe" or "calcEngineUtilitiesProcessWorkbook" or "calcEngineUtilitiesLocalBatch" => WorkbookState.IsCalcEngine,
+				"calcEngineUtilitiesConvertToRBLe" or "calcEngineUtilitiesRunMacros" or "calcEngineUtilitiesLocalBatch" => WorkbookState.IsCalcEngine,
 				"calcEngineUtilitiesLinkToLoadedAddIns" => WorkbookState.HasLinks,
 
 				"auditShowDependencies" or "auditHideDependencies" or "auditCellsWithEmptyDependencies" => application.ActiveWorkbook != null,
@@ -69,7 +69,7 @@ public partial class Ribbon
 		}
 		catch ( Exception ex )
 		{
-			LogError( $"Ribbon_GetEnabled {control.Tag}", ex );
+			ShowException( ex, $"Ribbon_GetEnabled {control.Tag}" );
 			return false;
 		}
 	}
@@ -93,7 +93,7 @@ public partial class Ribbon
 		}
 		catch ( Exception ex )
 		{
-			LogError( $"Ribbon_GetGetScreentip {control.Tag}", ex );
+			ShowException( ex, $"Ribbon_GetScreentip {control.Tag}" );
 			return null;
 		}
 	}
@@ -145,7 +145,7 @@ public partial class Ribbon
 		}
 		catch ( Exception ex )
 		{
-			LogError( $"Ribbon_GetContent {control.Tag}", ex );
+			ShowException( ex, $"Ribbon_GetContent {control.Tag}" );
 			return null;
 		}
 		finally
@@ -224,7 +224,7 @@ public partial class Ribbon
 		}
 		catch ( Exception ex )
 		{
-			LogError( $"Ribbon_GetImage {control.Tag}", ex );
+			ShowException( ex, $"Ribbon_GetImage {control.Tag}" );
 			return null!;
 		}
 	}

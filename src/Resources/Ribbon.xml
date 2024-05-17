@@ -30,7 +30,7 @@
 
 				<group id="groupCalcEngineUtilities" keytip="ll" label="CalcEngine Utilities" imageMso="FileCompatibilityChecker">
 					<button id="calcEngineUtilitiesLoadData" keytip="D" label="Load Input Tab Data..." imageMso="ImportMoreMenu" size="large" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_PopulateInputTab" getEnabled="Ribbon_GetEnabled"/>
-					<button id="calcEngineUtilitiesProcessWorkbook" keytip="W" label="Process Workbook" imageMso="EventOnBeforeChange" size="large" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_ProcessWorkbook" getEnabled="Ribbon_GetEnabled"/>
+					<button id="calcEngineUtilitiesRunMacros" keytip="R" label="Run Macros" imageMso="EventOnBeforeChange" size="large" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_RunMacros" getEnabled="Ribbon_GetEnabled"/>
 
 					<menu id="calcEngineUtilitiesExtrasMenu" keytip="2" label="Utilities" imageMso="ColumnListSetting" size="large">
 						<button id="calcEngineUtilitiesPreviewResults" keytip="P" label="Preview Results" imageMso="CreateReportWeb" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_PreviewResults" getEnabled="Ribbon_GetEnabled"/>

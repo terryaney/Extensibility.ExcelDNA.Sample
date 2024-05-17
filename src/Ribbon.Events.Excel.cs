@@ -16,7 +16,7 @@ public partial class Ribbon
 		}
 		catch ( Exception ex )
 		{
-			LogError( $"Application_WorkbookOpen", ex );
+			ShowException( ex, "Application_WorkbookOpen" );
 		}
 	}
 
@@ -71,7 +71,7 @@ public partial class Ribbon
 		}
 		catch ( Exception ex )
 		{
-			LogError( $"Application_WorkbookActivate", ex );
+			ShowException( ex, "Application_WorkbookActivate" );
 			application.Cursor = MSExcel.XlMousePointer.xlDefault;
 		}
 	}
@@ -106,7 +106,7 @@ public partial class Ribbon
 		}
 		catch ( Exception ex )
 		{
-			LogError( $"Application_WorkbookBeforeSave", ex );
+			ShowException( ex, "Application_WorkbookBeforeSave" );
 		}
 	}
 
