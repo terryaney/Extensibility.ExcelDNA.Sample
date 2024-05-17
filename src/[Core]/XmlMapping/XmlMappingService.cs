@@ -7,10 +7,10 @@ using MSExcel = Microsoft.Office.Interop.Excel;
 using System.Xml.Linq;
 using ExcelDna.Integration;
 using System.Xml.XPath;
-using KAT.Camelot.Extensibility.Excel.AddIn.GeneratedParser;
+using KAT.Camelot.Extensibility.Excel.AddIn.XmlMappingExport.GeneratedParser;
 using System.Linq.Expressions;
 
-namespace KAT.Camelot.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn.XmlMappingExport;
 
 class XmlMappingService
 {

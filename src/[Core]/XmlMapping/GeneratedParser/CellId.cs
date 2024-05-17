@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace KAT.Camelot.Extensibility.Excel.AddIn.GeneratedParser;
+namespace KAT.Camelot.Extensibility.Excel.AddIn.XmlMappingExport.GeneratedParser;
 
 public readonly struct CellId
 {

@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
 using KAT.Camelot.Domain.Extensions;
 
-namespace KAT.Camelot.Extensibility.Excel.AddIn.GeneratedParser;
+namespace KAT.Camelot.Extensibility.Excel.AddIn.XmlMappingExport.GeneratedParser;
 
 public class XmlMappingVisitor : ExpressionParseTreeVisitor
 {

@@ -1,6 +1,6 @@
 using System.Xml.Serialization;
 
-namespace KAT.Camelot.Extensibility.Excel.AddIn.GeneratedParser;
+namespace KAT.Camelot.Extensibility.Excel.AddIn.XmlMappingExport.GeneratedParser;
 
 public class Token
 {

@@ -4,7 +4,7 @@ using KAT.Camelot.RBLe.Core.Calculations.Functions;
 
 #pragma warning disable CA1822 // Mark members as static
 
-namespace KAT.Camelot.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn.XmlMappingExport;
 
 class XmlContext
 {

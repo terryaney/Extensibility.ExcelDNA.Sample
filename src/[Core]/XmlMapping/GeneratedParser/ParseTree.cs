@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace KAT.Camelot.Extensibility.Excel.AddIn.GeneratedParser;
+namespace KAT.Camelot.Extensibility.Excel.AddIn.XmlMappingExport.GeneratedParser;
 
 [Serializable]
 public partial class ParseTree : ParseNode

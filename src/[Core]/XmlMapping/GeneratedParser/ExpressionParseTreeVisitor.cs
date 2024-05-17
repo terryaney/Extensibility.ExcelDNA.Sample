@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 using System.Xml.Linq;
 using KAT.Camelot.Domain.Extensions;
 
-namespace KAT.Camelot.Extensibility.Excel.AddIn.GeneratedParser;
+namespace KAT.Camelot.Extensibility.Excel.AddIn.XmlMappingExport.GeneratedParser;
 
 public abstract class ExpressionParseTreeVisitor : ParseTreeVisitor<Expression, string>
 {
