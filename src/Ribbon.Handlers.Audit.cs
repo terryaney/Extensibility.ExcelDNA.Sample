@@ -176,6 +176,8 @@ public partial class Ribbon
 		ExcelAsyncUtil.QueueAsMacro( () =>
 		{
 			var name = application.ActiveWorkbook.Name;
+			// TODO: See why .RestoreSelection doesn't work here.
+			var selection = ExcelApi.Selection;
 
 			try
 			{
@@ -184,9 +186,11 @@ public partial class Ribbon
 				var sw = Stopwatch.StartNew();
 				var configuration = new ExcelCalcEngineConfigurationFactory( application.ActiveWorkbook ).Configuration;
 				Console.WriteLine( $"ExcelCalcEngineConfigurationFactory configuration took {sw.ElapsedMilliseconds}ms." );
+				File.WriteAllText( @"c:\btr\temp\excel.interop.json", configuration.ToJsonString() );
 				sw.Restart();
 				var dnaConfiguration = new DnaCalcEngineConfigurationFactory( application.ActiveWorkbook.Name ).Configuration;
 				Console.WriteLine( $"DnaCalcEngineConfigurationFactory configuration took {sw.ElapsedMilliseconds}ms." );
+				File.WriteAllText( @"c:\btr\temp\excel.dna.json", dnaConfiguration.ToJsonString() );
 
 				MessageBox.Show( $"All RBLe tabs in {name} are correctly configured ({configuration.InputTabs.Length} Input Tab(s) and {configuration.ResultTabs.Length} Result Tab(s)).", "CalcEngine Audit", MessageBoxButtons.OK, MessageBoxIcon.Information );
 			}
@@ -204,6 +208,7 @@ public partial class Ribbon
 			finally
 			{
 				application.ScreenUpdating = true;
+				selection.Select();
 			}
 		} );
 	}

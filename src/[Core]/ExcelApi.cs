@@ -33,7 +33,7 @@ public static partial class ExcelApi
 		{
 			if ( updating ) ScreenUpdating = false;
 
-			//remember the current active cell
+			// remember the current active cell
 			var current = new
 			{
 				Selection = XlCall.Excel( XlCall.xlfSelection ),
@@ -42,7 +42,7 @@ public static partial class ExcelApi
 
 			if ( reference != null )
 			{
-				//select caller worksheet containing range caller desires to be active
+				// select caller worksheet containing range caller desires to be active
 				// (need to do this before reading selection/cell on this sheet)
 				var rangeSheet = (string)XlCall.Excel( XlCall.xlSheetNm, reference );
 				XlCall.Excel( XlCall.xlcWorkbookSelect, new object[] { rangeSheet } );
@@ -61,6 +61,7 @@ public static partial class ExcelApi
 			if ( reference != null )
 			{
 				// Select the range caller desires to be active...
+				// NOTE: SelectionHelper seemed to use  (https://github.com/Excel-DNA/Samples/blob/9b1b8b6c749216147352c155766556868eaae949/Archive/Async/AsyncMacros.dna#L189)
 				XlCall.Excel( XlCall.xlcSelect, reference );
 			}
 

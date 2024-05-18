@@ -48,8 +48,8 @@ partial class ExcelApi
 	{
 		ExcelReference end = null!;
 
-		reference.RestoreSelection( () =>
-		{
+		// reference.RestoreSelection( () =>
+		// {
 			var value = 
 				ignoreEmpty ? ExcelEmpty.Value :
 				direction == DirectionType.Down ? reference.Offset( 1, 0 ).GetValue() :
@@ -57,7 +57,7 @@ partial class ExcelApi
 				direction == DirectionType.ToLeft ? reference.Offset( 0, -1 ).GetValue() :
 				/* DirectionType.Up */                reference.Offset( -1, 0 ).GetValue();
 
-			var isEmpty = value == ExcelEmpty.Value || ( value.GetType() == typeof( string ) && string.IsNullOrEmpty( (string)value ) );
+			var isEmpty = value == ExcelEmpty.Value || ( value is string s && string.IsNullOrEmpty( s ) );
 
 			if ( !ignoreEmpty && isEmpty )
 			{
@@ -66,6 +66,7 @@ partial class ExcelApi
 			else
 			{
 				// Govert talks about 'messiness' at http://stackoverflow.com/a/10920622/166231, but pretty straight forward
+				reference.Select();
 				XlCall.Excel( XlCall.xlcSelectEnd, (int)direction );
 
 				var selection = ( XlCall.Excel( XlCall.xlfSelection ) as ExcelReference )!;
@@ -74,9 +75,17 @@ partial class ExcelApi
 
 				end = new ExcelReference( row, row, col, col, selection.SheetId );
 			}
-		} );
+		// } );
 
 		return end;
+	}
+
+	public static ExcelReference Select( this ExcelReference reference )
+	{
+		var sheetName = (string)XlCall.Excel( XlCall.xlSheetNm, reference );
+		XlCall.Excel( XlCall.xlcWorkbookSelect, new object[] { sheetName } );
+		XlCall.Excel( XlCall.xlcSelect, reference );
+		return reference;
 	}
 
 	public static ExcelReference Offset( this ExcelReference reference, int rows, int cols )

@@ -5,6 +5,10 @@ using KAT.Camelot.RBLe.Core.Calculations;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn.RBLe.Dna;
 
+// TODO: Could make ConfigurationFactory better by eliminating the need for End() to do a 'select' every time for the sheet...
+// 1. Easiest would be to read entire 2 rows (table names/col names) and delete with object[,] data.
+// 2. Going to need EndDown() eventually for data reading, so maybe figure out a way to activate a sheet in a 'ReadSheet/LoadSheet' type method before
+//		doing all the End() calls and then I at least eliminate the 'read sheet name' and 'select sheet' api calls.
 public class DnaCalcEngineConfigurationFactory : CalcEngineConfigurationFactory<DnaWorkbook, DnaWorksheet, ExcelReference>
 {
 	private readonly string fileName;
@@ -39,7 +43,7 @@ public class DnaCalcEngineConfigurationFactory : CalcEngineConfigurationFactory<
 	protected override ExcelReference GetRange( string name ) => TryGetWorkbookReference( null, name )!;
 	protected override ExcelReference GetRange( DnaWorksheet sheet, string name ) => TryGetWorkbookReference( null, $"'{sheet.Name}'!{name}" )!;
 	protected override ExcelReference Offset( ExcelReference range, int rowOffset, int columnOffset ) =>
-		new(
+		new (
 			range.RowFirst + rowOffset,
 			range.RowLast + rowOffset,
 			range.ColumnFirst + columnOffset,
@@ -48,26 +52,6 @@ public class DnaCalcEngineConfigurationFactory : CalcEngineConfigurationFactory<
 		);
 
 	protected override ExcelReference EndRight( ExcelReference range ) => range.End( DirectionType.ToRight );
-	protected ExcelReference EndRight2( ExcelReference range )
-	{
-		var valToRight = Offset( range, 0, 1 ).GetValue();
-		var isEmpty = valToRight == ExcelEmpty.Value || ( valToRight.GetType() == typeof( string ) && string.IsNullOrEmpty( (string)valToRight ) );
-
-		if ( isEmpty )
-		{
-			return range;
-		}
-		else
-		{
-			XlCall.Excel( XlCall.xlcSelectEnd, (int)DirectionType.ToRight );
-
-			var selection = ( XlCall.Excel( XlCall.xlfSelection ) as ExcelReference )!;
-			var row = selection.RowFirst;
-			var col = selection.ColumnFirst;
-
-			return new ExcelReference( row, row, col, col, selection.SheetId );
-		}
-	}
 	protected override bool RangeExists( string name ) => TryGetWorkbookReference( null, name ) != null;
 	protected override bool RangeExists( DnaWorksheet sheet, string name ) => TryGetWorkbookReference( null, $"'{sheet.Name}'!{name}" ) != null;
 	protected override string GetAddress( ExcelReference range )
