@@ -1,8 +1,8 @@
 ﻿using ExcelDna.Integration;
 
-namespace KAT.Camelot.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn.Functions;
 
-public static class XmlMappingFunctions
+public static class XmlMapping
 {
 	[ExcelFunction( Category = "Xml Mapping", Description = "Returns the current ordinal position of the current mapping element being processed.  If 'scopeDepth' is passed, it is the current ordinal position of the ancestor mapping element determined by 'scopeDepth' levels.  Placeholder returning defaultValue in Excel." )]
 	public static int MapOrdinal( 

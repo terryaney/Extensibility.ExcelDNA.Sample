@@ -81,16 +81,40 @@ public class AddIn : IExcelAddIn
 		return ExcelError.ExcelErrorValue;
 	}
 
+
 	/// <summary>
 	/// Modify the Excel-DNA function registration, by applying various transformations before the functions are registered.
 	/// </summary>
 	/// <url>https://github.com/Excel-DNA/Registration</url>
 	private static void RegisterFunctions()
 	{		
+		// Decided to use this explicit function registration for a couple of reasons...
+		//
+		// 1) Default parameters don't work correctly and you need to pass as object, then check for ExcelMissing.  I didn't want to include ExcelDNA in the 'functions' repo for the RBLe service, so needed to add a layer.
+		// 2) Documentation for Excel (which will be nice to have) needs ExcelDNA library, again, didn't want to share across to RBLe service.
+		// 3) There were some 'public' methods that were registering in Excel, that I didn't want there so I used ExcelDNA hidden, and again, that wouldn't compile in RBLe service.
+		// 4) Can add a 'debug' version of functions to return object (which can return a number or exception method) without polluting RBLe service code
+		//
+		// So bit of a pain when you don't need documentation and you have to add the function then add the Excel signature here, but the same thing kind of happens in RBLe when you have to register functions with SSG.
+		//
+		// Only include C#/Xml documentation if the signature doesn't exist anywhere else (i.e. BTRNumberFormat uses a public method that can not be used by Excel, but can be used by RBLe, so only have signature here)
+
 		ExcelRegistration
 			.GetExcelFunctions()
 			.Select( UpdateHelpTopic )
 			.RegisterFunctions();
+	}
+
+	private static object DebugFunction( Func<object> func )
+	{
+		try
+		{
+			return func();
+		}
+		catch ( Exception ex )
+		{
+			return ex.Message;
+		}
 	}
 
 	private static ExcelFunctionRegistration UpdateHelpTopic( ExcelFunctionRegistration funcReg )
