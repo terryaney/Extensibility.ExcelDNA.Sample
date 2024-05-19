@@ -70,7 +70,6 @@ public class AddIn : IExcelAddIn
 		{
 			// Calculation error is happening on Excel calculation thread, so need to QueueAsMacro to get back to main Excel UI thread.
 			// https://groups.google.com/d/msg/exceldna/cHD8Tx56Msg/MdPa2PR13hkJ
-			// Explains why needs caller other XlCall methods inside
 			ExcelAsyncUtil.QueueAsMacro( () => Ribbon.CurrentRibbon.LogFunctionError( caller, exception ) );
 		}
 		else
@@ -80,7 +79,6 @@ public class AddIn : IExcelAddIn
 
 		return ExcelError.ExcelErrorValue;
 	}
-
 
 	/// <summary>
 	/// Modify the Excel-DNA function registration, by applying various transformations before the functions are registered.

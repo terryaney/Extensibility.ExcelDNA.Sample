@@ -12,6 +12,14 @@ public static class Macro
 		string name
 	) => ExcelEmpty.Value;
 
+	// See ServiceHeleprs.GetMacroSafeFormula and Core.BTRCellAddress for more details on hidden function reason
+	[ExcelFunction( IsHidden = true, IsVolatile = true, IsMacroType = true )]
+	public static string BTRCellAddressMacro(
+		[ExcelArgument( AllowReference = true )]
+		object range,
+		int rowOffset = 0, int columnOffset = 0, int additionalRows = 0, int additionalColumns = 0 
+	) => BTRCellAddress( range, rowOffset, columnOffset, additionalRows, additionalColumns );
+
 	[ExcelFunction( Category = "RBLe Macro", Description = "Returns the address (similar to Cell('address', cell) format) of a named range to be used in RBLe Macro processing.", IsVolatile = true, IsMacroType = true )]
 	public static string BTRCellAddress(
 		[ExcelArgument( AllowReference = true, Description = "The cell or range used as starting point of address." )]
