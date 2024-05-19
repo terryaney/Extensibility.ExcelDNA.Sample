@@ -69,9 +69,16 @@ public static class ExcelExtensions
 						.Where( n => n.Name.EndsWith( "!" + name ) )
 						.FirstOrDefault();
 
-			return !( (string?)namedRange?.RefersTo ?? "" ).Contains( "#REF!" )
+			var range = !( (string?)namedRange?.RefersTo ?? "" ).Contains( "#REF!" )
 				? namedRange?.RefersToRange
 				: null;
+
+			if ( range == null && ( char.IsLetter( name[ 0 ] ) || name[ 0 ] == '$' ) && char.IsDigit( name[ ^1 ] ) )
+			{
+				range = worksheet.Range[ name ];
+			}
+
+			return range;
 		}
 		catch ( Exception ex )
 		{

@@ -13,12 +13,13 @@ public static partial class ExcelApi
 		return caller is ExcelReference reference ? reference : null;
 	}
 
-	public static bool IsArrayFunction
+	public static bool IsArrayFormula
 	{
 		get
 		{
 			var caller = XlCall.Excel( XlCall.xlfCaller ) as ExcelReference;
-			return caller!.RowLast > caller.RowFirst;
+			// null if formula is being executed by xlfEvaluate
+			return caller != null && caller.RowLast > caller.RowFirst;
 		}
 	}
 

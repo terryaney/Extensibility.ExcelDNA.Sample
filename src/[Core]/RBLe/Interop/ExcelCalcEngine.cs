@@ -6,6 +6,8 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn.RBLe.Interop;
 
 public class ExcelCalcEngine : ICalcEngine<MSExcel.Workbook, MSExcel.Worksheet, MSExcel.Range, MSExcel.XlCVError>, IDisposable
 {
+	private static readonly string[] _MacroFunctionNames = new[] { "BTRGetMacroVariable" };
+
 	private readonly bool isSaved;
 	private readonly MSExcel.Worksheet wsEvaluate;
 	private readonly MSExcel.Application application;
@@ -30,6 +32,7 @@ public class ExcelCalcEngine : ICalcEngine<MSExcel.Workbook, MSExcel.Worksheet, 
 
 	public CalcEngineConfiguration Configuration { get; init; } = null!;
 
+	public string[] MacroFunctionNames => _MacroFunctionNames;
 	public int? MacroTimeout => macroTimeout;
 	public string FileName => workbook.FullName;
 	public string Version => version;
@@ -201,8 +204,8 @@ public class ExcelCalcEngine : ICalcEngine<MSExcel.Workbook, MSExcel.Worksheet, 
 	public MSExcel.Range Extend( MSExcel.Range start, MSExcel.Range end )
 	{
 		return start.Worksheet.Range[
-			start.Worksheet.Range[ Math.Min( start.Row, end.Row ), Math.Min( start.Column, end.Column ) ],
-			start.Worksheet.Range[ Math.Max( start.Row + start.Rows.Count - 1, end.Row + end.Rows.Count - 1 ), Math.Max( start.Column + start.Columns.Count - 1, end.Column + end.Columns.Count - 1 ) ]
+			start.Worksheet.Cells[ Math.Min( start.Row, end.Row ), Math.Min( start.Column, end.Column ) ],
+			start.Worksheet.Cells[ Math.Max( start.Row + start.Rows.Count - 1, end.Row + end.Rows.Count - 1 ), Math.Max( start.Column + start.Columns.Count - 1, end.Column + end.Columns.Count - 1 ) ]
 		];
 	}
 

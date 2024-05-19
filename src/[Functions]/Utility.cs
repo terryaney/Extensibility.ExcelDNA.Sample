@@ -55,7 +55,7 @@ public static class DnaUtility
 
 		var filterResult = Utility.Filter( table, includeHeadersInResults.Check( nameof( includeHeadersInResults ), true ), returnColumnNames, expressions, ExcelError.ExcelErrorNA );
 
-		var isArrayFunction = ExcelApi.IsArrayFunction;
+		var isArrayFunction = ExcelApi.IsArrayFormula;
 
 		if ( isArrayFunction && filterResult.GetUpperBound( 0 ) == 0 && !object.Equals( filterResult[ 0, 0 ], ExcelError.ExcelErrorNA ) )
 		{
@@ -108,7 +108,7 @@ public static class DnaUtility
 		object? caseSensitive = null
 	)
 	{
-		var isArrayFunction = ExcelApi.IsArrayFunction;
+		var isArrayFunction = ExcelApi.IsArrayFormula;
 
 		var returnValues = Utility.LookupValues(
 			table,

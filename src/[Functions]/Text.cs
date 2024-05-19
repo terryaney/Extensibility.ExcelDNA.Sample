@@ -204,7 +204,7 @@ public static class Text
 		params object[] ranges
 	)
 	{
-		var isArrayFunction = ExcelApi.IsArrayFunction;
+		var isArrayFunction = ExcelApi.IsArrayFormula;
 
 		var list = new HashSet<object>();
 		var ignoreEmptyCellsArg = ignoreEmptyCells.Check( nameof( ignoreEmptyCells ), true );
@@ -278,7 +278,7 @@ public static class Text
 		}
 		else
 		{
-			var isArrayFunction = ExcelApi.IsArrayFunction;
+			var isArrayFunction = ExcelApi.IsArrayFormula;
 			var output = new object[ System.Math.Max( vals.Length, isArrayFunction ? 2 : 1 ), 1 ];
 
 			for ( var i = 0; i < vals.Length; i++ )
