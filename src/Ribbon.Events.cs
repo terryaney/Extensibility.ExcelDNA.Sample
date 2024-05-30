@@ -51,7 +51,7 @@ public partial class Ribbon
 
 				"calcEngineUtilitiesLoadData" => WorkbookState.SheetState.IsInputSheet,
 				"calcEngineUtilitiesPreviewResults" => WorkbookState.SheetState.CanPreview,
-				"calcEngineUtilitiesConvertToRBLe" or "calcEngineUtilitiesRunMacros" or "calcEngineUtilitiesLocalBatch" => WorkbookState.IsCalcEngine,
+				"calcEngineUtilitiesRunMacros" or "calcEngineUtilitiesLocalBatch" => WorkbookState.IsCalcEngine,
 				"calcEngineUtilitiesLinkToLoadedAddIns" => WorkbookState.HasLinks,
 
 				"auditShowDependencies" or "auditHideDependencies" or "auditCellsWithEmptyDependencies" => application.ActiveWorkbook != null,

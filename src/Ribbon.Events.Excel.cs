@@ -7,6 +7,7 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn;
 public partial class Ribbon
 {
 	private bool skipProcessSaveHistory;
+	private bool skipWorkbookActivateEvents;
 
 	private void Application_WorkbookOpen( MSExcel.Workbook wb )
 	{
@@ -22,6 +23,11 @@ public partial class Ribbon
 
 	private void Application_WorkbookDeactivate( MSExcel.Workbook Wb ) 
 	{
+		if ( skipWorkbookActivateEvents )
+		{
+			return;
+		}
+
 		// Used to simply trigger a SheetDeactivate if ActiveSheet != null
 		/*
 		if ( Wb.ActiveSheet != null )
@@ -29,7 +35,7 @@ public partial class Ribbon
 			Application_SheetDeactivate( Wb.ActiveSheet );
 		}
 		*/
-		
+
 		// Clear error info whenever a new workbook is opened.  Currenly, only show any 
 		// errors after a cell is calculated.  Could call application.Calculate() to force everything
 		// to re-evaluate, but that could be expensive, so for now, not doing it, the function log display
@@ -48,6 +54,11 @@ public partial class Ribbon
 	
 	private void Application_WorkbookActivate( MSExcel.Workbook wb )
 	{
+		if ( skipWorkbookActivateEvents )
+		{
+			return;
+		}
+
 		try
 		{
 			application.Cursor = MSExcel.XlMousePointer.xlWait;

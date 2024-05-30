@@ -43,7 +43,6 @@
 
 						<menuSeparator id="calcEngineUtilitiesExtrasMenuSep2"/>
 
-						<button id="calcEngineUtilitiesConvertToRBLe" keytip="R" label="Convert to RBLe Functions" imageMso="ControlWizards" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_ConvertToRBLe" getEnabled="Ribbon_GetEnabled"/>
 						<button id="calcEngineUtilitiesLinkToLoadedAddIns" keytip="K" label="Link to Loaded Add-ins" imageMso="EditLinks" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_LinkToLoadedAddIns" getEnabled="Ribbon_GetEnabled"/>
 					</menu>
 				</group>

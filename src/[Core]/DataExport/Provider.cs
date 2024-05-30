@@ -3,6 +3,7 @@ using System.Xml;
 using System.Xml.Linq;
 using ExcelDna.Integration;
 using KAT.Camelot.Domain.Extensions;
+using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 using KAT.Camelot.RBLe.Core.Calculations;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn.DataExport;
@@ -69,7 +70,7 @@ class Provider
 			}
 			: Enumerable
 				.Range( 1, multiSheetInfo!.GetUpperBound( 0 ) )
-				.Select( r => new { Row = r, Reference = multiSheetInfo[ r, 1 ]!.GetReference( multiSheetInfo[ r, 0 ]! ) } )
+				.Select( r => new { Row = r, Reference = new DnaWorksheet( DnaApplication.ActiveWorkbookName(), multiSheetInfo[ r, 0 ]! ).ReferenceOrNull( multiSheetInfo[ r, 1 ]! )! } )
 				.Select( r =>
 					new ExportTable
 					(
@@ -310,13 +311,9 @@ class Provider
 						}
 					}
 				}
-				catch ( ExcelErrorException ex )
+				catch ( InteropValueException ex )
 				{
-					throw new ApplicationException(
-						$"Unable to export values for {authId}.",
-						ex
-					);
-
+					throw new ApplicationException( $"Unable to export values for {authId}.", ex );
 				}
 			}
 
@@ -530,7 +527,7 @@ class Provider
 				}
 			}
 		}
-		catch ( ExcelErrorException )
+		catch ( InteropValueException )
 		{
 			throw;
 		}

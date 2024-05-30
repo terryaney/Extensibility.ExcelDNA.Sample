@@ -1,3 +1,4 @@
+using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Responses;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
@@ -110,10 +111,10 @@ public class WorkbookState
 			return response.Validations;
 		}
 
-		var calcEngineInfo = response.Response!;
+		// Response is null when CE Not found in mgmt site...
+		var calcEngineInfo = response.Response ?? new CalcEngineInfo { CheckedOutBy = null, Version = 0 };
 
 		IsUploadable = string.Compare( ManagementName, activeWorkbookName, true ) == 0 || string.Compare( TestManagementName, activeWorkbookName, true ) == 0;
-
 		CheckedOutBy = calcEngineInfo.CheckedOutBy;
 		UploadedVersion = calcEngineInfo.Version.ToString();
 

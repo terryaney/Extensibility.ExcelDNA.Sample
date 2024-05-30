@@ -1,8 +1,9 @@
 ﻿using System.Diagnostics;
 using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
+using Irony.Parsing;
 using KAT.Camelot.Domain.Extensions;
-using KAT.Camelot.Extensibility.Excel.AddIn.RBLe;
+using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 using KAT.Camelot.Extensibility.Excel.AddIn.RBLe.Dna;
 using KAT.Camelot.Extensibility.Excel.AddIn.RBLe.Interop;
 using KAT.Camelot.RBLe.Core;
@@ -32,42 +33,129 @@ public partial class Ribbon
 
 	public void Audit_ShowCellsWithEmptyDependencies( IRibbonControl _ )
 	{
-		var selection = ( application.Selection as MSExcel.Range )!;
-		selection.Style = "Normal";
-
-		var selectionRef = selection.GetReference();
-		var firstCell = selectionRef.Corner( CornerType.UpperLeft );
-
-		for ( var row = 0; row <= selectionRef.RowLast - selectionRef.RowFirst; row++ )
+		ExcelAsyncUtil.QueueAsMacro( () =>
 		{
-			for ( var col = 0; col <= selectionRef.ColumnLast - selectionRef.ColumnFirst; col++ )
+			var selection = ( application.Selection as MSExcel.Range )!;
+			selection.Style = "Normal";
+
+			var selectionRef = selection.GetReference();
+			var firstCell = selectionRef.Corner( CornerType.UpperLeft );
+			var workbookName = application.ActiveWorkbook.Name;
+			var worksheetName = application.ActiveWorksheet().Name;
+
+			static string getRangeAddress( ParseTreeNode r, ParseTreeNode parent, int startIndex )
 			{
-				var cell = firstCell.Offset( row, col );
-				var cellFormula = cell.GetFormula();
+				var rangeStart = r.ChildNodes[ startIndex ].ChildNodes[ 0 ].Token.Text;
 
-				if ( !string.IsNullOrEmpty( cellFormula ) && cellFormula.StartsWith( "=" ) )
+				var next = r.ChildNodes[ startIndex ].Type() == GrammarNames.Cell
+					? GetNext( parent, r )
+					: null;
+
+				var range = next?.Type() == ":"
+					? $"{rangeStart}:{GetNext( parent, next )!.ChildNodes[ 0 ].ChildNodes[ 0 ].Token.Text}"
+					: rangeStart;
+
+				return range;
+			}
+
+			for ( var row = 0; row <= selectionRef.RowLast - selectionRef.RowFirst; row++ )
+			{
+				for ( var col = 0; col <= selectionRef.ColumnLast - selectionRef.ColumnFirst; col++ )
 				{
-					var tree = ExcelFormulaParser.Parse( cellFormula );
-					var references =
-						tree.AllNodes()
-							.Where( n => n.Term.Name == "NamedRange" || n.Term.Name == "Cell" )
-							.Select( r => r.ChildNodes[ 0 ].Token.Text );
+					var cell = firstCell.Offset( row, col );
+					var cellFormula = cell.GetFormula();
 
-					foreach ( var r in references )
+					if ( !string.IsNullOrEmpty( cellFormula ) && cellFormula.StartsWith( "=" ) )
 					{
-						var reference = r.GetReference();
-						var data = reference.GetValue();
-						var dataValues = data as object[,];
+						var tree = ExcelFormulaParser.Parse( cellFormula );
 
-						if ( dataValues?.Contains( ExcelEmpty.Value, false ) ?? Equals( data, ExcelEmpty.Value ) )
+						var references =
+							tree.AllNodes( GrammarNames.Reference )
+								.Where( r => new[] { GrammarNames.NamedRange, GrammarNames.Prefix, GrammarNames.Cell }.Contains( r.ChildNodes[ 0 ].Type() ) )
+								.ToArray();
+
+						foreach ( var r in references )
 						{
-							cell.GetRange().Style = "Bad";
-							break;
+							var type = r.ChildNodes[ 0 ].Type();
+
+							ExcelReference? reference = null;
+							var parent = r.Parent( tree );
+
+							if ( type == GrammarNames.Prefix )
+							{
+								var sheet = r.ChildNodes[ 0 ].ChildNodes[ 0 ].Token.Text;
+								var range = getRangeAddress( r, parent, 1 );
+								reference =
+									new DnaWorksheet(
+										workbookName,
+										name: sheet[ ..^1 ]
+									).ReferenceOrNull( range );
+							}
+							else if ( type == GrammarNames.NamedRange )
+							{
+								var range = r.ChildNodes[ 0 ].ChildNodes[ 0 ].Token.Text;
+								reference = new DnaWorkbook( workbookName ).ReferenceOrNull( range );
+							}
+							else if ( type == GrammarNames.Cell )
+							{
+								// Would have already been taken care of...
+								if ( GetPrevious( parent, r )?.Type() == ":" )
+								{
+									continue;
+								}
+
+								var range = getRangeAddress( r, parent, 0 );
+								reference =
+									new DnaWorksheet( workbookName, worksheetName )
+										.ReferenceOrNull( range );
+							}
+
+							var data = reference!.GetValue();
+							var dataValues = data as object[,];
+
+							if ( dataValues?.Contains( ExcelEmpty.Value, false ) ?? Equals( data, ExcelEmpty.Value ) )
+							{
+								cell.GetRange().Style = "Bad";
+								break;
+							}
 						}
 					}
 				}
 			}
+		} );
+	}
+
+	static ParseTreeNode? GetPrevious( ParseTreeNode parent, ParseTreeNode child )
+	{
+		ParseTreeNode? prev = null;
+
+		foreach ( var c in parent.ChildNodes )
+		{
+			if ( c == child ) break;
+
+			prev = c;
 		}
+
+		return prev;
+	}
+
+	static ParseTreeNode? GetNext( ParseTreeNode parent, ParseTreeNode child )
+	{
+		ParseTreeNode? found = null;
+
+		foreach ( var c in parent.ChildNodes )
+		{
+			if ( c == child )
+			{
+				found = c;
+			}
+			else if ( found != null )
+			{
+				return c;
+			}
+		}
+
+		return null;
 	}
 
 	public void Audit_SearchLocalCalcEngines( IRibbonControl _ )
@@ -177,7 +265,7 @@ public partial class Ribbon
 		{
 			var name = application.ActiveWorkbook.Name;
 			// TODO: See why .RestoreSelection doesn't work here.
-			var selection = ExcelApi.Selection;
+			var selection = DnaApplication.Selection;
 
 			try
 			{

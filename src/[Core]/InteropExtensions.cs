@@ -1,10 +1,11 @@
 using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
+using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
-public static class ExcelExtensions
+public static class InteropExtensions
 {
 	public static MSExcel.Workbook? GetWorkbook( this MSExcel.Application application, string name ) => application.Workbooks.Cast<MSExcel.Workbook>().FirstOrDefault( w => string.Compare( w.Name, name, true ) == 0 );
 	private static MSExcel.Application Application => ( ExcelDnaUtil.Application as MSExcel.Application )!;

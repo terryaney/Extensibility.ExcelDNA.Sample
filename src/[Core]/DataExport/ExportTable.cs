@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using ExcelDna.Integration;
+using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 using KAT.Camelot.RBLe.Core.Calculations;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn.DataExport;
@@ -515,14 +516,14 @@ class ExportTable
 								try
 								{
 									var dataValue = header.IsText
-										? excelReference.Offset( row + 1, header.Ordinal ).GetText()
+										? excelReference.Offset( row + 1, header.Ordinal ).GetValue<string>()
 										: data[ row, header.Ordinal ];
 
 									value = !deleteColumn && !( header.IsDeleteControl && header.Field.Field == null ) // If no .Field, it is profile delete or history row delete
 										? GetExportValue( dataValue, header )
 										: null;
 								}
-								catch ( ExcelErrorException ex ) when ( header.IsText )
+								catch ( InteropValueException ex ) when ( header.IsText )
 								{
 									value = ex.ErrorText;
 								}
@@ -542,7 +543,7 @@ class ExportTable
 										if ( substitutionIndexCol != null )
 										{
 											var substitutionIndexValue = substitutionIndexCol.IsText
-												? excelReference.Offset( row + 1, substitutionIndexCol.Ordinal ).GetText()
+												? excelReference.Offset( row + 1, substitutionIndexCol.Ordinal ).GetValue<string>()
 												: data[ row, substitutionIndexCol.Ordinal ];
 
 											index = GetExportValue( substitutionIndexValue, substitutionIndexCol );

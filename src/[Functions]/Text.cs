@@ -1,5 +1,6 @@
 using ExcelDna.Integration;
 using KAT.Camelot.Domain.Extensions;
+using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 using KAT.Camelot.RBLe.Core.Calculations.Functions;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn.Functions;
@@ -204,7 +205,7 @@ public static class Text
 		params object[] ranges
 	)
 	{
-		var isArrayFunction = ExcelApi.IsArrayFormula;
+		var isArrayFunction = DnaApplication.IsArrayFormula;
 
 		var list = new HashSet<object>();
 		var ignoreEmptyCellsArg = ignoreEmptyCells.Check( nameof( ignoreEmptyCells ), true );
@@ -278,7 +279,7 @@ public static class Text
 		}
 		else
 		{
-			var isArrayFunction = ExcelApi.IsArrayFormula;
+			var isArrayFunction = DnaApplication.IsArrayFormula;
 			var output = new object[ System.Math.Max( vals.Length, isArrayFunction ? 2 : 1 ), 1 ];
 
 			for ( var i = 0; i < vals.Length; i++ )

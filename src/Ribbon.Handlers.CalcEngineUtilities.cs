@@ -1,8 +1,9 @@
 ﻿using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
+using KAT.Camelot.Abstractions.RBLe.Calculations;
 using KAT.Camelot.Domain.Telemetry;
-using KAT.Camelot.Extensibility.Excel.AddIn.RBLe;
-using KAT.Camelot.Extensibility.Excel.AddIn.RBLe.Interop;
+using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
+using KAT.Camelot.Extensibility.Excel.AddIn.RBLe.Dna;
 using KAT.Camelot.RBLe.Core.Calculations;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
@@ -27,49 +28,63 @@ public partial class Ribbon
 
 		ExcelAsyncUtil.QueueAsMacro( async () =>
 		{
+			var diagnosticTraceLogger = new DiagnosticTraceLogger();
+			diagnosticTraceLogger.Start();
+
+			// Haven't found C API equivalent to setting Saved property...
+			var isSaved = application.ActiveWorkbook.Saved;
+			var fileName = application.ActiveWorkbook.Name;
+
+			application.ScreenUpdating = false;
+
+			// TODO: See why .RestoreSelection doesn't work here.
+			var selection = DnaApplication.Selection;
+
 			try
 			{
-				var configuration = new ExcelCalcEngineConfigurationFactory( application.ActiveWorkbook ).Configuration;
-				using var calcEngine = new ExcelCalcEngine( application.ActiveWorkbook, configuration );
+				skipWorkbookActivateEvents = true;
+
+				var configuration = new DnaCalcEngineConfigurationFactory( fileName ).Configuration;
+				using var calcEngine = new DnaCalcEngine( fileName, configuration );
 
 				var helpersWb =
 					application.GetWorkbook( Constants.FileNames.Helpers ) ??
 					application.Workbooks.Open( Path.Combine( AddIn.ResourcesPath, Constants.FileNames.Helpers ) );
+				var helpersFilename = helpersWb.Name;
 
 				try
 				{
-					using var helpers = new ExcelCalcEngine( helpersWb );
-					var cts = new CancellationTokenSource();
-					var diagnosticTraceLogger = new DiagnosticTraceLogger();
+					using var helpers = new DnaCalcEngine( helpersFilename );
 
-					/*
+					var cts = new CancellationTokenSource();
+
 					var parameters = new CalculationParameters
 					{
 						CalculationId = Guid.NewGuid(),
-						RequestInfo = request,
-						CalcEngineInfo = new() 
+						RequestInfo = new SingleRequest() 
 						{
-							InputTab = configuration.InputTab,
+							AuthId = "LOCAL.DEBUG",
+							CalcEngines = Array.Empty<RequestCalcEngine>(),
+							TraceEnabled = true
 						},
-						Payload = payload,
-						LookupTables = lookupsConfiguration.Tables,
-						ClearInputs = true,
-						ClearGlobalTables = true
+						// TODO: Would need to build this from input tab and all 'data' elements passed in...
+						Payload = new()
+						{
+							Profile = new(),
+							History = new()
+						}
 					};
-					*/
 
-					// TODO: Do I handle helpers severance?
-					// TODO: GetMacroValue - was override that threw error on ExcelErrorRef ... do I want that?
-					// TODO: diagnosticTraceLogger macro logging happens here...TraceMacroAction...figure out how to get them into display
+					var appliedDataUpdates = await dnaCalculationService.ProcessMacrosAsync( calcEngine, helpers, diagnosticTraceLogger, cts.Token );
 
-					var appliedDataUpdates = await excelCalculationService.ProcessMacrosAsync( calcEngine, helpers, diagnosticTraceLogger, cts.Token );
+					MessageBox.Show( "The RBLe Macros ran with no errors.", "RBLe Macros Succeeded", MessageBoxButtons.OK, MessageBoxIcon.Information );
 
 					if ( diagnosticTraceLogger.HasTrace )
 					{
 						ExcelDna.Logging.LogDisplay.Clear();
 						foreach ( var t in diagnosticTraceLogger.Trace )
 						{
-							ExcelDna.Logging.LogDisplay.WriteLine( t );
+							ExcelDna.Logging.LogDisplay.WriteLine( t.Replace( "\t", "    " ) );
 						}
 						ExcelDna.Logging.LogDisplay.Show();
 					}
@@ -84,7 +99,18 @@ public partial class Ribbon
 			}
 			catch ( Exception ex )
 			{
-				ShowException( ex );
+				MessageBox.Show( "The RBLe Macros failed.  See log for details.", "RBLe Macros Failed", MessageBoxButtons.OK, MessageBoxIcon.Error );
+
+				ExcelDna.Logging.LogDisplay.Clear();
+
+				ShowException( ex, null, diagnosticTraceLogger.HasTrace ? new [] { "", "RBLe Macro Trace" }.Concat( diagnosticTraceLogger.Trace.Select( t => t.Replace( "\t", "    " ) ) ) : null );
+			}
+			finally
+			{
+				selection.Select();
+				skipWorkbookActivateEvents = false;
+				application.ScreenUpdating = true;
+				application.ActiveWorkbook.Saved = isSaved;
 			}
 		} );
 	}
@@ -109,11 +135,6 @@ public partial class Ribbon
 	{
 		var fullName = DownloadLatestCalcEngineCheck( Constants.FileNames.Helpers, AddIn.ResourcesPath );
 		RunRibbonTask( () => DownloadLatestCalcEngineAsync( fullName ) );
-	}
-
-	public void CalcEngineUtilities_ConvertToRBLe( IRibbonControl control )
-	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
 	public void CalcEngineUtilities_LinkToLoadedAddIns( IRibbonControl _ ) => UpdateWorkbookLinks( application.ActiveWorkbook );

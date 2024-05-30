@@ -1,18 +1,35 @@
 using ExcelDna.Integration;
 using KAT.Camelot.RBLe.Core.Calculations;
 
-namespace KAT.Camelot.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 
-partial class ExcelApi
+public static class ExcelReferenceExtensions
 {
 	public static string WorkbookName( this ExcelReference reference ) => (string)XlCall.Excel( XlCall.xlfGetCell, (int)GetCellType.WorkbookRef, reference );
 	public static string SheetName( this ExcelReference reference ) => (string)XlCall.Excel( XlCall.xlfGetCell, (int)GetCellType.SheetRef, reference );
 
-	public static string? GetText( this ExcelReference cell )
+	public static T? GetValue<T>( this ExcelReference range )
 	{
-		var value = cell.GetValue();
-		return value.Equals( ExcelEmpty.Value ) ? null : (string)XlCall.Excel( XlCall.xlfGetCell, (int)GetCellType.Text, cell );
+		try
+		{
+			var value = range.GetValue();
+			if ( ExcelEmpty.Value.Equals( value ) ) return default;
+			
+			if ( typeof( T ) == typeof( string ) )
+			{
+				return (T?)XlCall.Excel( XlCall.xlfGetCell, (int)GetCellType.Text, range );
+			}
+
+			return (T?)value;
+		}
+		catch ( ApplicationException ) { throw; }
+		catch ( Exception ex )
+		{
+			throw new ApplicationException( $"Unable to get global named range value from {range?.GetAddress()}.", ex );
+		}
 	}
+
+	public static string? PrefixCharacter( this ExcelReference cell ) => (string?)XlCall.Excel( XlCall.xlfGetCell, (int)GetCellType.PrefixCharacter, cell );
 
 	public static string? GetFormula( this ExcelReference cell )
 	{
@@ -50,31 +67,31 @@ partial class ExcelApi
 
 		// reference.RestoreSelection( () =>
 		// {
-			var value = 
-				ignoreEmpty ? ExcelEmpty.Value :
-				direction == DirectionType.Down ? reference.Offset( 1, 0 ).GetValue() :
-				direction == DirectionType.ToRight ? reference.Offset( 0, 1 ).GetValue() :
-				direction == DirectionType.ToLeft ? reference.Offset( 0, -1 ).GetValue() :
-				/* DirectionType.Up */                reference.Offset( -1, 0 ).GetValue();
+		var value =
+			ignoreEmpty ? ExcelEmpty.Value :
+			direction == DirectionType.Down ? reference.Offset( 1, 0 ).GetValue() :
+			direction == DirectionType.ToRight ? reference.Offset( 0, 1 ).GetValue() :
+			direction == DirectionType.ToLeft ? reference.Offset( 0, -1 ).GetValue() :
+			/* DirectionType.Up */                reference.Offset( -1, 0 ).GetValue();
 
-			var isEmpty = value == ExcelEmpty.Value || ( value is string s && string.IsNullOrEmpty( s ) );
+		var isEmpty = value == ExcelEmpty.Value || ( value is string s && string.IsNullOrEmpty( s ) );
 
-			if ( !ignoreEmpty && isEmpty )
-			{
-				end = reference;
-			}
-			else
-			{
-				// Govert talks about 'messiness' at http://stackoverflow.com/a/10920622/166231, but pretty straight forward
-				reference.Select();
-				XlCall.Excel( XlCall.xlcSelectEnd, (int)direction );
+		if ( !ignoreEmpty && isEmpty )
+		{
+			end = reference;
+		}
+		else
+		{
+			// Govert talks about 'messiness' at http://stackoverflow.com/a/10920622/166231, but pretty straight forward
+			reference.Select();
+			XlCall.Excel( XlCall.xlcSelectEnd, (int)direction );
 
-				var selection = ( XlCall.Excel( XlCall.xlfSelection ) as ExcelReference )!;
-				var row = selection.RowFirst;
-				var col = selection.ColumnFirst;
+			var selection = ( XlCall.Excel( XlCall.xlfSelection ) as ExcelReference )!;
+			var row = selection.RowFirst;
+			var col = selection.ColumnFirst;
 
-				end = new ExcelReference( row, row, col, col, selection.SheetId );
-			}
+			end = new ExcelReference( row, row, col, col, selection.SheetId );
+		}
 		// } );
 
 		return end;
@@ -82,8 +99,11 @@ partial class ExcelApi
 
 	public static ExcelReference Select( this ExcelReference reference )
 	{
-		var sheetName = (string)XlCall.Excel( XlCall.xlSheetNm, reference );
-		XlCall.Excel( XlCall.xlcWorkbookSelect, new object[] { sheetName } );
+		var workbookName = reference.WorkbookName();
+		var sheetName = reference.SheetName();
+
+		XlCall.Excel( XlCall.xlcActivate, workbookName );
+		XlCall.Excel( XlCall.xlcWorkbookActivate, sheetName );
 		XlCall.Excel( XlCall.xlcSelect, reference );
 		return reference;
 	}
@@ -109,6 +129,12 @@ partial class ExcelApi
 			: reference.ColumnLast;
 
 		return new ExcelReference( row, row, column, column, reference.SheetId );
+	}
+
+	public static void FillDown( this ExcelReference reference )
+	{
+		reference.Select();
+		XlCall.Excel( XlCall.xlcFillDown );
 	}
 
 	/// <summary>
@@ -185,6 +211,17 @@ partial class ExcelApi
 		return result;
 	}
 
+	public static void SetArray<T>( this ExcelReference target, T[] array )
+	{
+		// https://exceldna.codeplex.com/wikipage?title=Returning%201-D%20Arrays&referringTitle=Documentation
+		var vertical = new object?[ array.Length, 1 ];
+		for ( var i = 0; i < array.Length; i++ )
+		{
+			vertical[ i, 0 ] = array[ i ];
+		}
+		target.SetValue( vertical );
+	}
+
 	public static InteropArray GetValueArray( this ExcelReference reference )
 	{
 		// Following call returns object[] array containing string, DateTime (correctly preserving Dates), and double values.
@@ -217,13 +254,41 @@ partial class ExcelApi
 		{
 			var i = (int)value;
 
-			if ( i == -2146826288d ) throw new ExcelErrorException( "ExcelError.ExcelErrorNull", "#NULL!" );
-			if ( i == -2146826281d ) throw new ExcelErrorException( "ExcelError.ExcelErrorDiv0", "#DIV/0!" );
-			if ( i == -2146826265d ) throw new ExcelErrorException( "ExcelError.ExcelErrorRef", "#REF!" );
-			if ( i == -2146826259d ) throw new ExcelErrorException( "ExcelError.ExcelErrorName", "#NAME?" );
-			if ( i == -2146826252d ) throw new ExcelErrorException( "ExcelError.ExcelErrorNum", "#NUM!" );
-			if ( i == -2146826246d ) throw new ExcelErrorException( "ExcelError.ExcelErrorNA", "#N/A" );
-			if ( i == -2146826273d ) throw new ExcelErrorException( "ExcelError.ExcelErrorValue", "#VALUE!" );
+			if ( i == -2146826288d ) throw new InteropValueException( "InteropValueException.ExcelErrorNull", "#NULL!" );
+			if ( i == -2146826281d ) throw new InteropValueException( "InteropValueException.ExcelErrorDiv0", "#DIV/0!" );
+			if ( i == -2146826265d ) throw new InteropValueException( "InteropValueException.ExcelErrorRef", "#REF!" );
+			if ( i == -2146826259d ) throw new InteropValueException( "InteropValueException.ExcelErrorName", "#NAME?" );
+			if ( i == -2146826252d ) throw new InteropValueException( "InteropValueException.ExcelErrorNum", "#NUM!" );
+			if ( i == -2146826246d ) throw new InteropValueException( "InteropValueException.ExcelErrorNA", "#N/A" );
+			if ( i == -2146826273d ) throw new InteropValueException( "InteropValueException.ExcelErrorValue", "#VALUE!" );
 		}
+	}
+
+	public static void ClearContents( this ExcelReference reference )
+	{
+		var rows = reference.RowLast - reference.RowFirst + 1;
+		var cols = reference.ColumnLast - reference.ColumnFirst + 1;
+		var values = new object[ rows, cols ]; // nulls
+		reference.SetValue( values );
+	}
+
+	public static void Sort( this ExcelReference sortRange, SortKey<ExcelReference> key1, SortKey<ExcelReference>? key2, SortKey<ExcelReference>? key3, bool sortByColumns, bool matchCase )
+	{
+		sortRange.Select();
+
+		XlCall.Excel(
+			XlCall.xlcSort,
+			sortByColumns ? (int)SortOrientationType.Columns : (int)SortOrientationType.Rows,
+			key1.Key,
+			key1.IsAscending ? (int)SortOrderType.Ascending : (int)SortOrderType.Descending,
+			key2?.Key,
+			key2 == null ? (int)SortOrderType.Ascending : key2.IsAscending ? (int)SortOrderType.Ascending : (int)SortOrderType.Descending,
+			key3?.Key,
+			key3 == null ? (int)SortOrderType.Ascending : key3.IsAscending ? (int)SortOrderType.Ascending : (int)SortOrderType.Descending,
+			(int)SortHeaderType.No,
+			key1.IsTextAsNumbers ? (int)SortDataType.Values : (int)SortDataType.Data,
+			null,
+			matchCase
+		);
 	}
 }

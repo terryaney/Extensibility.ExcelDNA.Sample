@@ -1,10 +1,10 @@
 ﻿using MSExcel = Microsoft.Office.Interop.Excel;
 using ExcelDna.Integration;
-using ExcelDna.Integration.CustomUI;
 using System.Text.Json.Nodes;
 using KAT.Camelot.RBLe.Core.Calculations;
 using KAT.Camelot.Domain.Extensions;
 using System.Globalization;
+using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
@@ -128,11 +128,11 @@ public partial class Ribbon
 				.GetReference()
 				.Offset( headerOffset, 0 );
 
-		while ( !string.IsNullOrEmpty( firstColumn.GetText() ) )
+		while ( !string.IsNullOrEmpty( firstColumn.GetValue<string>() ) )
 		{
-			var tableName = firstColumn.Offset( -headerOffset, 1 ).GetText()!;
+			var tableName = firstColumn.Offset( -headerOffset, 1 ).GetValue<string>()!;
 			var lastColumn = firstColumn.End( DirectionType.ToRight );
-			var tableInclude = firstColumn.Offset( -1, 1 ).GetText() ?? "Y";
+			var tableInclude = firstColumn.Offset( -1, 1 ).GetValue<string>() ?? "Y";
 
 			if ( configurationType != LookupConfigurationType.DataTables || tableInclude.StartsWith( "Y" ) )
 			{

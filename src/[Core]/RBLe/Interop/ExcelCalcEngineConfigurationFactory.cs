@@ -15,7 +15,6 @@ public class ExcelCalcEngineConfigurationFactory : CalcEngineConfigurationFactor
 	protected override MSExcel.Worksheet[] Worksheets => workbook.Worksheets.Cast<MSExcel.Worksheet>().ToArray();
 	protected override MSExcel.Worksheet GetSheet( MSExcel.Range range ) => range.Worksheet;
 	protected override string GetName( MSExcel.Worksheet sheet ) => sheet.Name;
-	protected override string? RangeTextOrNull( string name ) => workbook.RangeOrNull<string>( name );
 	protected override string? RangeTextOrNull( MSExcel.Worksheet sheet, string name ) => sheet.RangeOrNull<string>( name );
 	protected override MSExcel.Range GetRange( string name ) => workbook.RangeOrNull( name )!;
 	protected override MSExcel.Range GetRange( MSExcel.Worksheet sheet, string name ) => sheet.Range[ name ];
@@ -25,5 +24,4 @@ public class ExcelCalcEngineConfigurationFactory : CalcEngineConfigurationFactor
 	protected override bool RangeExists( MSExcel.Worksheet sheet, string name ) => sheet.RangeOrNull( name ) != null;
 	protected override string GetAddress( MSExcel.Range range ) => range.Address;
 	protected override string GetText( MSExcel.Range range ) => range.GetText();
-	protected override string GetFormula( MSExcel.Range range ) => ( (string)range.Formula )!;
 }

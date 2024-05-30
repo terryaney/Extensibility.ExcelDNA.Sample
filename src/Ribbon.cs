@@ -7,6 +7,7 @@ using KAT.Camelot.Domain.Configuration;
 using KAT.Camelot.Domain.Extensions;
 using KAT.Camelot.Domain.Services;
 using KAT.Camelot.Domain.Telemetry;
+using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 using KAT.Camelot.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -24,14 +25,12 @@ using MSExcel = Microsoft.Office.Interop.Excel;
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 /*
-CalcEngineUtilities_RunMacros
+CalcEngineUtilities_LocalBatchCalc
 CalcEngineUtilities_PopulateInputTab
 DataExporting_ExportResultDocGenXml
 DataExporting_ExportResultJsonData
 ConfigurationExporting_ExportWorkbook  - SpecSheet
 CalcEngineUtilities_PreviewResults
-CalcEngineUtilities_LocalBatchCalc
-CalcEngineUtilities_ConvertToRBLe
 */
 
 /// <summary>
@@ -60,7 +59,7 @@ public partial class Ribbon : ExcelRibbon
 
 	private readonly WorkbookState WorkbookState;
 	private readonly ApiService apiService;
-	private readonly RBLe.Interop.ExcelCalculationService excelCalculationService;
+	private readonly RBLe.Dna.DnaCalculationService dnaCalculationService;
 	private readonly IEmailService emailService = new FakeEmailService();
 	private readonly ITextService textService = new FakeTextService();
 	private readonly IConfiguration secretsConfiguration;
@@ -125,7 +124,7 @@ public partial class Ribbon : ExcelRibbon
 		IxDSRepository xDSRepository = new xDSRepository( connectionForge, dateTimeService, localizer );
 
 		apiService = new ApiService( httpClientFactory, xDSRepository );
-		excelCalculationService = new RBLe.Interop.ExcelCalculationService(
+		dnaCalculationService = new RBLe.Dna.DnaCalculationService(
 			httpClientFactory, emailService, textService, theKeepSettings.Value.Jwt.RBLe, logger
 		);
 
@@ -259,7 +258,7 @@ public partial class Ribbon : ExcelRibbon
 		}
 	}
 
-	internal static void ShowException( Exception ex, string? message = null )
+	internal static void ShowException( Exception ex, string? message = null, IEnumerable<string>? additionalMessages = null )
 	{
 		var exDisplay = ex; 
 
@@ -271,6 +270,14 @@ public partial class Ribbon : ExcelRibbon
 		{
 			ExcelDna.Logging.LogDisplay.WriteLine( $"Inner Exception: {exDisplay.Message}{Environment.NewLine}Trace: {exDisplay.StackTrace}" );
 			exDisplay = exDisplay.InnerException;
+		}
+
+		if ( additionalMessages != null )
+		{
+			foreach ( var additionalMessage in additionalMessages )
+			{
+				ExcelDna.Logging.LogDisplay.WriteLine( additionalMessage );
+			}
 		}
 
 		ExcelDna.Logging.LogDisplay.Show();

@@ -24,10 +24,10 @@ internal static class ExcelExtensions
 		var allowCast = typeof( string ) != type && typeof( int ) != type;
 
 		var data = reference.Value;
-		var array = data as object[,] ?? new object[,] { { data } };
+		var array = new InteropArray( data as object[,] ?? new object[,] { { data } } );
 
-		var rows = array.GetLength( 0 );
-		var cols = array.GetLength( 1 );
+		var rows = array.RowCount;
+		var cols = array.ColumnCount;
 
 		var result = new T[ rows, cols ];
 
@@ -63,9 +63,10 @@ internal static class ExcelExtensions
 		var type = typeof( T );
 		var allowCast = typeof( string ) != type && typeof( int ) != type;
 		var data = reference.Value;
-		var array = data as object[,] ?? new object[,] { { data } };
-		var rows = array.GetLength( 0 );
-		var columns = array.GetLength( 1 );
+		var array = new InteropArray( data as object[,] ?? new object[,] { { data } } );
+
+		var rows = array.RowCount;
+		var columns = array.ColumnCount;
 		var size = Math.Max( rows, columns );
 		var isVertical = rows == size;
 
@@ -82,7 +83,7 @@ internal static class ExcelExtensions
 			{
 				result[ i ] = (
 					( v == null ) ? default :
-					( allowCast ) ? (T)v :
+					allowCast ? (T)v :
 					(T)Convert.ChangeType( v, type )
 				)!;
 			}

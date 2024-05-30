@@ -1,5 +1,6 @@
 ﻿using ExcelDna.Integration;
 using ExcelDna.Registration;
+using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 using Microsoft.Extensions.Configuration;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
@@ -64,7 +65,7 @@ public class AddIn : IExcelAddIn
 	/// </remarks>
 	private object UnhandledExceptionHandler( object exception )
 	{
-		var caller = ExcelApi.GetCaller();
+		var caller = DnaApplication.GetCaller();
 
 		if ( caller != null )
 		{
@@ -86,21 +87,18 @@ public class AddIn : IExcelAddIn
 	/// <url>https://github.com/Excel-DNA/Registration</url>
 	private static void RegisterFunctions()
 	{		
-		// Decided to use this explicit function registration for a couple of reasons...
-		//
-		// 1) Default parameters don't work correctly and you need to pass as object, then check for ExcelMissing.  I didn't want to include ExcelDNA in the 'functions' repo for the RBLe service, so needed to add a layer.
-		// 2) Documentation for Excel (which will be nice to have) needs ExcelDNA library, again, didn't want to share across to RBLe service.
-		// 3) There were some 'public' methods that were registering in Excel, that I didn't want there so I used ExcelDNA hidden, and again, that wouldn't compile in RBLe service.
-		// 4) Can add a 'debug' version of functions to return object (which can return a number or exception method) without polluting RBLe service code
-		//
-		// So bit of a pain when you don't need documentation and you have to add the function then add the Excel signature here, but the same thing kind of happens in RBLe when you have to register functions with SSG.
-		//
-		// Only include C#/Xml documentation if the signature doesn't exist anywhere else (i.e. BTRNumberFormat uses a public method that can not be used by Excel, but can be used by RBLe, so only have signature here)
-
 		ExcelRegistration
 			.GetExcelFunctions()
 			.Select( UpdateHelpTopic )
+			.ProcessParamsRegistrations()
 			.RegisterFunctions();
+	}
+
+	private static ExcelFunctionRegistration UpdateHelpTopic( ExcelFunctionRegistration funcReg )
+	{
+		// TODO: Ability to run markdown help files locally.
+		funcReg.FunctionAttribute.HelpTopic = "http://www.bing.com";
+		return funcReg;
 	}
 
 	private static object DebugFunction( Func<object> func )
@@ -113,12 +111,5 @@ public class AddIn : IExcelAddIn
 		{
 			return ex.Message;
 		}
-	}
-
-	private static ExcelFunctionRegistration UpdateHelpTopic( ExcelFunctionRegistration funcReg )
-	{
-		// TODO: Ability to run markdown help files locally.
-		funcReg.FunctionAttribute.HelpTopic = "http://www.bing.com";
-		return funcReg;
 	}
 }

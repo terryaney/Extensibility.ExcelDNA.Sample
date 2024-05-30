@@ -1,5 +1,6 @@
 using ExcelDna.Integration;
 using KAT.Camelot.Domain.Extensions;
+using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 using KAT.Camelot.RBLe.Core.Calculations.Functions;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn.Functions;
@@ -28,7 +29,10 @@ public static class DnaUtility
 			: text.Contains( find );
 	}
 
-	[ExcelFunction( Category = "General Utility Helpers", Description = "Returns a filtered table given a list of filter columns and values to compare." )]
+	[ExcelFunction( 
+		Category = "General Utility Helpers", 
+		Description = "Returns a filtered table given a list of filter columns and values to compare." 
+	)]
 	public static object[,] BTRFilter(
 		[ExcelArgument( Description = "Range of cells to filter." )]
 		object[,] table,
@@ -55,7 +59,7 @@ public static class DnaUtility
 
 		var filterResult = Utility.Filter( table, includeHeadersInResults.Check( nameof( includeHeadersInResults ), true ), returnColumnNames, expressions, ExcelError.ExcelErrorNA );
 
-		var isArrayFunction = ExcelApi.IsArrayFormula;
+		var isArrayFunction = DnaApplication.IsArrayFormula;
 
 		if ( isArrayFunction && filterResult.GetUpperBound( 0 ) == 0 && !object.Equals( filterResult[ 0, 0 ], ExcelError.ExcelErrorNA ) )
 		{
@@ -108,7 +112,7 @@ public static class DnaUtility
 		object? caseSensitive = null
 	)
 	{
-		var isArrayFunction = ExcelApi.IsArrayFormula;
+		var isArrayFunction = DnaApplication.IsArrayFormula;
 
 		var returnValues = Utility.LookupValues(
 			table,

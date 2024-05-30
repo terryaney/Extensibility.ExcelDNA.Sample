@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
@@ -27,7 +28,7 @@ public class ApiService
 	{
 		var url = $"{AddIn.Settings.ApiEndpoint}{ApiEndpoints.Utility.SpreadsheetGear}";
 		
-		var (httpResponse, validations) = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get );
+		var (httpResponse, validations) = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get, null );
 		
 		if ( validations != null )
 		{
@@ -49,15 +50,15 @@ public class ApiService
 	public async Task<ApiResponse<CalcEngineInfo>> GetCalcEngineInfoAsync( string calcEngine, string? userName, string? password )
 	{
 		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.Get( Path.GetFileNameWithoutExtension( calcEngine ) )}";
-		var (httpResponse, validations) = await SendRequestAsync<CalcEngineInfo>( userName, password, url, HttpMethod.Get );
-		return new() { Response = httpResponse, Validations = validations };
+		var (calcEngineInfo, validations) = await SendRequestAsync<CalcEngineInfo>( userName, password, url, HttpMethod.Get, HttpStatusCode.NotFound );
+		return new() { Response = calcEngineInfo, Validations = validations };
 	}
 
 	public async Task<ApiResponse<string>> DownloadDebugAsync( string calcEngine, int versionKey, string? userName, string? password )
 	{
 		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.DebugDownload( Path.GetFileNameWithoutExtension( calcEngine ), versionKey )}";
 		
-		var (httpResponse, validations) = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get );
+		var (httpResponse, validations) = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get, null );
 		
 		if ( validations != null )
 		{
@@ -81,7 +82,7 @@ public class ApiService
 		var calcEngine = Path.GetFileNameWithoutExtension( path );
 		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Build.DownloadLatest( calcEngine )}";
 		
-		var (httpResponse, validations) = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get );
+		var (httpResponse, validations) = await SendHttpRequestAsync( userName, password, url, HttpMethod.Get, null );
 
 		if ( validations != null )
 		{
@@ -251,13 +252,17 @@ public class ApiService
 		return null;
 	}
 
-	private async Task<(T? Response, ApiValidation[]? Validations)> SendRequestAsync<T>( string? userName, string? password, string url, HttpMethod method ) where T : class
+	private async Task<(T? Response, ApiValidation[]? Validations)> SendRequestAsync<T>( string? userName, string? password, string url, HttpMethod method, params HttpStatusCode[] errorCodesToIgnore ) where T : class
 	{
-		var (httpResponse, validations) = await SendHttpRequestAsync( userName, password, url, method );
+		var (httpResponse, validations) = await SendHttpRequestAsync( userName, password, url, method, null, errorCodesToIgnore );
 
 		if ( validations != null )
 		{
 			return (null, validations);
+		}
+		else if ( errorCodesToIgnore.Contains( httpResponse!.StatusCode ) )
+		{
+			return (null, null);
 		}
 
 		using var response = httpResponse!;
@@ -276,7 +281,7 @@ public class ApiService
 	private async Task<ApiValidation[]?> SendRequestWithoutResponseAsync( string? userName, string? password, string url, HttpMethod method, HttpContent? content = null ) =>
 		( await SendHttpRequestAsync( userName, password, url, method, content ) ).Validations;
 
-	private async Task<(HttpResponseMessage? Response, ApiValidation[]? Validations)> SendHttpRequestAsync( string? userName, string? password, string url, HttpMethod method, HttpContent? content = null )
+	private async Task<(HttpResponseMessage? Response, ApiValidation[]? Validations)> SendHttpRequestAsync( string? userName, string? password, string url, HttpMethod method, HttpContent? content, params HttpStatusCode[] errorCodesToIgnore )
 	{
 		if ( string.IsNullOrEmpty( userName ) || string.IsNullOrEmpty( password ) )
 		{
@@ -295,7 +300,7 @@ public class ApiService
 		{
 			response = await httpClient.SendConduentAsync( request );
 
-			if ( response.StatusCode == System.Net.HttpStatusCode.BadRequest )
+			if ( response.StatusCode == HttpStatusCode.BadRequest )
 			{
 				var problemDetails = ( await response.Content.ReadFromJsonAsync<JsonNode>() )!;
 
@@ -312,7 +317,10 @@ public class ApiService
 				return (null, new[] { new ApiValidation { Name = "Excel Api", Message = (string)problemDetails[ "detail" ]! } });
 			}
 
-			response.EnsureSuccessStatusCode();
+			if ( !errorCodesToIgnore.Contains( response.StatusCode ) )
+			{
+				response.EnsureSuccessStatusCode();
+			}
 
 			return (response, null);
 		}

@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using ExcelDna.Integration;
+﻿using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 using MSExcel = Microsoft.Office.Interop.Excel;
 

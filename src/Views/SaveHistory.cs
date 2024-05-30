@@ -69,6 +69,7 @@ internal partial class SaveHistory : Form
 			// Just get a 'formatted' version number
 			proposedVersion = (string)currentVersionRange.Text;
 			currentVersionRange.Value = currentVersionValue;
+			workbook.Saved = true;
 		}
 
 		author.Text = name;

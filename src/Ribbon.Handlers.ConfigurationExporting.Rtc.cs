@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Nodes;
 using KAT.Camelot.Domain.Extensions;
+using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 using KAT.Camelot.RBLe.Core.Calculations;
 using MSExcel = Microsoft.Office.Interop.Excel;
 

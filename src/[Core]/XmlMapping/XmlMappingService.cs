@@ -9,6 +9,7 @@ using ExcelDna.Integration;
 using System.Xml.XPath;
 using KAT.Camelot.Extensibility.Excel.AddIn.XmlMappingExport.GeneratedParser;
 using System.Linq.Expressions;
+using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn.XmlMappingExport;
 
@@ -119,20 +120,20 @@ class XmlMappingService
 
 	private static XElement GetXmlMappingConfiguration( MSExcel.Worksheet worksheet )
 	{
-		var authIdElement = worksheet.Range[ AuthIdElement ].GetReference().Offset( 0, 1 ).GetText();
-		var pathToProfileElement = worksheet.Range[ PathToProfileElement ].GetReference().Offset( 0, 1 ).GetText()!;
+		var authIdElement = worksheet.Range[ AuthIdElement ].GetReference().Offset( 0, 1 ).GetValue<string>();
+		var pathToProfileElement = worksheet.Range[ PathToProfileElement ].GetReference().Offset( 0, 1 ).GetValue<string>()!;
 		var mappingLayout = worksheet.Range[ MappingLayouts ].GetReference();
 
 		var specification = new XElement( "Specification" );
 
 		string? mappingLayoutText = null;
 
-		while ( !string.IsNullOrEmpty( mappingLayoutText = mappingLayout.GetText() ) && mappingLayout.RowFirst < 10000 )
+		while ( !string.IsNullOrEmpty( mappingLayoutText = mappingLayout.GetValue<string>() ) && mappingLayout.RowFirst < 10000 )
 		{
 			if ( mappingLayoutText == "xDS Table" )
 			{
-				var currentxDSTable = mappingLayout.Offset( 0, 1 ).GetText() ?? "Profile";
-				var pathToElement = mappingLayout.Offset( 1, 1 ).GetText()!;
+				var currentxDSTable = mappingLayout.Offset( 0, 1 ).GetValue<string>() ?? "Profile";
+				var pathToElement = mappingLayout.Offset( 1, 1 ).GetValue<string>()!;
 
 				var headers =
 					mappingLayout
@@ -149,7 +150,7 @@ class XmlMappingService
 				}
 
 				string? getSpecValue( string name, ExcelReference reference ) =>
-					getSpecColumn( name, reference )?.GetText();
+					getSpecColumn( name, reference )?.GetValue<string>();
 
 				XAttribute? getSpecAttribute( string name, ExcelReference reference )
 				{
@@ -163,7 +164,7 @@ class XmlMappingService
 				XAttribute? getSpecFormulaAttribute( string name, ExcelReference reference )
 				{
 					var specColumn = getSpecColumn( name, reference );
-					var value = specColumn?.GetFormula() ?? specColumn?.GetText();
+					var value = specColumn?.GetFormula() ?? specColumn?.GetValue<string>();
 
 					return !string.IsNullOrEmpty( value )
 						? new XAttribute( name.Replace( " ", "" ), value )
@@ -184,7 +185,7 @@ class XmlMappingService
 				var rowOffset = 0;
 				ExcelReference? currentRow = null;
 
-				while ( !string.IsNullOrEmpty( ( currentRow = mappingLayout.Offset( rowOffset, 0 ) ).GetText() ) )
+				while ( !string.IsNullOrEmpty( ( currentRow = mappingLayout.Offset( rowOffset, 0 ) ).GetValue<string>() ) )
 				{
 					var field = getSpecValue( xDSField, currentRow )!;
 					var authIdCheck = getSpecValue( clientField, currentRow );

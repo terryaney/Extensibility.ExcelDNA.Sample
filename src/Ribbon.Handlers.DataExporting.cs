@@ -5,6 +5,7 @@ using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 using KAT.Camelot.Domain.Extensions;
 using KAT.Camelot.Domain.IO;
+using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 using KAT.Camelot.Extensibility.Excel.AddIn.XmlMappingExport;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
@@ -21,12 +22,12 @@ public partial class Ribbon
 			var owner = new NativeWindow();
 			owner.AssignHandle( new IntPtr( application.Hwnd ) );
 
-			var selection = ExcelApi.Selection;
-			selection = string.IsNullOrEmpty( selection.GetText() )
-				? "DataExport".GetReferenceOrNull( selection.SheetName() ) ?? selection
+			var selection = DnaApplication.Selection;
+			selection = string.IsNullOrEmpty( selection.GetValue<string>() )
+				? new DnaWorksheet( DnaApplication.ActiveWorkbookName(), selection.SheetName() ).ReferenceOrNull( "DataExport" ) ?? selection
 				: selection;
 
-			if ( string.IsNullOrEmpty( selection.GetText() ) )
+			if ( string.IsNullOrEmpty( selection.GetValue<string>() ) )
 			{
 				MessageBox.Show( "To export data, you must select the first column header of either a single sheet export configuration (usually the Auth ID) or the 'Sheet' configuration cell of a multi-sheet export configuration.", "Export Data", MessageBoxButtons.OK, MessageBoxIcon.Exclamation );
 				return;

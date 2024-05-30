@@ -1,5 +1,4 @@
 using System.Linq.Expressions;
-using System.Xml.Linq;
 using KAT.Camelot.Domain.Extensions;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn.XmlMappingExport.GeneratedParser;

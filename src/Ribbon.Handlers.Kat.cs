@@ -5,6 +5,7 @@ using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Requests;
 using KAT.Camelot.Domain.Extensions;
+using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 using KAT.Camelot.RBLe.Core.Calculations;
 using MSExcel = Microsoft.Office.Interop.Excel;
 

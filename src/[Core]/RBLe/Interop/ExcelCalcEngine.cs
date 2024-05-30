@@ -4,12 +4,22 @@ using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn.RBLe.Interop;
 
+[Obsolete( "Use DnaCalcEngine instead.  Can't safely use this object (and nested COM objects) in async/await workflows." )]
 public class ExcelCalcEngine : ICalcEngine<MSExcel.Workbook, MSExcel.Worksheet, MSExcel.Range, MSExcel.XlCVError>, IDisposable
 {
 	private static readonly string[] _MacroFunctionNames = new[] { "BTRGetMacroVariable" };
-
+	readonly Dictionary<int, MSExcel.XlCVError> cvErrorMapping = new ()
+	{
+		{ -2146826281, MSExcel.XlCVError.xlErrDiv0 },
+		{ -2146826246, MSExcel.XlCVError.xlErrNA },
+		{ -2146826259, MSExcel.XlCVError.xlErrName },
+		{ -2146826288, MSExcel.XlCVError.xlErrNull },
+		{ -2146826252, MSExcel.XlCVError.xlErrNum },
+		{ -2146826265, MSExcel.XlCVError.xlErrRef },
+		{ -2146826273, MSExcel.XlCVError.xlErrValue }
+	};
 	private readonly bool isSaved;
-	private readonly MSExcel.Worksheet wsEvaluate;
+	private MSExcel.Worksheet? wsEvaluate;
 	private readonly MSExcel.Application application;
 	private readonly string version;
 	private readonly MSExcel.Workbook workbook;
@@ -23,11 +33,7 @@ public class ExcelCalcEngine : ICalcEngine<MSExcel.Workbook, MSExcel.Worksheet, 
 		this.workbook = workbook;
 		isSaved = workbook.Saved;
 
-		application.Calculation = MSExcel.XlCalculation.xlCalculationManual;
 		Configuration = configuration;
-
-		wsEvaluate = ( application.Worksheets.Add() as MSExcel.Worksheet )!;
-		wsEvaluate.Visible = MSExcel.XlSheetVisibility.xlSheetHidden;
 	}
 
 	public CalcEngineConfiguration Configuration { get; init; } = null!;
@@ -75,10 +81,8 @@ public class ExcelCalcEngine : ICalcEngine<MSExcel.Workbook, MSExcel.Worksheet, 
 	}
 
 	public MSExcel.Worksheet[] Worksheets => workbook.Worksheets.Cast<MSExcel.Worksheet>().ToArray();
-	public MSExcel.Worksheet GetSheet( MSExcel.Range range ) => range.Worksheet;
 	public MSExcel.Worksheet? GetSheet( string name ) => Worksheets.FirstOrDefault( w => w.Name == name );
 	public string GetName( MSExcel.Worksheet sheet ) => sheet.Name;
-	public string? RangeTextOrNull( string name ) => workbook.RangeOrNull<string>( name );
 	public string? RangeTextOrNull( MSExcel.Worksheet sheet, string name ) => sheet.RangeOrNull<string>( name );
 	public MSExcel.Range GetRange( MSExcel.Worksheet sheet, string name ) => sheet.Range[ name ];
 	public MSExcel.Range GetRange( string name ) => workbook.RangeOrNull( name )!;
@@ -111,10 +115,8 @@ public class ExcelCalcEngine : ICalcEngine<MSExcel.Workbook, MSExcel.Worksheet, 
 	}
 
 	public MSExcel.Range Offset( MSExcel.Range range, int rowOffset, int columnOffset ) => range.Offset[ rowOffset, columnOffset ];
-	public MSExcel.Range EndRight( MSExcel.Range range ) => range.End[ MSExcel.XlDirection.xlToRight ];
-	public bool RangeExists( MSExcel.Worksheet sheet, string name ) => sheet.RangeOrNull( name ) != null;
 	public bool RangeExists( string name ) => workbook.RangeOrNull( name ) != null;
-	public string GetAddress( MSExcel.Range range ) => range.Address;
+	public string GetA1Address( MSExcel.Range range ) => range.Address;
 	public string GetFullAddress( MSExcel.Range range ) => $"{range.Worksheet.Name}!{range.Address}";
 	public string GetText( MSExcel.Range range ) => range.GetText();
 	public string GetFormula( MSExcel.Range range ) => (string)range.Formula!;
@@ -125,7 +127,6 @@ public class ExcelCalcEngine : ICalcEngine<MSExcel.Workbook, MSExcel.Worksheet, 
 	}
 	public bool TextForced( MSExcel.Range range ) => !string.IsNullOrEmpty( (string?)range.PrefixCharacter ) || range.GetText() == "'";
 	public void ClearContents( MSExcel.Range range ) => range.ClearContents();
-	public void SetValue( MSExcel.Range range, string value ) => range.Value = value;
 	public void SetValue( MSExcel.Range range, object value )
 	{
 		if ( value is string v )
@@ -154,20 +155,34 @@ public class ExcelCalcEngine : ICalcEngine<MSExcel.Workbook, MSExcel.Worksheet, 
 	public void SetArray<T>( MSExcel.Range range, T[] array )
 	{
 		if ( array.Length == 0 ) return;
-		var target = Extend( range, range.Offset[ array.Length - 1, 0 ] );
+
+		var target = range.Worksheet.Range[
+			range.Worksheet.Cells[ range.Row, range.Column ],
+			range.Worksheet.Cells[ range.Row + array.Length - 1, range.Column ]
+		];
+
 		target.SetArray( array );
 	}
 	public void SetArray<T>( MSExcel.Range range, T[,] array )
 	{
 		if ( array.GetUpperBound( 0 ) == -1 ) return;
 
-		var target = Extend( range, range.Offset[ array.GetUpperBound( 0 ), array.GetUpperBound( 1 ) ] );
+		var target = range.Worksheet.Range[
+			range.Worksheet.Cells[ range.Row, range.Column ],
+			range.Worksheet.Cells[ range.Row + array.GetUpperBound( 0 ), range.Column + array.GetUpperBound( 1 ) ]
+		];
 
 		// SpreadsheetGear requires it to be object[,]
-		var oArray = new object[ array.GetLength( 0 ), array.GetLength( 1 ) ];
-		Array.Copy( array, oArray, array.Length );
-
-		target.Value = oArray;
+		if ( typeof( T ) == typeof( object ) )
+		{
+			target.Value = array;
+		}
+		else
+		{
+			var oArray = new object[ array.GetLength( 0 ), array.GetLength( 1 ) ];
+			Array.Copy( array, oArray, array.Length );
+			target.Value = oArray;
+		}
 	}
 	public void CopyAddress( MSExcel.Range source, MSExcel.Range destination ) => destination.Value2 = source.Value2;
 	public void CopyRange( MSExcel.Range source, MSExcel.Range destination ) => source.Copy( destination );
@@ -210,20 +225,55 @@ public class ExcelCalcEngine : ICalcEngine<MSExcel.Workbook, MSExcel.Worksheet, 
 	}
 
 	public int Rows( MSExcel.Range table ) => table.End[ MSExcel.XlDirection.xlDown ].Row - table.Row;
-	public T EvalulateFormula<T>( MSExcel.Range _, string formula ) 
+	public T EvaluateFormula<T>( MSExcel.Range _, string formula ) 
 	{
 		// https://microsoft.public.excel.sdk.narkive.com/W7118afY/strange-behaviour-of-evaluate-xlfevaluate
+		if ( wsEvaluate == null )
+		{
+			wsEvaluate = ( workbook.Sheets.Add() as MSExcel.Worksheet )!;
+			wsEvaluate.Visible = MSExcel.XlSheetVisibility.xlSheetHidden;
+		}
+
 		wsEvaluate.Range[ "A1" ].Formula = formula;
 		var value = wsEvaluate.Range[ "A1" ].Value;
 
 		try
 		{
+			if ( value is int intValue && cvErrorMapping.TryGetValue( intValue, out var cvError ) )
+			{
+				throw new ApplicationException( cvError == MSExcel.XlCVError.xlErrRef
+					? $"Processing Macro variables in formula << {formula} >> failed.  Make sure all cell references have Sheet! prefix in the formula, even if cells are located on RBLMacro tab."
+					: $"Processing Macro variables in formula << {formula} >> failed returning {cvError}."
+				 );
+			}
+
 			return (T)value;
 		}
-		catch ( Exception ex )
+		catch ( Exception ex ) when ( ex is not ApplicationException )
 		{
 			throw new ApplicationException( $"Unable to evaluate formula '{formula}'.  Text result is {wsEvaluate.Range[ "A1" ].Text}.", ex );
 		}
+
+		/*
+		var result = ExcelDna.Integration.XlCall.Excel( ExcelDna.Integration.XlCall.xlfEvaluate, formula[ 1.. ] );
+
+		try
+		{
+			if ( result is ExcelDna.Integration.ExcelError r )
+			{
+				throw new ApplicationException( r == ExcelDna.Integration.ExcelError.ExcelErrorRef
+					? $"Processing Macro variables in formula << {formula} >> failed.  Make sure all cell references have Sheet! prefix in the formula, even if cells are located on RBLMacro tab."
+					: $"Processing Macro variables in formula << {formula} >> failed returning {r}."
+				 );
+			}
+
+			return (T)result;
+		}
+		catch ( Exception ex )
+		{
+			throw new ApplicationException( $"Unable to evaluate formula '{formula}'.  Text result is {result?.ToString()}.", ex );
+		}
+		*/
 	}
 
 	public void Calculate() => application.Calculate();
