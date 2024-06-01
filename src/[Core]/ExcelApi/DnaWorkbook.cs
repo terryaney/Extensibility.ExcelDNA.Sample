@@ -13,7 +13,7 @@ class DnaWorkbook
 	public DnaWorkbook( string name ) 
 	{
 		Name = name;
-		Version = ReferenceOrNull( "Version" )?.GetValue<string>();
+		Version = RangeOrNull( "Version" )?.GetValue<string>();
 	} 
 	public bool IsSaved => (bool)XlCall.Excel( XlCall.xlfGetWorkbook, (int)GetWorkbookType.IsSaved, Name );
 
@@ -32,9 +32,41 @@ class DnaWorkbook
 		}
 	}
 
-	public ExcelReference? ReferenceOrNull( string address )
+	public ExcelReference? RangeOrNull( string address )
 	{
+		// C API scope issue: https://stackoverflow.com/questions/78551625/excel-c-api-via-exceldna-and-named-range-scopes
+
+		var scopeResult = XlCall.Excel( XlCall.xlfGetName, $"'{Name}'!{address}", (int)GetNameInfoType.Scope );
+		if ( scopeResult is ExcelError )
+		{
+			return null;
+		}
+
 		var sheetName = (string)XlCall.Excel( XlCall.xlfGetWorkbook, (int)GetWorkbookType.ActiveSheet, Name );
+
+		if ( (bool)scopeResult )
+		{
+			// Sheet scope...
+			var otherSheet = Worksheets.FirstOrDefault( w => w.Name != sheetName );
+			if ( otherSheet == null )
+			{
+				return null; // Unable to get a different sheet so I can get 'workbook scope' range....
+			}
+
+			XlCall.Excel( XlCall.xlcWorkbookActivate, otherSheet.Name );
+
+			try
+			{
+				return RangeOrNull( address );				
+			}
+			finally
+			{
+				XlCall.Excel( XlCall.xlcWorkbookActivate, sheetName );
+			}
+		}
+
 		return XlCall.Excel( XlCall.xlfEvaluate, $"='[{Name}]{sheetName}'!{address}" ) as ExcelReference;
 	}
+
+	public void Activate() => XlCall.Excel( XlCall.xlcActivate, Name );
 }

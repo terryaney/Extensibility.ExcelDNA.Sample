@@ -24,7 +24,7 @@ public partial class Ribbon
 
 			var selection = DnaApplication.Selection;
 			selection = string.IsNullOrEmpty( selection.GetValue<string>() )
-				? new DnaWorksheet( DnaApplication.ActiveWorkbookName(), selection.SheetName() ).ReferenceOrNull( "DataExport" ) ?? selection
+				? new DnaWorksheet( DnaApplication.ActiveWorkbookName(), selection.SheetName() ).RangeOrNull( "DataExport" ) ?? selection
 				: selection;
 
 			if ( string.IsNullOrEmpty( selection.GetValue<string>() ) )

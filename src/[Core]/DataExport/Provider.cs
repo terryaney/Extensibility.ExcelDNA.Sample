@@ -70,7 +70,7 @@ class Provider
 			}
 			: Enumerable
 				.Range( 1, multiSheetInfo!.GetUpperBound( 0 ) )
-				.Select( r => new { Row = r, Reference = new DnaWorksheet( DnaApplication.ActiveWorkbookName(), multiSheetInfo[ r, 0 ]! ).ReferenceOrNull( multiSheetInfo[ r, 1 ]! )! } )
+				.Select( r => new { Row = r, Reference = new DnaWorksheet( DnaApplication.ActiveWorkbookName(), multiSheetInfo[ r, 0 ]! ).RangeOrNull( multiSheetInfo[ r, 1 ]! )! } )
 				.Select( r =>
 					new ExportTable
 					(

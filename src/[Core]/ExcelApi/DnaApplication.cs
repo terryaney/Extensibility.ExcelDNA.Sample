@@ -51,15 +51,15 @@ public static class DnaApplication
 		}
 	}
 
-	public static ExcelReference? GetRangeFromAddress( string address )
+	public static ExcelReference? GetRangeFromAddress( string workbookName, string address )
 	{
 		try
 		{
 			var excelAddress = address.GetExcelAddress();
-			var workbook = new DnaWorkbook();
+			var workbook = new DnaWorkbook( workbookName );
 
 			var range = string.IsNullOrEmpty( excelAddress.Sheet ) || excelAddress.Sheet == workbook.Name /* global range if so */
-				? workbook.ReferenceOrNull( excelAddress.Address )
+				? workbook.RangeOrNull( excelAddress.Address )
 				: null;
 
 			if ( range != null )
@@ -73,7 +73,7 @@ public static class DnaApplication
 				return null;
 			}
 
-			return new DnaWorksheet( workbook.Name, excelAddress.Sheet ).ReferenceOrNull( excelAddress.Address );
+			return new DnaWorksheet( workbook.Name, excelAddress.Sheet ).RangeOrNull( excelAddress.Address );
 		}
 		catch ( Exception ex )
 		{

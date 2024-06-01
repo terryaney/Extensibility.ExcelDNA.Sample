@@ -13,6 +13,34 @@ class DnaWorksheet
 		Name = name;
 	}
 
-	public ExcelReference? ReferenceOrNull( string address ) => XlCall.Excel( XlCall.xlfEvaluate, $"='[{WorkbookName}]{Name}'!{address}" ) as ExcelReference;
-	public T? ReferenceOrNull<T>( string name ) => ReferenceOrNull( name )!.GetValue<T>();
+	public ExcelReference? RangeOrNull( string nameOrAddress )
+	{
+		// C API scope issue: https://stackoverflow.com/questions/78551625/excel-c-api-via-exceldna-and-named-range-scopes
+
+		var sheetName = (string)XlCall.Excel( XlCall.xlfGetWorkbook, (int)GetWorkbookType.ActiveSheet, WorkbookName );
+		
+		if ( sheetName != Name )
+		{
+			XlCall.Excel( XlCall.xlcWorkbookActivate, Name );
+		}
+
+		try
+		{
+			var scopeResult = XlCall.Excel( XlCall.xlfGetName, $"{Name}!{nameOrAddress}", (int)GetNameInfoType.Scope );
+			if ( scopeResult is bool b && !b )
+			{
+				// Found named range but scoped to Workbook...
+				return null;
+			}
+
+			return XlCall.Excel( XlCall.xlfEvaluate, $"='{Name}'!{nameOrAddress}" ) as ExcelReference;
+		}
+		finally
+		{
+			if ( sheetName != Name )
+			{
+				XlCall.Excel( XlCall.xlcWorkbookActivate, sheetName );
+			}
+		}			
+	}
 }

@@ -24,13 +24,13 @@ class DnaCalcEngineConfigurationFactory : CalcEngineConfigurationFactory<DnaWork
 	protected override DnaWorksheet[] Worksheets => new DnaWorkbook( fileName ).Worksheets;
 	protected override DnaWorksheet GetSheet( ExcelReference range ) => new( workbook.Name, range.SheetName() );
 	protected override string GetName( DnaWorksheet sheet ) => sheet.Name;
-	protected override string? RangeTextOrNull( DnaWorksheet sheet, string name ) => sheet.ReferenceOrNull<string>( name );
-	protected override ExcelReference GetRange( string name ) => workbook.ReferenceOrNull( name )!;
-	protected override ExcelReference GetRange( DnaWorksheet sheet, string name ) => sheet.ReferenceOrNull( name )!;
+	protected override string? RangeTextOrNull( DnaWorksheet sheet, string name ) => sheet.RangeOrNull( name )?.GetValue<string>();
+	protected override ExcelReference GetRange( string name ) => workbook.RangeOrNull( name )!;
+	protected override ExcelReference GetRange( DnaWorksheet sheet, string nameOrAddress ) => sheet.RangeOrNull( nameOrAddress )!;
 	protected override ExcelReference Offset( ExcelReference range, int rowOffset, int columnOffset ) => range.Offset( rowOffset, columnOffset );
 	protected override ExcelReference EndRight( ExcelReference range ) => range.End( DirectionType.ToRight );
-	protected override bool RangeExists( string name ) => workbook.ReferenceOrNull( name ) != null;
-	protected override bool RangeExists( DnaWorksheet sheet, string name ) => sheet.ReferenceOrNull( name ) != null;
+	protected override bool RangeExists( string name ) => workbook.RangeOrNull( name ) != null;
+	protected override bool RangeExists( DnaWorksheet sheet, string name ) => sheet.RangeOrNull( name ) != null;
 	protected override string GetAddress( ExcelReference range ) => range.GetAddress().Split( '!' ).Last();
 	protected override string GetText( ExcelReference range ) => range.GetValue<string>() ?? "";
 }

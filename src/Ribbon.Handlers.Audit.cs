@@ -35,92 +35,101 @@ public partial class Ribbon
 	{
 		ExcelAsyncUtil.QueueAsMacro( () =>
 		{
-			var selection = ( application.Selection as MSExcel.Range )!;
-			selection.Style = "Normal";
+			application.ScreenUpdating = false;
 
-			var selectionRef = selection.GetReference();
-			var firstCell = selectionRef.Corner( CornerType.UpperLeft );
-			var workbookName = application.ActiveWorkbook.Name;
-			var worksheetName = application.ActiveWorksheet().Name;
-
-			static string getRangeAddress( ParseTreeNode r, ParseTreeNode parent, int startIndex )
+			try
 			{
-				var rangeStart = r.ChildNodes[ startIndex ].ChildNodes[ 0 ].Token.Text;
+				var selection = ( application.Selection as MSExcel.Range )!;
+				selection.Style = "Normal";
 
-				var next = r.ChildNodes[ startIndex ].Type() == GrammarNames.Cell
-					? GetNext( parent, r )
-					: null;
+				var selectionRef = selection.GetReference();
+				var firstCell = selectionRef.Corner( CornerType.UpperLeft );
+				var workbookName = application.ActiveWorkbook.Name;
+				var worksheetName = application.ActiveWorksheet().Name;
 
-				var range = next?.Type() == ":"
-					? $"{rangeStart}:{GetNext( parent, next )!.ChildNodes[ 0 ].ChildNodes[ 0 ].Token.Text}"
-					: rangeStart;
-
-				return range;
-			}
-
-			for ( var row = 0; row <= selectionRef.RowLast - selectionRef.RowFirst; row++ )
-			{
-				for ( var col = 0; col <= selectionRef.ColumnLast - selectionRef.ColumnFirst; col++ )
+				static string getRangeAddress( ParseTreeNode r, ParseTreeNode parent, int startIndex )
 				{
-					var cell = firstCell.Offset( row, col );
-					var cellFormula = cell.GetFormula();
+					var rangeStart = r.ChildNodes[ startIndex ].ChildNodes[ 0 ].Token.Text;
 
-					if ( !string.IsNullOrEmpty( cellFormula ) && cellFormula.StartsWith( "=" ) )
+					var next = r.ChildNodes[ startIndex ].Type() == GrammarNames.Cell
+						? GetNext( parent, r )
+						: null;
+
+					var range = next?.Type() == ":"
+						? $"{rangeStart}:{GetNext( parent, next )!.ChildNodes[ 0 ].ChildNodes[ 0 ].Token.Text}"
+						: rangeStart;
+
+					return range;
+				}
+
+				for ( var row = 0; row <= selectionRef.RowLast - selectionRef.RowFirst; row++ )
+				{
+					for ( var col = 0; col <= selectionRef.ColumnLast - selectionRef.ColumnFirst; col++ )
 					{
-						var tree = ExcelFormulaParser.Parse( cellFormula );
+						var cell = firstCell.Offset( row, col );
+						var cellFormula = cell.GetFormula();
 
-						var references =
-							tree.AllNodes( GrammarNames.Reference )
-								.Where( r => new[] { GrammarNames.NamedRange, GrammarNames.Prefix, GrammarNames.Cell }.Contains( r.ChildNodes[ 0 ].Type() ) )
-								.ToArray();
-
-						foreach ( var r in references )
+						if ( !string.IsNullOrEmpty( cellFormula ) && cellFormula.StartsWith( "=" ) )
 						{
-							var type = r.ChildNodes[ 0 ].Type();
+							var tree = ExcelFormulaParser.Parse( cellFormula );
 
-							ExcelReference? reference = null;
-							var parent = r.Parent( tree );
+							var references =
+								tree.AllNodes( GrammarNames.Reference )
+									.Where( r => new[] { GrammarNames.NamedRange, GrammarNames.Prefix, GrammarNames.Cell }.Contains( r.ChildNodes[ 0 ].Type() ) )
+									.ToArray();
 
-							if ( type == GrammarNames.Prefix )
+							foreach ( var r in references )
 							{
-								var sheet = r.ChildNodes[ 0 ].ChildNodes[ 0 ].Token.Text;
-								var range = getRangeAddress( r, parent, 1 );
-								reference =
-									new DnaWorksheet(
-										workbookName,
-										name: sheet[ ..^1 ]
-									).ReferenceOrNull( range );
-							}
-							else if ( type == GrammarNames.NamedRange )
-							{
-								var range = r.ChildNodes[ 0 ].ChildNodes[ 0 ].Token.Text;
-								reference = new DnaWorkbook( workbookName ).ReferenceOrNull( range );
-							}
-							else if ( type == GrammarNames.Cell )
-							{
-								// Would have already been taken care of...
-								if ( GetPrevious( parent, r )?.Type() == ":" )
+								var type = r.ChildNodes[ 0 ].Type();
+
+								ExcelReference? reference = null;
+								var parent = r.Parent( tree );
+
+								if ( type == GrammarNames.Prefix )
 								{
-									continue;
+									var sheet = r.ChildNodes[ 0 ].ChildNodes[ 0 ].Token.Text;
+									var range = getRangeAddress( r, parent, 1 );
+									reference =
+										new DnaWorksheet(
+											workbookName,
+											name: sheet[ ..^1 ]
+										).RangeOrNull( range );
+								}
+								else if ( type == GrammarNames.NamedRange )
+								{
+									var range = r.ChildNodes[ 0 ].ChildNodes[ 0 ].Token.Text;
+									reference = new DnaWorkbook( workbookName ).RangeOrNull( range );
+								}
+								else if ( type == GrammarNames.Cell )
+								{
+									// Would have already been taken care of...
+									if ( GetPrevious( parent, r )?.Type() == ":" )
+									{
+										continue;
+									}
+
+									var range = getRangeAddress( r, parent, 0 );
+									reference =
+										new DnaWorksheet( workbookName, worksheetName )
+											.RangeOrNull( range );
 								}
 
-								var range = getRangeAddress( r, parent, 0 );
-								reference =
-									new DnaWorksheet( workbookName, worksheetName )
-										.ReferenceOrNull( range );
-							}
+								var data = reference!.GetValue();
+								var dataValues = data as object[,];
 
-							var data = reference!.GetValue();
-							var dataValues = data as object[,];
-
-							if ( dataValues?.Contains( ExcelEmpty.Value, false ) ?? Equals( data, ExcelEmpty.Value ) )
-							{
-								cell.GetRange().Style = "Bad";
-								break;
+								if ( dataValues?.Contains( ExcelEmpty.Value, false ) ?? Equals( data, ExcelEmpty.Value ) )
+								{
+									cell.GetRange().Style = "Bad";
+									break;
+								}
 							}
 						}
 					}
 				}
+			}
+			finally
+			{
+				application.ScreenUpdating = true;
 			}
 		} );
 	}
@@ -270,16 +279,7 @@ public partial class Ribbon
 			try
 			{
 				application.ScreenUpdating = false;
-
-				var sw = Stopwatch.StartNew();
-				var configuration = new ExcelCalcEngineConfigurationFactory( application.ActiveWorkbook ).Configuration;
-				Console.WriteLine( $"ExcelCalcEngineConfigurationFactory configuration took {sw.ElapsedMilliseconds}ms." );
-				File.WriteAllText( @"c:\btr\temp\excel.interop.json", configuration.ToJsonString() );
-				sw.Restart();
-				var dnaConfiguration = new DnaCalcEngineConfigurationFactory( application.ActiveWorkbook.Name ).Configuration;
-				Console.WriteLine( $"DnaCalcEngineConfigurationFactory configuration took {sw.ElapsedMilliseconds}ms." );
-				File.WriteAllText( @"c:\btr\temp\excel.dna.json", dnaConfiguration.ToJsonString() );
-
+				var configuration = new DnaCalcEngineConfigurationFactory( application.ActiveWorkbook.Name ).Configuration;
 				MessageBox.Show( $"All RBLe tabs in {name} are correctly configured ({configuration.InputTabs.Length} Input Tab(s) and {configuration.ResultTabs.Length} Result Tab(s)).", "CalcEngine Audit", MessageBoxButtons.OK, MessageBoxIcon.Information );
 			}
 			catch ( CalcEngineConfigurationException ex )

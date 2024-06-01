@@ -17,7 +17,7 @@ public class ExcelCalcEngineConfigurationFactory : CalcEngineConfigurationFactor
 	protected override string GetName( MSExcel.Worksheet sheet ) => sheet.Name;
 	protected override string? RangeTextOrNull( MSExcel.Worksheet sheet, string name ) => sheet.RangeOrNull<string>( name );
 	protected override MSExcel.Range GetRange( string name ) => workbook.RangeOrNull( name )!;
-	protected override MSExcel.Range GetRange( MSExcel.Worksheet sheet, string name ) => sheet.Range[ name ];
+	protected override MSExcel.Range GetRange( MSExcel.Worksheet sheet, string nameOrAddress ) => sheet.Range[ nameOrAddress ];
 	protected override MSExcel.Range Offset( MSExcel.Range range, int rowOffset, int columnOffset ) => range.Offset[ rowOffset, columnOffset ];
 	protected override MSExcel.Range EndRight( MSExcel.Range range ) => range.End[ MSExcel.XlDirection.xlToRight ];
 	protected override bool RangeExists( string name ) => workbook.RangeOrNull( name ) != null;

@@ -35,7 +35,6 @@ class DnaCalcEngine : ICalcEngine<DnaWorkbook, DnaWorksheet, ExcelReference, Exc
 	public string Version => version;
 	public ExcelError NoMatchValue => ExcelError.ExcelErrorNA;
 	public int GetRow( ExcelReference cell ) => cell.RowFirst;
-	
 	public void GoalSeek( ExcelReference valueCell, double goal, ExcelReference changingCell ) => XlCall.Excel( XlCall.xlcGoalSeek, valueCell, goal, changingCell );
 
 	public void SortRange( ExcelReference sortRange, SortKey<ExcelReference> key1, SortKey<ExcelReference>? key2, SortKey<ExcelReference>? key3, bool sortByColumns, bool matchCase ) =>
@@ -43,17 +42,16 @@ class DnaCalcEngine : ICalcEngine<DnaWorkbook, DnaWorksheet, ExcelReference, Exc
 
 	public RangeDimension GetDimensions( ExcelReference range ) => new() { Columns = range.ColumnLast - range.ColumnFirst + 1, Rows = range.RowLast - range.RowFirst + 1 };
 	public ExcelReference Corner( ExcelReference range, CornerType cornerType ) => range.Corner( cornerType );
-
 	public DnaWorksheet[] Worksheets => workbook.Worksheets;
 	public DnaWorksheet? GetSheet( string name ) => new( workbook.Name, name );
 	public string GetName( DnaWorksheet sheet ) => sheet.Name;
-	public string? RangeTextOrNull( DnaWorksheet sheet, string name ) => sheet.ReferenceOrNull<string>( name );
-	public ExcelReference GetRange( DnaWorksheet sheet, string name ) => sheet.ReferenceOrNull( name )!;
-	public ExcelReference GetRange( string name ) => workbook.ReferenceOrNull( name )!;
-	public ExcelReference? GetRangeFromAddress( string address ) => DnaApplication.GetRangeFromAddress( address );
-
+	public string? RangeTextOrNull( DnaWorksheet sheet, string name ) => sheet.RangeOrNull( name )?.GetValue<string>();
+	public ExcelReference GetRange( string sheetName, string nameOrAddress ) => new DnaWorksheet( workbook.Name, sheetName ).RangeOrNull( nameOrAddress )!;
+	public ExcelReference GetRange( DnaWorksheet sheet, string nameOrAddress ) => sheet.RangeOrNull( nameOrAddress )!;
+	public ExcelReference GetRange( string name ) => workbook.RangeOrNull( name )!;
+	public ExcelReference? GetRangeFromAddress( string address ) => DnaApplication.GetRangeFromAddress( workbook.Name, address );
 	public ExcelReference Offset( ExcelReference range, int rowOffset, int columnOffset ) => range.Offset( rowOffset, columnOffset );
-	public bool RangeExists( string name ) => workbook.ReferenceOrNull( name ) != null;
+	public bool RangeExists( string name ) => workbook.RangeOrNull( name ) != null;
 	public string GetA1Address( ExcelReference range ) => range.GetAddress().Split( '!' ).Last();
 	public string GetFullAddress( ExcelReference range )
 	{
@@ -104,7 +102,18 @@ class DnaCalcEngine : ICalcEngine<DnaWorkbook, DnaWorksheet, ExcelReference, Exc
 
 		target.SetValue( array );
 	}
-	public void CopyAddress( ExcelReference source, ExcelReference destination ) => destination.SetValue( source );
+	public void CopyAddress( ExcelReference source, ExcelReference destination )
+	{
+		var target = new ExcelReference( 
+			destination.RowFirst, 
+			destination.RowFirst + source.RowLast - source.RowFirst, 
+			destination.ColumnFirst, 
+			destination.ColumnFirst + source.ColumnLast - source.ColumnFirst, 
+			destination.SheetId 
+		);
+
+		target.SetValue( source );
+	}
 	public void CopyRange( ExcelReference source, ExcelReference destination ) => XlCall.Excel( XlCall.xlcCopy, source, destination );
 	public void TransposeAddress( ExcelReference source, ExcelReference destination )
 	{
@@ -277,6 +286,8 @@ class DnaCalcEngine : ICalcEngine<DnaWorkbook, DnaWorksheet, ExcelReference, Exc
 			// application.CalculationOnDemand = calculationOnDemand.Value;
 		}
 	}
+
+	public void Activate() => workbook.Activate();
 
 	public void Dispose()
 	{

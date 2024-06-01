@@ -20,6 +20,12 @@ enum WorkbookInsertType
 	Worksheet = 1
 }
 
+enum GetNameInfoType
+{
+	Definition = 1,
+	Scope = 2 // true = sheet, false = workbook
+}
+
 enum GetWorkbookType
 {
 	SheetNames = 1,

@@ -56,6 +56,7 @@ public partial class Ribbon
 				{
 					using var helpers = new DnaCalcEngine( helpersFilename );
 
+					calcEngine.Activate();
 					var cts = new CancellationTokenSource();
 
 					var parameters = new CalculationParameters

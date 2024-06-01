@@ -84,7 +84,8 @@ public class ExcelCalcEngine : ICalcEngine<MSExcel.Workbook, MSExcel.Worksheet, 
 	public MSExcel.Worksheet? GetSheet( string name ) => Worksheets.FirstOrDefault( w => w.Name == name );
 	public string GetName( MSExcel.Worksheet sheet ) => sheet.Name;
 	public string? RangeTextOrNull( MSExcel.Worksheet sheet, string name ) => sheet.RangeOrNull<string>( name );
-	public MSExcel.Range GetRange( MSExcel.Worksheet sheet, string name ) => sheet.Range[ name ];
+	public MSExcel.Range GetRange( string sheetName, string nameOrAddress ) => GetSheet( sheetName )!.Range[ nameOrAddress ];
+	public MSExcel.Range GetRange( MSExcel.Worksheet sheet, string nameOrAddress ) => sheet.Range[ nameOrAddress ];
 	public MSExcel.Range GetRange( string name ) => workbook.RangeOrNull( name )!;
 	public MSExcel.Range? GetRangeFromAddress( string address )
 	{
