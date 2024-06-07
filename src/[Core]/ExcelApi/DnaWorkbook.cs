@@ -36,13 +36,13 @@ class DnaWorkbook
 	{
 		// C API scope issue: https://stackoverflow.com/questions/78551625/excel-c-api-via-exceldna-and-named-range-scopes
 
-		var scopeResult = XlCall.Excel( XlCall.xlfGetName, $"'{Name}'!{address}", (int)GetNameInfoType.Scope );
+		var sheetName = (string)XlCall.Excel( XlCall.xlfGetWorkbook, (int)GetWorkbookType.ActiveSheet, Name );
+		var scopeResult = XlCall.Excel( XlCall.xlfGetName, $"'[{Name}]{sheetName}'!{address}", (int)GetNameInfoType.Scope );
+
 		if ( scopeResult is ExcelError )
 		{
 			return null;
 		}
-
-		var sheetName = (string)XlCall.Excel( XlCall.xlfGetWorkbook, (int)GetWorkbookType.ActiveSheet, Name );
 
 		if ( (bool)scopeResult )
 		{

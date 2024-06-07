@@ -52,6 +52,7 @@
 		<ProjectReference Include="..\..\..\Core\Infrastructure\src\Camelot.Infrastructure.csproj" />
 		<ProjectReference Include="..\..\..\RBLe\Core\src\Camelot.RBLe.Core.csproj" />
 		<ProjectReference Include="..\..\..\Abstractions\Api.Contracts\Excel\src\Camelot.Abstractions.Api.Contracts.Excel.csproj" />
+		<ProjectReference Include="..\..\..\Abstractions\Api.Contracts\xDS\src\Camelot.Abstractions.Api.Contracts.xDS.csproj" />
 	</ItemGroup>
 
 	<ItemGroup>

@@ -278,7 +278,7 @@ public static class ExcelReferenceExtensions
 
 		XlCall.Excel(
 			XlCall.xlcSort,
-			sortByColumns ? (int)SortOrientationType.Columns : (int)SortOrientationType.Rows,
+			sortByColumns ? (int)SortOrientationType.Rows : (int)SortOrientationType.Columns,
 			key1.Key,
 			key1.IsAscending ? (int)SortOrderType.Ascending : (int)SortOrderType.Descending,
 			key2?.Key,

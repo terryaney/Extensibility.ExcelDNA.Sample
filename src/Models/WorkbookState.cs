@@ -87,7 +87,7 @@ public class WorkbookState
 		HasxDSDataFields = hasxDSDataFields;
 		HasRBLeMacro = hasRBLeMacro;
 		HasLinks = hasLinks;
-		CurrentVersion = activeWorkbook.RangeOrNull<string>( "Version" );
+		CurrentVersion = planInfo?.RangeOrNull<string>( "Version" ) ?? activeWorkbook.RangeOrNull<string>( "Version" );
 
 		UpdateSheet( ( activeWorkbook.ActiveSheet as MSExcel.Worksheet )! );
 	}

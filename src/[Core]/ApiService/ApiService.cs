@@ -8,6 +8,7 @@ using System.Text.RegularExpressions;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Requests;
 using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Responses;
+using KAT.Camelot.Abstractions.Api.Contracts.xDS.V1.Responses;
 using KAT.Camelot.Domain.Extensions;
 using KAT.Camelot.Domain.Services;
 
@@ -250,6 +251,40 @@ public class ApiService
 		}
 
 		return null;
+	}
+
+	public async Task<ApiResponse<SingleResponse>> GetxDSDataAsync( string clientName, string authId, string target, string? userName, string? password, CancellationToken cancellationToken = default )
+	{
+		if ( string.Compare( target, "LOCAL", true ) == 0 )
+		{
+			if ( !( userName?.Contains( '@' ) ?? false ) )
+			{
+				return new() { Validations = CredentialsMissing };
+			}
+
+			var result = await xDSRepository.GetProfileAndHistoryAsync( clientName, authId, null, null, null, cancellationToken );
+
+			return new() { Response = new ()
+			{
+				AuthId = result.Profile!.pAuthId,
+				Group = result.Profile!.gName,
+				Created = result.Profile!.pDateCreated,
+				CreatedBy = result.Profile!.pCreatedBy,
+				Updated = result.Profile!.pDateUpdated,
+				UpdatedBy = result.Profile!.pUpdatedBy,
+
+				Profile = result.Profile!.pProfileXml.Attributes().ToDictionary( k => k.Name.LocalName, v => (string)v ),
+				History = result.HistoryData?
+					.Select( h => new HistoryItemResponse( h.hisType, h.hisDateCreated, h.hisCreatedBy, h.hisDateUpdated, h.hisUpdatedBy, h.hisDataXml ) )
+					.GroupBy( g => g.Type )
+					.ToDictionary( g => g.Key, g => g.ToArray() ) ?? new Dictionary<string, HistoryItemResponse[]>()
+			} };
+		}
+
+		var url = $"{AddIn.Settings.ApiEndpoint}{ApiEndpoints.xDSData.Build.Get( target, clientName, authId )}";
+		var (httpResponse, validations) = await SendRequestAsync<SingleResponse>( userName, password, url, HttpMethod.Get, HttpStatusCode.NotFound );
+		
+		return new() { Response = httpResponse, Validations = validations };
 	}
 
 	private async Task<(T? Response, ApiValidation[]? Validations)> SendRequestAsync<T>( string? userName, string? password, string url, HttpMethod method, params HttpStatusCode[] errorCodesToIgnore ) where T : class

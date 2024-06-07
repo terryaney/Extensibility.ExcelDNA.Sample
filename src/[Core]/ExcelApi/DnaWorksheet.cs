@@ -26,14 +26,14 @@ class DnaWorksheet
 
 		try
 		{
-			var scopeResult = XlCall.Excel( XlCall.xlfGetName, $"{Name}!{nameOrAddress}", (int)GetNameInfoType.Scope );
+			var scopeResult = XlCall.Excel( XlCall.xlfGetName, $"'[{WorkbookName}]{Name}'!{nameOrAddress}", (int)GetNameInfoType.Scope );
 			if ( scopeResult is bool b && !b )
 			{
 				// Found named range but scoped to Workbook...
 				return null;
 			}
 
-			return XlCall.Excel( XlCall.xlfEvaluate, $"='{Name}'!{nameOrAddress}" ) as ExcelReference;
+			return XlCall.Excel( XlCall.xlfEvaluate, $"'[{WorkbookName}]{Name}'!{nameOrAddress}" ) as ExcelReference;
 		}
 		finally
 		{

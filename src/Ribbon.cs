@@ -26,7 +26,6 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 /*
 CalcEngineUtilities_LocalBatchCalc
-CalcEngineUtilities_PopulateInputTab
 DataExporting_ExportResultDocGenXml
 DataExporting_ExportResultJsonData
 ConfigurationExporting_ExportWorkbook  - SpecSheet
@@ -114,7 +113,6 @@ public partial class Ribbon : ExcelRibbon
 		
 		var serviceProvider = services.BuildServiceProvider();
 
-		var httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
 		var theKeepSettings = serviceProvider.GetRequiredService<IOptionsSnapshot<TheKeepSettings>>();
 		var localizer = serviceProvider.GetRequiredService<IStringLocalizer<xDSRepository>>();
 		var logger = serviceProvider.GetRequiredService<ILogger<CalculationSourceContext>>();
@@ -123,6 +121,7 @@ public partial class Ribbon : ExcelRibbon
 		IDateTimeService dateTimeService = new DateTimeService();
 		IxDSRepository xDSRepository = new xDSRepository( connectionForge, dateTimeService, localizer );
 
+		httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
 		apiService = new ApiService( httpClientFactory, xDSRepository );
 		dnaCalculationService = new RBLe.Dna.DnaCalculationService(
 			httpClientFactory, emailService, textService, theKeepSettings.Value.Jwt.RBLe, logger
@@ -380,6 +379,8 @@ public partial class Ribbon : ExcelRibbon
 	}
 
 	private bool isSpreadsheetGearLicensed;
+	private IHttpClientFactory httpClientFactory;
+
 	private async Task<bool> EnsureSpreadsheetGearLicenseAsync()
 	{
 		if ( isSpreadsheetGearLicensed ) return true;
@@ -421,18 +422,18 @@ public partial class Ribbon : ExcelRibbon
 		var isDirty = !managedCalcEngine?.Saved ?? false;
 		var fullName = Path.Combine( destination ?? Path.GetDirectoryName( ( managedCalcEngine ?? application.ActiveWorkbook ).FullName )!, calcEngine );
 
-		if ( isDirty )
-		{
-			if ( MessageBox.Show( 
+		if ( 
+			isDirty && 
+			MessageBox.Show( 
 				"You currently have changes in this CalcEngine. If you proceed, all changes will be lost.", 
 				"Download Latest Version", 
 				MessageBoxButtons.YesNo, 
 				MessageBoxIcon.Warning, 
 				MessageBoxDefaultButton.Button2 
-			) != DialogResult.Yes )
-			{
-				return null;
-			}
+			) != DialogResult.Yes 
+		)
+		{
+			return null;
 		}
 
 		application.Cursor = MSExcel.XlMousePointer.xlWait;
@@ -440,7 +441,7 @@ public partial class Ribbon : ExcelRibbon
 		return fullName;
 	}
 
-	private async Task DownloadLatestCalcEngineAsync( string? fullName )
+	private async Task DownloadLatestCalcEngineAsync( string? fullName, bool openFile = true )
 	{
 		if ( string.IsNullOrEmpty( fullName ) ) return;
 		
@@ -454,7 +455,10 @@ public partial class Ribbon : ExcelRibbon
 			return;
 		}
 
-		ExcelAsyncUtil.QueueAsMacro( () => application.Workbooks.Open( fullName ) );
+		if ( openFile )
+		{
+			ExcelAsyncUtil.QueueAsMacro( () => application.Workbooks.Open( fullName ) );
+		}
 	}
 
 	private static void OpenUrl( string url )

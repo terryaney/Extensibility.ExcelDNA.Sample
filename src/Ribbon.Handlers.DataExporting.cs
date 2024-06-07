@@ -84,13 +84,13 @@ public partial class Ribbon
 							{
 								writer.WriteStartObject();
 
-								writer.WritePropertyName( "AuthID" );
+								writer.WritePropertyName( "@authId" );
 								writer.WriteStringValue( authId );
 
-								writer.WritePropertyName( "Client" );
+								writer.WritePropertyName( "@client" );
 								writer.WriteStringValue( client );
 
-								writer.WritePropertyName( "Profile" );
+								writer.WritePropertyName( "profile" );
 								writer.WriteStartObject();
 
 								foreach ( var f in xDataDef.Elements( "Profile" ).Elements().Where( e => e.Attribute( "delete" ) == null ) )
@@ -106,7 +106,7 @@ public partial class Ribbon
 										.Where( h => h.Attribute( "hisClear" ) == null )
 										.GroupBy( h => h.hisType() );
 
-								writer.WritePropertyName( "History" );
+								writer.WritePropertyName( "history" );
 								writer.WriteStartObject();
 
 								foreach ( var historyType in historyTypes )

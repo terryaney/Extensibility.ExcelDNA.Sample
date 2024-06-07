@@ -5,7 +5,7 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 
 // https://excel-dna.net/docs/guides-basic/excel-programming-interfaces/excel-c-api
 // https://learn.microsoft.com/en-us/office/client-developer/excel/welcome-to-the-excel-software-development-kit
-public static class DnaApplication
+static class DnaApplication
 {
 	public static ExcelReference? GetCaller()
 	{
@@ -22,6 +22,8 @@ public static class DnaApplication
 			return caller != null && caller.RowLast > caller.RowFirst;
 		}
 	}
+
+	public static DnaWorkbook[] Workbooks() => ( (string[])XlCall.Excel( XlCall.xlfDocuments ) ).Select( d => new DnaWorkbook( d ) ).ToArray();
 
 	public static string ActiveWorkbookName() => (string)XlCall.Excel( XlCall.xlfGetDocument, (int)GetDocumentType.ActiveWorkbook );
 	

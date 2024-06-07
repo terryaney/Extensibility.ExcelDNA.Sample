@@ -9,6 +9,8 @@ public class AddInSettings
 	public bool ShowRibbon { get; init; }
 	public string ApiEndpoint { get; init; } = null!;
 	public string[] DataServices { get; init; } = Array.Empty<string>();
+	public string[] SpecificationFileLocations { get; init; } = Array.Empty<string>();
+	
 	public string? SaveHistoryName { get; init; }
 	public DataExportSettings DataExport { get; init; } = new();
 	public Help Help { get; init; } = new();
@@ -31,7 +33,12 @@ public class AddInSettings
 	{
 		if ( clearPassword != null ) return clearPassword;
 		if ( KatPassword == null ) return null;
-
+		if ( KatPassword.Length < 45 )
+		{
+			clearPassword = KatPassword; // password is in clear text
+			return clearPassword;
+		}
+		
 		try
 		{
 			var macAddress = GetMacAddress();
