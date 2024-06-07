@@ -75,7 +75,7 @@ partial class LoadInputTab
         dataSourceLabel.Margin = new Padding(4, 0, 4, 0);
         dataSourceLabel.Name = "dataSourceLabel";
         dataSourceLabel.Size = new Size(73, 15);
-        dataSourceLabel.TabIndex = 0;
+        dataSourceLabel.TabIndex = 5;
         dataSourceLabel.Text = "Data &Source:";
         // 
         // password
@@ -86,7 +86,7 @@ partial class LoadInputTab
         password.Name = "password";
         password.PasswordChar = '*';
         password.Size = new Size(386, 23);
-        password.TabIndex = 12;
+        password.TabIndex = 4;
         // 
         // passwordLabel
         // 
@@ -95,7 +95,7 @@ partial class LoadInputTab
         passwordLabel.Margin = new Padding(4, 0, 4, 0);
         passwordLabel.Name = "passwordLabel";
         passwordLabel.Size = new Size(57, 15);
-        passwordLabel.TabIndex = 11;
+        passwordLabel.TabIndex = 3;
         passwordLabel.Text = "&Password";
         // 
         // emailAddress
@@ -105,7 +105,7 @@ partial class LoadInputTab
         emailAddress.Margin = new Padding(4);
         emailAddress.Name = "emailAddress";
         emailAddress.Size = new Size(386, 23);
-        emailAddress.TabIndex = 10;
+        emailAddress.TabIndex = 2;
         // 
         // emailAddressLabel
         // 
@@ -114,7 +114,7 @@ partial class LoadInputTab
         emailAddressLabel.Margin = new Padding(4, 0, 4, 0);
         emailAddressLabel.Name = "emailAddressLabel";
         emailAddressLabel.Size = new Size(84, 15);
-        emailAddressLabel.TabIndex = 9;
+        emailAddressLabel.TabIndex = 1;
         emailAddressLabel.Text = "&Email Address:";
         // 
         // ok
@@ -124,7 +124,7 @@ partial class LoadInputTab
         ok.Margin = new Padding(4);
         ok.Name = "ok";
         ok.Size = new Size(88, 26);
-        ok.TabIndex = 15;
+        ok.TabIndex = 19;
         ok.Text = "OK";
         ok.UseVisualStyleBackColor = true;
         ok.Click += Ok_Click;
@@ -137,7 +137,7 @@ partial class LoadInputTab
         cancel.Margin = new Padding(4);
         cancel.Name = "cancel";
         cancel.Size = new Size(88, 26);
-        cancel.TabIndex = 16;
+        cancel.TabIndex = 20;
         cancel.Text = "Cancel";
         cancel.UseVisualStyleBackColor = true;
         // 
@@ -148,7 +148,7 @@ partial class LoadInputTab
         dataSource.Location = new Point(13, 163);
         dataSource.Name = "dataSource";
         dataSource.Size = new Size(386, 23);
-        dataSource.TabIndex = 17;
+        dataSource.TabIndex = 6;
         dataSource.SelectedIndexChanged += DataSource_SelectedIndexChanged;
         // 
         // inputFileNameSelect
@@ -158,7 +158,7 @@ partial class LoadInputTab
         inputFileNameSelect.Margin = new Padding(4, 3, 4, 3);
         inputFileNameSelect.Name = "inputFileNameSelect";
         inputFileNameSelect.Size = new Size(40, 23);
-        inputFileNameSelect.TabIndex = 20;
+        inputFileNameSelect.TabIndex = 9;
         inputFileNameSelect.Text = "...";
         inputFileNameSelect.UseVisualStyleBackColor = true;
         inputFileNameSelect.Click += InputFileNameSelect_Click;
@@ -170,7 +170,7 @@ partial class LoadInputTab
         inputFileName.Margin = new Padding(4, 3, 4, 3);
         inputFileName.Name = "inputFileName";
         inputFileName.Size = new Size(341, 23);
-        inputFileName.TabIndex = 19;
+        inputFileName.TabIndex = 8;
         // 
         // inputFileNameLabel
         // 
@@ -179,7 +179,7 @@ partial class LoadInputTab
         inputFileNameLabel.Margin = new Padding(4, 0, 4, 0);
         inputFileNameLabel.Name = "inputFileNameLabel";
         inputFileNameLabel.Size = new Size(59, 15);
-        inputFileNameLabel.TabIndex = 18;
+        inputFileNameLabel.TabIndex = 7;
         inputFileNameLabel.Text = "&Input File:";
         // 
         // configLookupUrl
@@ -189,7 +189,7 @@ partial class LoadInputTab
         configLookupUrl.Margin = new Padding(4);
         configLookupUrl.Name = "configLookupUrl";
         configLookupUrl.Size = new Size(388, 23);
-        configLookupUrl.TabIndex = 24;
+        configLookupUrl.TabIndex = 15;
         // 
         // configLookupsUrlLabel
         // 
@@ -198,7 +198,7 @@ partial class LoadInputTab
         configLookupsUrlLabel.Margin = new Padding(4, 0, 4, 0);
         configLookupsUrlLabel.Name = "configLookupsUrlLabel";
         configLookupsUrlLabel.Size = new Size(171, 15);
-        configLookupsUrlLabel.TabIndex = 23;
+        configLookupsUrlLabel.TabIndex = 14;
         configLookupsUrlLabel.Text = "Config-Lookups Download &Url:";
         // 
         // label3
@@ -209,7 +209,7 @@ partial class LoadInputTab
         label3.Margin = new Padding(4, 0, 4, 0);
         label3.Name = "label3";
         label3.Size = new Size(156, 13);
-        label3.TabIndex = 25;
+        label3.TabIndex = 0;
         label3.Text = "Authentication Information";
         // 
         // utilityTabsDivider
@@ -220,7 +220,7 @@ partial class LoadInputTab
         utilityTabsDivider.Margin = new Padding(4, 0, 4, 0);
         utilityTabsDivider.Name = "utilityTabsDivider";
         utilityTabsDivider.Size = new Size(386, 2);
-        utilityTabsDivider.TabIndex = 28;
+        utilityTabsDivider.TabIndex = 21;
         // 
         // downloadGlobalTables
         // 
@@ -229,7 +229,7 @@ partial class LoadInputTab
         downloadGlobalTables.Margin = new Padding(4);
         downloadGlobalTables.Name = "downloadGlobalTables";
         downloadGlobalTables.Size = new Size(259, 19);
-        downloadGlobalTables.TabIndex = 29;
+        downloadGlobalTables.TabIndex = 12;
         downloadGlobalTables.Text = "&Download latest MadHatter_GlobalTables.xls";
         downloadGlobalTables.UseVisualStyleBackColor = true;
         // 
@@ -240,7 +240,7 @@ partial class LoadInputTab
         loadTables.Margin = new Padding(4);
         loadTables.Name = "loadTables";
         loadTables.Size = new Size(224, 19);
-        loadTables.TabIndex = 30;
+        loadTables.TabIndex = 11;
         loadTables.Text = "Load Global and Client &Lookup Tables";
         loadTables.UseVisualStyleBackColor = true;
         loadTables.CheckedChanged += LoadTables_CheckedChanged;
@@ -252,7 +252,7 @@ partial class LoadInputTab
         downloadConfigLookups.Margin = new Padding(4);
         downloadConfigLookups.Name = "downloadConfigLookups";
         downloadConfigLookups.Size = new Size(192, 19);
-        downloadConfigLookups.TabIndex = 31;
+        downloadConfigLookups.TabIndex = 13;
         downloadConfigLookups.Text = "&Download Config-Lookups.xml";
         downloadConfigLookups.UseVisualStyleBackColor = true;
         downloadConfigLookups.CheckedChanged += DownloadConfigLookups_CheckedChanged;
@@ -264,7 +264,7 @@ partial class LoadInputTab
         configLookupPath.Margin = new Padding(4);
         configLookupPath.Name = "configLookupPath";
         configLookupPath.Size = new Size(341, 23);
-        configLookupPath.TabIndex = 33;
+        configLookupPath.TabIndex = 17;
         // 
         // configLookupPathLabel
         // 
@@ -273,7 +273,7 @@ partial class LoadInputTab
         configLookupPathLabel.Margin = new Padding(4, 0, 4, 0);
         configLookupPathLabel.Name = "configLookupPathLabel";
         configLookupPathLabel.Size = new Size(154, 15);
-        configLookupPathLabel.TabIndex = 32;
+        configLookupPathLabel.TabIndex = 16;
         configLookupPathLabel.Text = "Local Config-Lookups &Path:";
         // 
         // configLookupPathSelect
@@ -283,7 +283,7 @@ partial class LoadInputTab
         configLookupPathSelect.Margin = new Padding(4, 3, 4, 3);
         configLookupPathSelect.Name = "configLookupPathSelect";
         configLookupPathSelect.Size = new Size(40, 23);
-        configLookupPathSelect.TabIndex = 34;
+        configLookupPathSelect.TabIndex = 18;
         configLookupPathSelect.Text = "...";
         configLookupPathSelect.UseVisualStyleBackColor = true;
         configLookupPathSelect.Click += ConfigLookupPathSelect_Click;
@@ -306,7 +306,7 @@ partial class LoadInputTab
         participantSplitContainer.Panel2.Controls.Add(authIdLabel);
         participantSplitContainer.Size = new Size(386, 51);
         participantSplitContainer.SplitterDistance = 191;
-        participantSplitContainer.TabIndex = 35;
+        participantSplitContainer.TabIndex = 10;
         participantSplitContainer.Resize += ParticipantSplitContainer_Resize;
         // 
         // clientName
@@ -316,7 +316,7 @@ partial class LoadInputTab
         clientName.Margin = new Padding(4);
         clientName.Name = "clientName";
         clientName.Size = new Size(190, 23);
-        clientName.TabIndex = 8;
+        clientName.TabIndex = 1;
         // 
         // clientNameLabel
         // 
@@ -325,7 +325,7 @@ partial class LoadInputTab
         clientNameLabel.Margin = new Padding(4, 0, 4, 0);
         clientNameLabel.Name = "clientNameLabel";
         clientNameLabel.Size = new Size(73, 15);
-        clientNameLabel.TabIndex = 7;
+        clientNameLabel.TabIndex = 0;
         clientNameLabel.Text = "&Client Name";
         // 
         // authId
@@ -335,7 +335,7 @@ partial class LoadInputTab
         authId.Margin = new Padding(4);
         authId.Name = "authId";
         authId.Size = new Size(189, 23);
-        authId.TabIndex = 24;
+        authId.TabIndex = 1;
         // 
         // authIdLabel
         // 
@@ -344,7 +344,7 @@ partial class LoadInputTab
         authIdLabel.Margin = new Padding(4, 0, 4, 0);
         authIdLabel.Name = "authIdLabel";
         authIdLabel.Size = new Size(50, 15);
-        authIdLabel.TabIndex = 23;
+        authIdLabel.TabIndex = 0;
         authIdLabel.Text = "Auth &ID:";
         // 
         // LoadInputTab

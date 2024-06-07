@@ -61,7 +61,7 @@ partial class ExportSpecification
         ok.Margin = new Padding(4);
         ok.Name = "ok";
         ok.Size = new Size(88, 26);
-        ok.TabIndex = 15;
+        ok.TabIndex = 4;
         ok.Text = "OK";
         ok.UseVisualStyleBackColor = true;
         ok.Click += Ok_Click;
@@ -74,7 +74,7 @@ partial class ExportSpecification
         cancel.Margin = new Padding(4);
         cancel.Name = "cancel";
         cancel.Size = new Size(88, 26);
-        cancel.TabIndex = 16;
+        cancel.TabIndex = 5;
         cancel.Text = "Cancel";
         cancel.UseVisualStyleBackColor = true;
         // 
@@ -86,7 +86,7 @@ partial class ExportSpecification
         locations.Location = new Point(13, 27);
         locations.Name = "locations";
         locations.Size = new Size(583, 220);
-        locations.TabIndex = 17;
+        locations.TabIndex = 1;
         locations.KeyDown += Locations_KeyDown;
         // 
         // saveSpecification
@@ -96,8 +96,8 @@ partial class ExportSpecification
         saveSpecification.Location = new Point(13, 254);
         saveSpecification.Margin = new Padding(4);
         saveSpecification.Name = "saveSpecification";
-        saveSpecification.Size = new Size(523, 19);
-        saveSpecification.TabIndex = 27;
+        saveSpecification.Size = new Size(438, 19);
+        saveSpecification.TabIndex = 2;
         saveSpecification.Text = "&Save Specification to \\Evolution\\Websites\\Admin\\HarrisSeverance\\_Developer";
         saveSpecification.UseVisualStyleBackColor = true;
         // 
@@ -108,7 +108,7 @@ partial class ExportSpecification
         addLocation.Margin = new Padding(4);
         addLocation.Name = "addLocation";
         addLocation.Size = new Size(127, 26);
-        addLocation.TabIndex = 28;
+        addLocation.TabIndex = 3;
         addLocation.Text = "&Add Location...";
         addLocation.UseVisualStyleBackColor = true;
         addLocation.Click += AddLocation_Click;
@@ -117,15 +117,14 @@ partial class ExportSpecification
         // 
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
-        ClientSize = new Size(535, 332);
+        CancelButton = cancel;
+        ClientSize = new Size(620, 332);
         Controls.Add(addLocation);
         Controls.Add(saveSpecification);
         Controls.Add(locations);
         Controls.Add(locationsLabel);
         Controls.Add(ok);
         Controls.Add(cancel);
-		CancelButton = cancel;
-		FormBorderStyle = FormBorderStyle.Sizable;
         Margin = new Padding(4);
         MaximizeBox = false;
         MaximumSize = new Size(813, 453);
