@@ -150,6 +150,7 @@ partial class LoadInputTab
         dataSource.Size = new Size(386, 23);
         dataSource.TabIndex = 6;
         dataSource.SelectedIndexChanged += DataSource_SelectedIndexChanged;
+		dataSource.DropDownStyle = ComboBoxStyle.DropDownList;
         // 
         // inputFileNameSelect
         // 

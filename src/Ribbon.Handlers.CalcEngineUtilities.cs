@@ -461,9 +461,43 @@ public partial class Ribbon
 		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 
-	public void CalcEngineUtilities_LocalBatchCalc( IRibbonControl control )
+	public void CalcEngineUtilities_LocalBatchCalc( IRibbonControl _ )
 	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
+		ExcelAsyncUtil.QueueAsMacro( () =>
+		{
+			var fileName = application.ActiveWorkbook.Name;
+			var tabName = application.ActiveWorksheet().Name;
+			var selection = DnaApplication.Selection;
+
+			CalcEngineConfiguration ceConfig;
+			application.ScreenUpdating = false;
+			try
+			{
+				ceConfig = new DnaCalcEngineConfigurationFactory( fileName ).Configuration;
+			}
+			finally
+			{
+				selection.Select();
+				application.ScreenUpdating = true;			
+			}
+
+			var owner = new NativeWindow();
+			owner.AssignHandle( new IntPtr( application.Hwnd ) );
+
+			var windowConfig = GetWindowConfiguration( nameof( LocalBatch ) );
+
+			using var loadInputTab = new LocalBatch(
+				ceConfig,
+				tabName,
+				windowConfig
+			);
+
+			var info = loadInputTab.GetInfo( owner );
+
+			if ( info == null ) return;
+
+			SaveWindowConfiguration( nameof( LocalBatch ), info.WindowConfiguration );
+		} );
 	}
 
 	public void CalcEngineUtilities_DownloadGlobalTables( IRibbonControl _ )
