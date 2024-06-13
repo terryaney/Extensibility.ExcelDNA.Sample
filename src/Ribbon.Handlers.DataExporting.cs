@@ -149,11 +149,6 @@ public partial class Ribbon
 		} );
 	}
 
-	public void DataExporting_ExportResultDocGenXml( IRibbonControl control )
-	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
-	}
-
 	public void DataExporting_ExportMappedXmlData( IRibbonControl _ )
 	{
 		var owner = new NativeWindow();
@@ -178,10 +173,5 @@ public partial class Ribbon
 
 			new XmlMappingService().ExportXmlData( ws, info );
 		} );
-	}
-
-	public void DataExporting_ExportResultJsonData( IRibbonControl control )
-	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
 	}
 }

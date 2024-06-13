@@ -1,4 +1,6 @@
-﻿using System.Text.Json;
+﻿using System.Diagnostics;
+using System.Text;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Xml;
 using System.Xml.Linq;
@@ -21,7 +23,7 @@ public partial class Ribbon
 {
 	string? lastPopulateInputTabAuthId = null;
 
-	public void CalcEngineUtilities_PopulateInputTab( IRibbonControl _ )
+	public void CalcEngineUtilities_LoadInputTab( IRibbonControl _ )
 	{
 		RunRibbonTask( async () =>
 		{
@@ -152,6 +154,10 @@ public partial class Ribbon
 								var parameters = new CalculationParameters
 								{
 									CalculationId = Guid.NewGuid(),
+									CalcEngineInfo = new()
+									{
+										InputTab = tabName
+									},
 									RequestInfo = new SingleRequest()
 									{
 										AuthId = "LOCAL.DEBUG",
@@ -174,7 +180,7 @@ public partial class Ribbon
 
 								try
 								{
-									dnaCalculationService.LoadParticipantData( calcEngine, parameters, tabName, diagnosticTraceLogger );
+									dnaCalculationService.LoadParticipantData( calcEngine, parameters, diagnosticTraceLogger );
 								}
 								finally
 								{
@@ -408,7 +414,6 @@ public partial class Ribbon
 							CalcEngines = Array.Empty<RequestCalcEngine>(),
 							TraceEnabled = true
 						},
-						// TODO: Would need to build this from input tab and all 'data' elements passed in...
 						Payload = new()
 						{
 							Profile = new(),
@@ -456,11 +461,6 @@ public partial class Ribbon
 		} );
 	}
 
-	public void CalcEngineUtilities_PreviewResults( IRibbonControl control )
-	{
-		MessageBox.Show( "// TODO: Process " + control.Id );
-	}
-
 	public void CalcEngineUtilities_LocalBatchCalc( IRibbonControl _ )
 	{
 		ExcelAsyncUtil.QueueAsMacro( () =>
@@ -498,6 +498,238 @@ public partial class Ribbon
 
 			SaveWindowConfiguration( nameof( LocalBatch ), info.WindowConfiguration );
 		} );
+	}
+
+	public void CalcEngineUtilities_ExportResultDocGenXml( IRibbonControl _ )
+	{
+		ExcelAsyncUtil.QueueAsMacro( () =>
+		{
+			var (results, jsonPath) = ExportResultJsonData();
+
+			var fileName = application.ActiveWorkbook.Name;
+			var version = application.ActiveWorkbook.RangeOrNull<string>( "Version" )!;
+			var xml = new XElement( "RBL",
+				new XElement( "Profile",
+					new XAttribute( "id-auth", "N/A" ),
+					new XAttribute( "CalcEngineName", fileName ),
+					new XAttribute( "CalcEngineVersion", version ),
+					new XAttribute( "job-token", Guid.NewGuid().ToString() ),
+					new XElement( "Data",
+						results.ToEvolutionXml( version, fileName, "N/A", "N/A", "N/A", 0, DateTime.Now )
+					)
+				)
+			);
+
+			var profileXml = new XElement( "xDataDefs", new XElement( "xDataDef", new XElement( "FolderItems" ) ) );
+			var docgenXml = xml.ToDocGenXml( results, calculationChartBuilder, profileXml );	
+
+			var docgenPath = Path.ChangeExtension( jsonPath, ".xml" );
+
+			docgenXml.Save( docgenPath );
+
+			Process.Start( AddIn.Settings.TextEditor, $"\"{docgenPath}\"" );
+		} );
+	}
+
+	public void CalcEngineUtilities_ExportResultJsonData( IRibbonControl _ )
+	{
+		ExcelAsyncUtil.QueueAsMacro( () =>
+		{
+			var (_, path) = ExportResultJsonData();
+			Process.Start( AddIn.Settings.TextEditor, $"\"{path}\"" );
+		} );
+	}
+
+	public void CalcEngineUtilities_ConfigureHighCharts( IRibbonControl _ )
+	{
+		ExcelAsyncUtil.QueueAsMacro( () =>
+		{
+			var (results, _) = ExportResultJsonData();
+
+			var chartConfigurations = calculationChartBuilder.GetConfigurations( results ).ToArray();
+
+			var hasCulture = !( (string?)results.Tables.FirstOrDefault( t => t.Name == "variable" )?.Rows.FirstOrDefault( r => (string?)r![ "@id" ] == "culture" )?[ "value" ] ?? "en-" ).StartsWith( "en-" );
+
+			var script = new StringBuilder();
+
+			script.AppendLine( @$"
+const defaultTooltip = function(tooltipFormat, seriesFormats) {{
+	return {{
+		formatter: function() {{
+			var s = '';
+			var t = 0;
+
+			$.each(this.points, function (i, point) {{
+				if (point.y > 0 ) {{
+					s += '<br/>' + point.series.name + ' : ' + String.localeFormat( '{{0:' + seriesFormats[ i ] + '}}', point.y );
+					t += point.y;
+				}}
+			}});
+
+			return tooltipFormat.replace('{{x}}', this.x)
+						.replace('{{stackTotal}}', String.localeFormat( '{{0:' + seriesFormats[ 0 ] + '}}', t))
+						.replace('{{seriesDetail}}', s);			
+		}},
+		shared: true
+	}};
+}};
+
+function GetChartConfiguration(e,i) {{
+	var t = '';
+	for (var n in e) {{
+		if (['data','categories','AsLinq'].indexOf(n) < 0 && (void 0!=i || 'series' != n) ) {{
+			var r = void 0 != i ? i + '.' + n : n;
+			var a = e[n];
+			var o = typeof a;
+			
+			if( 'object' == o ) {{
+				t += GetChartConfiguration(a,r);
+			}} 
+			else {{
+				var g = 'string' == o
+					? BTR.RBLe.Debugging.GetCsvValue(a)
+					: 'function' == o
+						? BTR.RBLe.Debugging.GetCsvValue(a.toString())
+						:a;
+				t += r + ', ' + g + '\r\n';
+			}}
+		}}
+	}}
+	return t;
+}}
+					" );
+
+			if ( hasCulture )
+			{
+				script.AppendLine( @"
+Highcharts.setOptions({
+	yAxis: {
+		labels: {
+			formatter: function() {
+				return String.localeFormat( ""{0:c0}"", this.value );
+			}
+		},
+		stackLabels: {}
+			formatter: function() {
+				return String.localeFormat( ""{0:c0}"", this.total );
+			}
+		}
+	}
+});
+				" );
+			}
+
+			foreach ( var chart in chartConfigurations )
+			{
+				script.AppendLine( $"var {chart.HtmlId}_options = {chart.Options.ToJsonString()};" );
+				script.AppendLine( $"var {chart.HtmlId}_seriesFormats = {chart.SeriesFormats.ToJsonString()};" );
+
+				if ( !string.IsNullOrEmpty( chart.ToolTipFormat ) )
+				{
+					script.AppendLine( $"{chart.HtmlId}_options.tooltip = defaultTooltip(\"{chart.ToolTipFormat}\", {chart.HtmlId}_seriesFormats)" );
+				}
+			}
+
+			script.AppendLine( "function renderHighCharts() {" );
+
+			foreach ( var chart in chartConfigurations )
+			{
+				script.AppendLine( $"	$('#{chart.HtmlId}').highcharts({chart.HtmlId}_options);" );
+			}
+
+			script.AppendLine( "}" );
+
+			var chartDOMItems = string.Join( "",
+				chartConfigurations.Select( c => $"<div class='panel panel-default'><div class='panel-heading'>{c.Name} Chart</div><div class='panel-body'><div id='{c.HtmlId}'></div><p><a href='#' class='config' data-chart='{c.HtmlId}'>Copy Configuration</a></p></div></div>" )
+			);
+
+			script.AppendLine( $@"
+$(document).ready(function() {{
+	$( '.col-xs-12' ).append( ""{chartDOMItems}"" );
+
+	$('a.config').click(function() {{ 
+		var chartId = $(this).data('chart'); 
+		console.log('\r\n' + GetChartConfiguration(eval(chartId + '_options'))); 
+		alert( 'View console log to copy key/value properties.' );
+	}});
+
+	renderHighCharts();
+}});
+			" );
+
+			Clipboard.SetText( script.ToString() );
+			MessageBox.Show( "Click OK to launch a JSFiddle session in your default browser.  The HighCharts configuration has been copied to you clipbard.  Please paste the content into the 'Javascript' window (lower left) and click on the Run button.", "Opening JSFiddle...", MessageBoxButtons.OK, MessageBoxIcon.Information );
+
+			Process.Start( new ProcessStartInfo
+			{
+				FileName = "https://jsfiddle.net/p3en0wu6/",
+				UseShellExecute = true // Required for .NET Core and .NET 5+
+			} );
+		} );
+	}
+
+	private (ResponseTab Results, string Path) ExportResultJsonData() 
+	{
+		var fileName = application.ActiveWorkbook.Name;
+		var tabName = application.ActiveWorksheet().Name;
+		// Haven't found C API equivalent to setting Saved property...
+		var isSaved = application.ActiveWorkbook.Saved;
+		// TODO: See why .RestoreSelection doesn't work here.
+		var selection = DnaApplication.Selection;
+		application.ScreenUpdating = false;
+
+		try
+		{
+			var configuration = new DnaCalcEngineConfigurationFactory( fileName ).Configuration;
+			using var calcEngine = new DnaCalcEngine( fileName, configuration );
+
+			var parameters = new CalculationParameters
+			{
+				CalculationId = Guid.NewGuid(),
+				CalcEngineInfo = new()
+				{
+					ResultTabs = new [] { tabName }
+				},
+				RequestInfo = new SingleRequest() 
+				{
+					AuthId = "LOCAL.DEBUG",
+					CalcEngines = Array.Empty<RequestCalcEngine>(),
+					TraceEnabled = true
+				},
+				Payload = new()
+				{
+					Profile = new(),
+					History = new()
+				}
+			};
+
+			var diagnosticTraceLogger = new DiagnosticTraceLogger();
+			diagnosticTraceLogger.Start();
+
+			var results = dnaCalculationService.ReadResults( calcEngine, parameters, diagnosticTraceLogger );
+
+			var path = Path.Combine( AddIn.ResourcesPath, "ResultExports", $"{Path.GetFileNameWithoutExtension( fileName )}.{tabName}.json" );
+			Directory.CreateDirectory( Path.GetDirectoryName( path )! );
+			File.WriteAllText( path, results.ToJsonString( writeIndented: true, ignoreNulls: true, camelCase: true ) );
+
+			if ( diagnosticTraceLogger.HasTrace )
+			{
+				ExcelDna.Logging.LogDisplay.Clear();
+				foreach ( var t in diagnosticTraceLogger.Trace )
+				{
+					ExcelDna.Logging.LogDisplay.WriteLine( t.Replace( "\t", "    " ) );
+				}
+				ExcelDna.Logging.LogDisplay.Show();
+			}
+
+			return (results, path);
+		}
+		finally
+		{
+			selection.Select();
+			application.ScreenUpdating = true;
+			application.ActiveWorkbook.Saved = isSaved;
+		}
 	}
 
 	public void CalcEngineUtilities_DownloadGlobalTables( IRibbonControl _ )

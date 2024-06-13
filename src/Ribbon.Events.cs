@@ -45,12 +45,12 @@ public partial class Ribbon
 				"katDataStoreDownloadLatest" => WorkbookState.IsCalcEngine && !WorkbookState.IsLatestVersion,
 				"katDataStoreDebugCalcEnginesMenu" => WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( AddIn.Settings.SaveHistoryName ) && !string.IsNullOrEmpty( WorkbookState.UploadedVersion ),
 
-				"dataExportingDocGenXml" or "dataExportingJsonResultData" => WorkbookState.SheetState.IsResultSheet,
-				"dataExportingExtras" or "dataExportingxDS" or "dataExportingJsonData" => application.ActiveWorkbook != null && !WorkbookState.IsSpecSheetFile && !WorkbookState.IsGlobalTablesFile && !WorkbookState.IsRTCFile && !WorkbookState.IsCalcEngine,
+				"calcEngineUtilitiesDocGenXml" or "calcEngineUtilitiesJsonResultData" => WorkbookState.SheetState.IsResultSheet,
+				"dataExportingxDS" or "dataExportingJsonData" => application.ActiveWorkbook != null && !WorkbookState.IsSpecSheetFile && !WorkbookState.IsGlobalTablesFile && !WorkbookState.IsRTCFile && !WorkbookState.IsCalcEngine,
 				"dataExportingMappedxDSData" => WorkbookState.SheetState.IsXmlMappingSheet,
 
 				"calcEngineUtilitiesLoadData" => WorkbookState.SheetState.IsInputSheet,
-				"calcEngineUtilitiesPreviewResults" => WorkbookState.SheetState.CanPreview,
+				"calcEngineUtilitiesConfigureHighCharts" => WorkbookState.SheetState.CanPreview,
 				"calcEngineUtilitiesRunMacros" or "calcEngineUtilitiesLocalBatch" => WorkbookState.IsCalcEngine,
 				"calcEngineUtilitiesLinkToLoadedAddIns" => WorkbookState.HasLinks,
 

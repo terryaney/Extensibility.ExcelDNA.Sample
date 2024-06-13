@@ -7,6 +7,8 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn;
 public class AddInSettings
 {
 	public bool ShowRibbon { get; init; }
+	// Path (or file if path is in %PATH%) to the text editor to use for opening xml/json files...
+	public string TextEditor { get; init; } = @"C:\Program Files\Microsoft VS Code\bin\code.exe";
 	public string ApiEndpoint { get; init; } = null!;
 	public string[] DataServices { get; init; } = Array.Empty<string>();
 	public string[] SpecificationFileLocations { get; init; } = Array.Empty<string>();
@@ -17,6 +19,8 @@ public class AddInSettings
 
 	public string? KatUserName { get; set; }
 	public string? KatPassword { get; set; }
+
+
 
 	public async Task<string?> SetCredentialsAsync( string userName, string password )
 	{

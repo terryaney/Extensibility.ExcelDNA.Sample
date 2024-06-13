@@ -7,6 +7,7 @@ internal partial class LocalBatch : Form
 {
 	private readonly string calcEngine;
 	private readonly JsonObject windowConfiguration;
+	private readonly CancellationTokenSource cancellationSource;
 
 	public LocalBatch( CalcEngineConfiguration configuration, string? currentTab, JsonObject? windowConfiguration )
 	{
@@ -69,6 +70,8 @@ internal partial class LocalBatch : Form
 
 		saveErrorCalcEngineError.Checked = (bool?)calcEngineConfig?[ nameof( saveErrorCalcEngineError ) ] ?? false;
 		saveErrorCalcEngineCount.Text = (string?)calcEngineConfig?[ nameof( saveErrorCalcEngineCount ) ] ?? "5";
+
+		cancellationSource = new CancellationTokenSource();
 	}
 
 	private void LocalBatch_Load( object sender, EventArgs e )

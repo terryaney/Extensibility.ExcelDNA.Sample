@@ -26,10 +26,11 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 /*
 CalcEngineUtilities_LocalBatchCalc
-DataExporting_ExportResultDocGenXml
-DataExporting_ExportResultJsonData
 ConfigurationExporting_ExportWorkbook  - SpecSheet
-CalcEngineUtilities_PreviewResults
+
+Review keyboard hotkeys of ribbon
+Figure out help markdown
+Search for all 'TODO' comments
 */
 
 /// <summary>
@@ -62,6 +63,7 @@ public partial class Ribbon : ExcelRibbon
 	private readonly IEmailService emailService = new FakeEmailService();
 	private readonly ITextService textService = new FakeTextService();
 	private readonly IConfiguration secretsConfiguration;
+	private readonly ICalculationChartBuilder calculationChartBuilder;
 
 	public Ribbon()
 	{
@@ -114,12 +116,15 @@ public partial class Ribbon : ExcelRibbon
 		var serviceProvider = services.BuildServiceProvider();
 
 		var theKeepSettings = serviceProvider.GetRequiredService<IOptionsSnapshot<TheKeepSettings>>();
-		var localizer = serviceProvider.GetRequiredService<IStringLocalizer<xDSRepository>>();
 		var logger = serviceProvider.GetRequiredService<ILogger<CalculationSourceContext>>();
 		
 		IDbConnectionForge connectionForge = new DbConnectionForge( theKeepSettings );
 		IDateTimeService dateTimeService = new DateTimeService();
-		IxDSRepository xDSRepository = new xDSRepository( connectionForge, dateTimeService, localizer );
+		IxDSRepository xDSRepository = new xDSRepository( 
+			connectionForge, 
+			dateTimeService, 
+			serviceProvider.GetRequiredService<IStringLocalizer<xDSRepository>>() 
+		);
 
 		httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
 		apiService = new ApiService( httpClientFactory, xDSRepository );
@@ -127,6 +132,8 @@ public partial class Ribbon : ExcelRibbon
 			httpClientFactory, emailService, textService, theKeepSettings.Value.Jwt.RBLe, logger
 		);
 
+		var chartHelper = new ChartHelper( serviceProvider.GetRequiredService<IStringLocalizer<Infrastructure.ICamelotMarker>>() );
+		calculationChartBuilder = new HighchartsCalculationChartBuilder( chartHelper );
 		WorkbookState = new WorkbookState( apiService );
 	}
 

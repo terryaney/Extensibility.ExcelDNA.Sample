@@ -29,12 +29,13 @@
 				</group>
 
 				<group id="groupCalcEngineUtilities" keytip="ll" label="CalcEngine Utilities" imageMso="FileCompatibilityChecker">
-					<button id="calcEngineUtilitiesLoadData" keytip="D" label="Load Input Tab Data..." imageMso="ImportMoreMenu" size="large" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_PopulateInputTab" getEnabled="Ribbon_GetEnabled"/>
+					<button id="calcEngineUtilitiesLoadData" keytip="D" label="Load Input Data..." imageMso="ImportMoreMenu" size="large" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_LoadInputTab" getEnabled="Ribbon_GetEnabled"/>
 					<button id="calcEngineUtilitiesRunMacros" keytip="R" label="Run Macros" imageMso="EventOnBeforeChange" size="large" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_RunMacros" getEnabled="Ribbon_GetEnabled"/>
 
 					<menu id="calcEngineUtilitiesExtrasMenu" keytip="2" label="Utilities" imageMso="ColumnListSetting" size="large">
-						<button id="calcEngineUtilitiesPreviewResults" keytip="P" label="Preview Results" imageMso="CreateReportWeb" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_PreviewResults" getEnabled="Ribbon_GetEnabled"/>
-						<button id="calcEngineUtilitiesLocalBatch" keytip="B" label="Local Batch Calc" imageMso="GroupCreateClient" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_LocalBatchCalc" getEnabled="Ribbon_GetEnabled"/>
+						<button id="calcEngineUtilitiesJsonResultData" keytip="R" label="Export Results" imageMso="CustomizeXSLTMenu" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_ExportResultJsonData" getEnabled="Ribbon_GetEnabled"/>
+						<button id="calcEngineUtilitiesDocGenXml" keytip="G" label="Export DocGen Xml" imageMso="ExportWord" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_ExportResultDocGenXml" getEnabled="Ribbon_GetEnabled"/>
+						<button id="calcEngineUtilitiesConfigureHighCharts" keytip="C" label="HighCharts Fiddle" imageMso="ChartLayoutGallery" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_ConfigureHighCharts" getEnabled="Ribbon_GetEnabled"/>
 
 						<menuSeparator id="calcEngineUtilitiesExtrasMenuSep1"/>
 
@@ -44,18 +45,14 @@
 						<menuSeparator id="calcEngineUtilitiesExtrasMenuSep2"/>
 
 						<button id="calcEngineUtilitiesLinkToLoadedAddIns" keytip="K" label="Link to Loaded Add-ins" imageMso="EditLinks" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_LinkToLoadedAddIns" getEnabled="Ribbon_GetEnabled"/>
+						<button id="calcEngineUtilitiesLocalBatch" keytip="B" label="Run Local Batch..." imageMso="GroupCreateClient" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_LocalBatchCalc" getEnabled="Ribbon_GetEnabled"/>
 					</menu>
 				</group>
 
-				<group id="groupDataExporting" keytip="xx" label="Data Exporting" imageMso="ExportXmlFile">
-					<button id="dataExportingxDS" keytip="X" label="xDS Xml Data..." imageMso="ExportXmlFile" size="large" onAction="Ribbon_OnAction" tag="DataExporting_ExportXmlData" getEnabled="Ribbon_GetEnabled"/>
-					<button id="dataExportingDocGenXml" keytip="G" label="DocGen Xml" imageMso="ExportWord" size="large" onAction="Ribbon_OnAction" tag="DataExporting_ExportResultDocGenXml" getEnabled="Ribbon_GetEnabled"/>
-					<menu id="dataExportingExtras" keytip="1" label="Export Tools" imageMso="PageSettings" size="large" getEnabled="Ribbon_GetEnabled">
-						<button id="dataExportingJsonData" keytip="J" label="xDS Json Data..." imageMso="CustomizeXSLTMenu" onAction="Ribbon_OnAction" tag="DataExporting_ExportJsonData"/>
-						<button id="dataExportingJsonResultData" keytip="R" label="Result Json Data..." imageMso="CustomizeXSLTMenu" onAction="Ribbon_OnAction" tag="DataExporting_ExportResultJsonData" getEnabled="Ribbon_GetEnabled"/>
-						<menuSeparator id="dataExportingExtrasSep1"/>
-						<button id="dataExportingMappedxDSData" keytip="M" label="Mapped xDS Data..." imageMso="ExportBusinessDataCatalogModel" onAction="Ribbon_OnAction" tag="DataExporting_ExportMappedXmlData" getEnabled="Ribbon_GetEnabled"/>
-					</menu>
+				<group id="groupDataExporting" keytip="xx" label="xDS Data Exporting" imageMso="ExportXmlFile">
+					<button id="dataExportingxDS" keytip="X" label="Xml Data..." imageMso="ExportXmlFile" size="large" onAction="Ribbon_OnAction" tag="DataExporting_ExportXmlData" getEnabled="Ribbon_GetEnabled"/>
+					<button id="dataExportingJsonData" keytip="J" label="Json Data..." imageMso="CustomizeXSLTMenu" size="large" onAction="Ribbon_OnAction" tag="DataExporting_ExportJsonData" getEnabled="Ribbon_GetEnabled"/>
+					<button id="dataExportingMappedxDSData" keytip="M" label="Mapped Data..." imageMso="ExportBusinessDataCatalogModel" size="large" onAction="Ribbon_OnAction" tag="DataExporting_ExportMappedXmlData" getEnabled="Ribbon_GetEnabled"/>
 				</group>
 
 				<group id="groupAudit" keytip="uu" label="Audit" imageMso="ErrorChecking">
