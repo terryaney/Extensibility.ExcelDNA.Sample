@@ -42,35 +42,32 @@ public partial class Ribbon
 
 	void ExportSpecificationFile()
 	{
-		ExcelAsyncUtil.QueueAsMacro( () =>
-		{
-			var owner = new NativeWindow();
-			owner.AssignHandle( new IntPtr( application.Hwnd ) );
+		var owner = new NativeWindow();
+		owner.AssignHandle( new IntPtr( application.Hwnd ) );
 
-			var config = GetWindowConfiguration( nameof( ExportSpecification ) );
+		var config = GetWindowConfiguration( nameof( ExportSpecification ) );
 
-			var specName = WorkbookState.ManagementName;
-			var clientName = Path.GetFileNameWithoutExtension( specName ).Split( '-' ).First( p => !new [] { "MHA", "Spec" }.Contains( p ) );
+		var specName = WorkbookState.ManagementName;
+		var clientName = Path.GetFileNameWithoutExtension( specName ).Split( '-' ).First( p => !new [] { "MHA", "Spec" }.Contains( p ) );
 
-			var saveLocations =
-				AddIn.Settings.SpecificationFileLocations
-					.Select( l => l.Replace( "{clientName}", clientName ).Replace( "{specName}", specName ) )
-					.ToArray();
+		var saveLocations =
+			AddIn.Settings.SpecificationFileLocations
+				.Select( l => l.Replace( "{clientName}", clientName ).Replace( "{specName}", specName ) )
+				.ToArray();
 
-			var validLocation = saveLocations.FirstOrDefault( File.Exists );
-			using var exportData = new ExportSpecification( 
-				validLocation ?? $@"C:\BTR\Camelot\WebSites\Admin\{clientName}\_Developer\{specName}", 
-				saveSpecification: validLocation != null,
-				config 
-			);
+		var validLocation = saveLocations.FirstOrDefault( File.Exists );
+		using var exportData = new ExportSpecification( 
+			validLocation ?? $@"C:\BTR\Camelot\WebSites\Admin\{clientName}\_Developer\{specName}", 
+			saveSpecification: validLocation != null,
+			config 
+		);
 
-			var info = exportData.GetInfo( owner );
+		var info = exportData.GetInfo( owner );
 
-			if ( info == null ) return;
+		if ( info == null ) return;
 
-			SaveWindowConfiguration( nameof( ExportSpecification ), info.WindowConfiguration );
+		SaveWindowConfiguration( nameof( ExportSpecification ), info.WindowConfiguration );
 
-			MessageBox.Show( "// TODO: Export SpecSheetFile" );
-		} );
+		MessageBox.Show( "// TODO: Export SpecSheetFile" );
 	}
 }

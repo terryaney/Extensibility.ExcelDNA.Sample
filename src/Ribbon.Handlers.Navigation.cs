@@ -163,30 +163,27 @@ public partial class Ribbon
 
 	public void Navigation_GoToBTRCellAddress( IRibbonControl _ )
 	{
-		ExcelAsyncUtil.QueueAsMacro( () =>
+		var formula = "[Unavailable]";
+		var address = "[Unavailable]";
+		try
 		{
-			var formula = "[Unavailable]";
-			var address = "[Unavailable]";
-			try
+			var selection = application.Selection as MSExcel.Range;
+			formula = selection!.Formula as string;
+			
+			if ( formula!.Contains( "BTRCellAddress" ) )
 			{
-				var selection = application.Selection as MSExcel.Range;
-				formula = selection!.Formula as string;
-				
-				if ( formula!.Contains( "BTRCellAddress" ) )
-				{
-					address = selection.Text as string;
+				address = selection.Text as string;
 
-					// address is always in the form of 'Sheet1!A1' (with sheet prefix)
-					var range = DnaApplication.GetRangeFromAddress( DnaApplication.ActiveWorkbookName(), address! )!.GetRange();
-					range.Worksheet.Activate();
-					range.Activate();
-				}
+				// address is always in the form of 'Sheet1!A1' (with sheet prefix)
+				var range = DnaApplication.GetRangeFromAddress( DnaApplication.ActiveWorkbookName(), address! )!.GetRange();
+				range.Worksheet.Activate();
+				range.Activate();
 			}
-			catch ( Exception ex )
-			{
-				throw new ApplicationException( $"Unable to go to BTRCellAddress selected.\r\n\r\nFormula: {formula}\r\nAddress: {address}", ex );
-			}
-		} );
+		}
+		catch ( Exception ex )
+		{
+			throw new ApplicationException( $"Unable to go to BTRCellAddress selected.\r\n\r\nFormula: {formula}\r\nAddress: {address}", ex );
+		}
 	}
 
 	private void GotoInputNamedRange( string name )

@@ -141,11 +141,6 @@ internal partial class LoadInputTab : Form
 		Size = new Size { Width = (int?)windowConfiguration[ "width" ] ?? Width, Height = (int?)windowConfiguration[ "height" ] ?? Height };
 	}
 
-	private void ParticipantSplitContainer_Resize( object sender, EventArgs e )
-	{
-		// participantSplitContainer.SplitterDistance = participantSplitContainer.Width / 2;
-	}
-
 	private void LoadTables_CheckedChanged( object sender, EventArgs e )
 	{
 		downloadGlobalTables.Enabled = downloadConfigLookups.Enabled = loadTables.Checked;

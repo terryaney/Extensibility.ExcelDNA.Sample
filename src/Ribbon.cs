@@ -208,27 +208,32 @@ public partial class Ribbon : ExcelRibbon
 		var tag = control.Tag;
 		var actionParts = tag.Split( '|' );
 
-		try
+		ExcelAsyncUtil.QueueAsMacro( () =>
 		{
-			var parameters = actionParts.Skip( 1 ).ToArray();
-			var parameterTypes = parameters.Any()
-				? new[] { typeof( IRibbonControl ) }.Concat( parameters.Select( p => typeof( string ) ) ).ToArray()
-				: null;
+			try
+			{
+				var parameters = actionParts.Skip( 1 ).ToArray();
+				var parameterTypes = parameters.Any()
+					? new[] { typeof( IRibbonControl ) }.Concat( parameters.Select( p => typeof( string ) ) ).ToArray()
+					: null;
 
-			var mi = parameters.Any()
-				? typeof( Ribbon ).GetMethod( actionParts[ 0 ], parameterTypes! )
-				: typeof( Ribbon ).GetMethod( actionParts[ 0 ] );
+				var mi = parameters.Any()
+					? typeof( Ribbon ).GetMethod( actionParts[ 0 ], parameterTypes! )
+					: typeof( Ribbon ).GetMethod( actionParts[ 0 ] );
 
-			mi!.Invoke( this, new object[] { control }.Concat( parameters ).ToArray() );
-		}
-		catch ( Exception ex )
-		{
-			ShowException( ex, $"Ribbon_OnAction {tag}" );
-		}
-		finally
-		{
-			application.Cursor = MSExcel.XlMousePointer.xlDefault;
-		}
+				// WARNING: If mi is async Task, need to wrap entire implementation inside Try/Catch and display own exception
+				mi!.Invoke( this, new object[] { control }.Concat( parameters ).ToArray() );
+			}
+			catch ( Exception ex )
+			{
+				ShowException( ex, $"Ribbon_OnAction {tag}" );
+			}
+			finally
+			{
+				// TODO: May have to remove this...if mi is async Task, then this will flip to default and I'm not sure of timing (if mi sets to wait)
+				application.Cursor = MSExcel.XlMousePointer.xlDefault;
+			}
+		} );
 	}
 
 	private void RunRibbonTask( Func<Task> action, [CallerMemberName] string actionName = "" )

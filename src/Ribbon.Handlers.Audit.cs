@@ -33,105 +33,102 @@ public partial class Ribbon
 
 	public void Audit_ShowCellsWithEmptyDependencies( IRibbonControl _ )
 	{
-		ExcelAsyncUtil.QueueAsMacro( () =>
+		application.ScreenUpdating = false;
+
+		try
 		{
-			application.ScreenUpdating = false;
+			var selection = ( application.Selection as MSExcel.Range )!;
+			selection.Style = "Normal";
 
-			try
+			var selectionRef = selection.GetReference();
+			var firstCell = selectionRef.Corner( CornerType.UpperLeft );
+			var workbookName = application.ActiveWorkbook.Name;
+			var worksheetName = application.ActiveWorksheet().Name;
+
+			static string getRangeAddress( ParseTreeNode r, ParseTreeNode parent, int startIndex )
 			{
-				var selection = ( application.Selection as MSExcel.Range )!;
-				selection.Style = "Normal";
+				var rangeStart = r.ChildNodes[ startIndex ].ChildNodes[ 0 ].Token.Text;
 
-				var selectionRef = selection.GetReference();
-				var firstCell = selectionRef.Corner( CornerType.UpperLeft );
-				var workbookName = application.ActiveWorkbook.Name;
-				var worksheetName = application.ActiveWorksheet().Name;
+				var next = r.ChildNodes[ startIndex ].Type() == GrammarNames.Cell
+					? GetNext( parent, r )
+					: null;
 
-				static string getRangeAddress( ParseTreeNode r, ParseTreeNode parent, int startIndex )
+				var range = next?.Type() == ":"
+					? $"{rangeStart}:{GetNext( parent, next )!.ChildNodes[ 0 ].ChildNodes[ 0 ].Token.Text}"
+					: rangeStart;
+
+				return range;
+			}
+
+			for ( var row = 0; row <= selectionRef.RowLast - selectionRef.RowFirst; row++ )
+			{
+				for ( var col = 0; col <= selectionRef.ColumnLast - selectionRef.ColumnFirst; col++ )
 				{
-					var rangeStart = r.ChildNodes[ startIndex ].ChildNodes[ 0 ].Token.Text;
+					var cell = firstCell.Offset( row, col );
+					var cellFormula = cell.GetFormula();
 
-					var next = r.ChildNodes[ startIndex ].Type() == GrammarNames.Cell
-						? GetNext( parent, r )
-						: null;
-
-					var range = next?.Type() == ":"
-						? $"{rangeStart}:{GetNext( parent, next )!.ChildNodes[ 0 ].ChildNodes[ 0 ].Token.Text}"
-						: rangeStart;
-
-					return range;
-				}
-
-				for ( var row = 0; row <= selectionRef.RowLast - selectionRef.RowFirst; row++ )
-				{
-					for ( var col = 0; col <= selectionRef.ColumnLast - selectionRef.ColumnFirst; col++ )
+					if ( !string.IsNullOrEmpty( cellFormula ) && cellFormula.StartsWith( "=" ) )
 					{
-						var cell = firstCell.Offset( row, col );
-						var cellFormula = cell.GetFormula();
+						var tree = ExcelFormulaParser.Parse( cellFormula );
 
-						if ( !string.IsNullOrEmpty( cellFormula ) && cellFormula.StartsWith( "=" ) )
+						var references =
+							tree.AllNodes( GrammarNames.Reference )
+								.Where( r => new[] { GrammarNames.NamedRange, GrammarNames.Prefix, GrammarNames.Cell }.Contains( r.ChildNodes[ 0 ].Type() ) )
+								.ToArray();
+
+						foreach ( var r in references )
 						{
-							var tree = ExcelFormulaParser.Parse( cellFormula );
+							var type = r.ChildNodes[ 0 ].Type();
 
-							var references =
-								tree.AllNodes( GrammarNames.Reference )
-									.Where( r => new[] { GrammarNames.NamedRange, GrammarNames.Prefix, GrammarNames.Cell }.Contains( r.ChildNodes[ 0 ].Type() ) )
-									.ToArray();
+							ExcelReference? reference = null;
+							var parent = r.Parent( tree );
 
-							foreach ( var r in references )
+							if ( type == GrammarNames.Prefix )
 							{
-								var type = r.ChildNodes[ 0 ].Type();
-
-								ExcelReference? reference = null;
-								var parent = r.Parent( tree );
-
-								if ( type == GrammarNames.Prefix )
+								var sheet = r.ChildNodes[ 0 ].ChildNodes[ 0 ].Token.Text;
+								var range = getRangeAddress( r, parent, 1 );
+								reference =
+									new DnaWorksheet(
+										workbookName,
+										name: sheet[ ..^1 ]
+									).RangeOrNull( range );
+							}
+							else if ( type == GrammarNames.NamedRange )
+							{
+								var range = r.ChildNodes[ 0 ].ChildNodes[ 0 ].Token.Text;
+								reference = new DnaWorkbook( workbookName ).RangeOrNull( range );
+							}
+							else if ( type == GrammarNames.Cell )
+							{
+								// Would have already been taken care of...
+								if ( GetPrevious( parent, r )?.Type() == ":" )
 								{
-									var sheet = r.ChildNodes[ 0 ].ChildNodes[ 0 ].Token.Text;
-									var range = getRangeAddress( r, parent, 1 );
-									reference =
-										new DnaWorksheet(
-											workbookName,
-											name: sheet[ ..^1 ]
-										).RangeOrNull( range );
-								}
-								else if ( type == GrammarNames.NamedRange )
-								{
-									var range = r.ChildNodes[ 0 ].ChildNodes[ 0 ].Token.Text;
-									reference = new DnaWorkbook( workbookName ).RangeOrNull( range );
-								}
-								else if ( type == GrammarNames.Cell )
-								{
-									// Would have already been taken care of...
-									if ( GetPrevious( parent, r )?.Type() == ":" )
-									{
-										continue;
-									}
-
-									var range = getRangeAddress( r, parent, 0 );
-									reference =
-										new DnaWorksheet( workbookName, worksheetName )
-											.RangeOrNull( range );
+									continue;
 								}
 
-								var data = reference!.GetValue();
-								var dataValues = data as object[,];
+								var range = getRangeAddress( r, parent, 0 );
+								reference =
+									new DnaWorksheet( workbookName, worksheetName )
+										.RangeOrNull( range );
+							}
 
-								if ( dataValues?.Contains( ExcelEmpty.Value, false ) ?? Equals( data, ExcelEmpty.Value ) )
-								{
-									cell.GetRange().Style = "Bad";
-									break;
-								}
+							var data = reference!.GetValue();
+							var dataValues = data as object[,];
+
+							if ( dataValues?.Contains( ExcelEmpty.Value, false ) ?? Equals( data, ExcelEmpty.Value ) )
+							{
+								cell.GetRange().Style = "Bad";
+								break;
 							}
 						}
 					}
 				}
 			}
-			finally
-			{
-				application.ScreenUpdating = true;
-			}
-		} );
+		}
+		finally
+		{
+			application.ScreenUpdating = true;
+		}
 	}
 
 	static ParseTreeNode? GetPrevious( ParseTreeNode parent, ParseTreeNode child )
@@ -270,34 +267,31 @@ public partial class Ribbon
 
 	public void Audit_CalcEngineTabs( IRibbonControl _ )
 	{
-		ExcelAsyncUtil.QueueAsMacro( () =>
+		var name = application.ActiveWorkbook.Name;
+		// TODO: See why .RestoreSelection doesn't work here.
+		var selection = DnaApplication.Selection;
+
+		try
 		{
-			var name = application.ActiveWorkbook.Name;
-			// TODO: See why .RestoreSelection doesn't work here.
-			var selection = DnaApplication.Selection;
+			application.ScreenUpdating = false;
+			var configuration = new DnaCalcEngineConfigurationFactory( application.ActiveWorkbook.Name ).Configuration;
+			MessageBox.Show( $"All RBLe tabs in {name} are correctly configured ({configuration.InputTabs.Length} Input Tab(s) and {configuration.ResultTabs.Length} Result Tab(s)).", "CalcEngine Audit", MessageBoxButtons.OK, MessageBoxIcon.Information );
+		}
+		catch ( CalcEngineConfigurationException ex )
+		{
+			ExcelDna.Logging.LogDisplay.WriteLine( $"The RBLe tabs in {name} are incorrectly configured.  See the issues below for more details." + Environment.NewLine );
 
-			try
+			foreach ( var error in ex.Errors )
 			{
-				application.ScreenUpdating = false;
-				var configuration = new DnaCalcEngineConfigurationFactory( application.ActiveWorkbook.Name ).Configuration;
-				MessageBox.Show( $"All RBLe tabs in {name} are correctly configured ({configuration.InputTabs.Length} Input Tab(s) and {configuration.ResultTabs.Length} Result Tab(s)).", "CalcEngine Audit", MessageBoxButtons.OK, MessageBoxIcon.Information );
+				ExcelDna.Logging.LogDisplay.WriteLine( error );
 			}
-			catch ( CalcEngineConfigurationException ex )
-			{
-				ExcelDna.Logging.LogDisplay.WriteLine( $"The RBLe tabs in {name} are incorrectly configured.  See the issues below for more details." + Environment.NewLine );
 
-				foreach( var error in ex.Errors )
-				{
-					ExcelDna.Logging.LogDisplay.WriteLine( error );
-				}
-
-				ExcelDna.Logging.LogDisplay.Show();
-			}
-			finally
-			{
-				application.ScreenUpdating = true;
-				selection.Select();
-			}
-		} );
+			ExcelDna.Logging.LogDisplay.Show();
+		}
+		finally
+		{
+			application.ScreenUpdating = true;
+			selection.Select();
+		}
 	}
 }

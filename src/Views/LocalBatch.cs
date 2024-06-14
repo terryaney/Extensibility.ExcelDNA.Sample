@@ -7,7 +7,6 @@ internal partial class LocalBatch : Form
 {
 	private readonly string calcEngine;
 	private readonly JsonObject windowConfiguration;
-	private readonly CancellationTokenSource cancellationSource;
 
 	public LocalBatch( CalcEngineConfiguration configuration, string? currentTab, JsonObject? windowConfiguration )
 	{
@@ -32,11 +31,6 @@ internal partial class LocalBatch : Form
 		} );
 
 		exportType.SelectedIndex = (int?)calcEngineConfig?[ nameof( exportType ) ] ?? 0;
-
-		var toolTip = new ToolTip();
-		toolTip.SetToolTip( filter, "Sample: HistoryData/HistoryItem[@hisType='Status'][position()=last()]/status='A'" );
-		filter.Text = (string?)calcEngineConfig?[ nameof( filter ) ];
-
 		inputFileName.Text = (string?)calcEngineConfig?[ nameof( inputFileName ) ];
 		outputFileName.Text = (string?)calcEngineConfig?[ nameof( outputFileName ) ];
 
@@ -70,8 +64,6 @@ internal partial class LocalBatch : Form
 
 		saveErrorCalcEngineError.Checked = (bool?)calcEngineConfig?[ nameof( saveErrorCalcEngineError ) ] ?? false;
 		saveErrorCalcEngineCount.Text = (string?)calcEngineConfig?[ nameof( saveErrorCalcEngineCount ) ] ?? "5";
-
-		cancellationSource = new CancellationTokenSource();
 	}
 
 	private void LocalBatch_Load( object sender, EventArgs e )
@@ -107,9 +99,9 @@ internal partial class LocalBatch : Form
 		calcEngines[ calcEngine ] = new JsonObject
 		{
 			[ nameof( exportType ) ] = exportType.SelectedIndex,
-			[ nameof( filter ) ] = this.filter.Text,
-			[ nameof( inputFileName ) ] = this.inputFileName.Text,
-			[ nameof( outputFileName ) ] = this.outputFileName.Text,
+			[ nameof( filter ) ] = filter.Text,
+			[ nameof( inputFileName ) ] = inputFileName.Text,
+			[ nameof( outputFileName ) ] = outputFileName.Text,
 			[ nameof( inputTab ) ] = (string)inputTab.SelectedValue!,
 			[ nameof( resultTab ) ] = (string)resultTab.SelectedValue!,
 			[ nameof( limitRows ) ] = limitRows.Checked,
@@ -122,9 +114,9 @@ internal partial class LocalBatch : Form
 		{
 			WindowConfiguration = windowConfiguration,
 
-			InputFile = this.inputFileName.Text,
-			OutputFile = this.outputFileName.Text,
-			Filter = this.filter.Text,
+			InputFile = inputFileName.Text,
+			OutputFile = outputFileName.Text,
+			Filter = filter.Text,
 			InputTab = (string)inputTab.SelectedValue!,
 			ResultTab = (string)resultTab.SelectedValue!,
 			ExportType = ExportFormat,
@@ -220,8 +212,8 @@ internal partial class LocalBatch : Form
 	{
 		var openDialog = new OpenFileDialog()
 		{
-			Filter = "Xml Files|*.xml",
-			Title = "Input Xml Data",
+			Filter = "Xml Files|*.xml|Json Files|*.json",
+			Title = "Xml/Json Data",
 			CheckFileExists = true,
 			FileName = inputFileName.Text,
 			RestoreDirectory = true,
@@ -231,6 +223,10 @@ internal partial class LocalBatch : Form
 		if ( openDialog.ShowDialog() == DialogResult.OK )
 		{
 			inputFileName.Text = openDialog.FileName;
+			if ( string.IsNullOrEmpty( outputFileName.Text ) )
+			{
+				outputFileName.Text = Path.ChangeExtension( inputFileName.Text, $".output{( ExportFormat == ExportFormatType.Xml ? ".xml" : ".csv" )}" );
+			}
 		}
 	}
 
@@ -238,10 +234,18 @@ internal partial class LocalBatch : Form
 	{
 		var saveDialog = new SaveFileDialog()
 		{
-			Filter = "Xml Files|*.xml|Csv Files|*.csv",
-			Title = "Save Xml/Csv Result Data",
+			Filter = ExportFormat == ExportFormatType.Xml
+				? "Xml Files|*.xml"
+				: "Csv Files|*.csv",
+			Title = ExportFormat == ExportFormatType.Xml
+				? "Save Xml Result Data"
+				: "Save Csv Result Data",
 			OverwritePrompt = true,
-			FileName = outputFileName.Text,
+			FileName = !string.IsNullOrEmpty( outputFileName.Text ) 
+				? Path.GetFileName( outputFileName.Text )
+				: !string.IsNullOrEmpty( inputFileName.Text )
+					? $"{Path.GetFileNameWithoutExtension( inputFileName.Text )}.output{( ExportFormat == ExportFormatType.Xml ? ".xml" : ".csv" )}"
+					: null,
 			RestoreDirectory = true,
 			InitialDirectory = !string.IsNullOrEmpty( outputFileName.Text ) ? Path.GetDirectoryName( outputFileName.Text ) : null
 		};

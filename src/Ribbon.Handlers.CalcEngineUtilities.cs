@@ -461,10 +461,17 @@ public partial class Ribbon
 		} );
 	}
 
-	public void CalcEngineUtilities_LocalBatchCalc( IRibbonControl _ )
+	public async Task CalcEngineUtilities_LocalBatchCalc( IRibbonControl _ )
 	{
-		ExcelAsyncUtil.QueueAsMacro( () =>
+		try
 		{
+			var helpers = application.GetWorkbook( Constants.FileNames.Helpers );
+			if ( helpers == null && !File.Exists( Path.Combine( AddIn.ResourcesPath, Constants.FileNames.Helpers ) ) )
+			{
+				MessageBox.Show( "The Helpers workbook is missing.  Please download it before processing the workbook.", "Missing Helpers", MessageBoxButtons.OK, MessageBoxIcon.Warning );
+				return;
+			}
+
 			var fileName = application.ActiveWorkbook.Name;
 			var tabName = application.ActiveWorksheet().Name;
 			var selection = DnaApplication.Selection;
@@ -478,7 +485,7 @@ public partial class Ribbon
 			finally
 			{
 				selection.Select();
-				application.ScreenUpdating = true;			
+				application.ScreenUpdating = true;
 			}
 
 			var owner = new NativeWindow();
@@ -497,7 +504,103 @@ public partial class Ribbon
 			if ( info == null ) return;
 
 			SaveWindowConfiguration( nameof( LocalBatch ), info.WindowConfiguration );
-		} );
+
+			var ceBatchPath = Path.Combine( AddIn.ResourcesPath, "LocalBatch", $"{Path.GetFileNameWithoutExtension( WorkbookState.ManagementName )}.localbatch{Path.GetExtension( WorkbookState.ManagementName )}" );
+			var helpersBatchPath = Path.Combine( AddIn.ResourcesPath, "LocalBatch", $"{Path.GetFileNameWithoutExtension( Constants.FileNames.Helpers )}.localbatch{Path.GetExtension( Constants.FileNames.Helpers )}" );
+
+			Directory.CreateDirectory( Path.GetDirectoryName( ceBatchPath )! );
+			foreach ( var f in new[] { ceBatchPath, helpersBatchPath } )
+			{
+				if ( File.Exists( f ) )
+				{
+					File.Delete( f );
+				}
+			}
+
+			application.ActiveWorkbook.SaveCopyAs( ceBatchPath );
+			helpers?.SaveCopyAs( helpersBatchPath );
+
+			if ( helpers == null )
+			{
+				File.Copy( Path.Combine( AddIn.ResourcesPath, Constants.FileNames.Helpers ), helpersBatchPath );
+			}
+
+			// Note, only way this works is if the following is true (however, I've asked for advice in Excel-DNA group https://groups.google.com/g/exceldna/c/iUBUHNyYg3g):
+			// 1. Function needs to be 'async Task' instead of 'void' -> public async Task CalcEngineUtilities_LocalBatchCalc
+			// 2. Need 'ExcelAsyncUtil.QueueAsMacro' call otherwise 'DnaApplication.Selection' fails.  Since Govert says (https://groups.google.com/g/exceldna/c/XN6cwgYGtIs) 
+			//		that 'ExcelAsyncUtil.QueueAsMacro( async () => { } )' is not a valid pattern, I moved QueueAsMacro up into 'Ribbon_OnAction' like it was in
+			//		Evolution version of addin.  'Ribbon_OnAction' calls button handlers via 'MemberInfo.Invoke', so not sure how that handles 'async Task' 
+			//		handlers, but it seems to be working.
+			// 3. Using this, means lose benefit of built in exception handling of RunRibbonTask :(
+
+
+			// Task.Run( async () => 
+			// {
+			/* Sample for Excel-DNA group...
+				try
+				{
+					var processingConfig = GetWindowConfiguration( nameof( Processing ) );
+					using var processing = new Processing( "Local Batch Calculation", 1, 10, processingConfig );
+
+					var result = await processing.ProcessAsync( async ( currentProgress, currentStatus, cancellationToken ) =>
+					{
+						currentStatus.Report( "Starting batch calculations..." );
+
+						for ( var i = 0; i < 10; i++ )
+						{
+							await Task.Delay( 1000, cancellationToken );
+							currentProgress.Report( -1 );
+						}
+
+						currentStatus.Report( "Finished batch calculations" );
+					} );
+				}
+				catch ( Exception ex )
+				{
+					ExcelAsyncUtil.QueueAsMacro( () => MessageBox.Show( ex.Message ) );
+				}
+			*/
+			// } );
+
+			// RunRibbonTask( async () =>
+			// {
+			var fileSize = new FileInfo( info.InputFile ).Length;
+			var reduction = 1;
+			while ( ( fileSize / reduction ) > int.MaxValue )
+			{
+				reduction *= 10;
+			}
+
+			var processingConfig = GetWindowConfiguration( nameof( Processing ) );
+			using var processing = new Processing( "Local Batch Calculation", info.InputRows ?? (int)( fileSize / reduction ), processingConfig );
+			var batchManager = new BatchCalculations.BatchManager( info, ceBatchPath, helpersBatchPath, reduction );
+
+			var result = await processing.ProcessAsync( batchManager.RunBatchAsync );
+
+			SaveWindowConfiguration( nameof( Processing ), result.WindowConfiguration );
+
+			if ( result.Result == DialogResult.None )
+			{
+				MessageBox.Show( "Process failed. Please see Log Display for more information", "Local Batch Calculation", MessageBoxButtons.OK, MessageBoxIcon.Error );
+				ExcelDna.Logging.LogDisplay.Show();
+			}
+			else
+			{
+				MessageBox.Show(
+					result.Result == DialogResult.OK
+						? $"Process complete. Ran {batchManager.TotalCalculations} calculation(s) with {batchManager.TotalErrors} error(s) in {batchManager.Elapsed.TotalMinutes:0.00} minutes."
+						: $"Process cancelled after {batchManager.Elapsed.TotalMinutes:0.00} minutes.  Completed {batchManager.TotalCalculations} calculation(s) with {batchManager.TotalErrors} error(s).",
+					"Local Batch Calculation",
+					MessageBoxButtons.OK,
+					result.Result == DialogResult.OK ? MessageBoxIcon.Information : MessageBoxIcon.Warning
+				);
+			}
+			// } );
+		}
+		catch ( Exception ex )
+		{
+			ShowException( ex, $"Ribbon_OnAction {nameof( CalcEngineUtilities_LocalBatchCalc )}" );
+		}
 	}
 
 	public void CalcEngineUtilities_ExportResultDocGenXml( IRibbonControl _ )

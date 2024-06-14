@@ -308,7 +308,6 @@ partial class LoadInputTab
         participantSplitContainer.Size = new Size(386, 51);
         participantSplitContainer.SplitterDistance = 191;
         participantSplitContainer.TabIndex = 10;
-        participantSplitContainer.Resize += ParticipantSplitContainer_Resize;
         // 
         // clientName
         // 

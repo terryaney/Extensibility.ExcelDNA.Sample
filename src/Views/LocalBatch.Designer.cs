@@ -152,10 +152,11 @@ partial class LocalBatch
         filter.Name = "filter";
         filter.Size = new Size(389, 23);
         filter.TabIndex = 4;
-        // 
-        // filterLabel
-        // 
-        filterLabel.AutoSize = true;
+		filter.PlaceholderText = "HistoryData/HistoryItem[@hisType='Status'][position()=last()]/status='A'";
+		// 
+		// filterLabel
+		// 
+		filterLabel.AutoSize = true;
         filterLabel.Location = new Point(13, 53);
         filterLabel.Margin = new Padding(4, 0, 4, 0);
         filterLabel.Name = "filterLabel";
@@ -166,12 +167,12 @@ partial class LocalBatch
         // inputTab
         // 
         inputTab.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        inputTab.DropDownStyle = ComboBoxStyle.DropDownList;
         inputTab.FormattingEnabled = true;
         inputTab.Location = new Point(15, 115);
         inputTab.Name = "inputTab";
         inputTab.Size = new Size(387, 23);
         inputTab.TabIndex = 6;
-		inputTab.DropDownStyle = ComboBoxStyle.DropDownList;
         // 
         // inputTabLabel
         // 
@@ -186,12 +187,12 @@ partial class LocalBatch
         // resultTab
         // 
         resultTab.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        resultTab.DropDownStyle = ComboBoxStyle.DropDownList;
         resultTab.FormattingEnabled = true;
         resultTab.Location = new Point(13, 159);
         resultTab.Name = "resultTab";
         resultTab.Size = new Size(387, 23);
         resultTab.TabIndex = 8;
-		resultTab.DropDownStyle = ComboBoxStyle.DropDownList;
         // 
         // resultTabLabel
         // 
@@ -206,12 +207,12 @@ partial class LocalBatch
         // exportType
         // 
         exportType.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        exportType.DropDownStyle = ComboBoxStyle.DropDownList;
         exportType.FormattingEnabled = true;
         exportType.Location = new Point(12, 203);
         exportType.Name = "exportType";
         exportType.Size = new Size(387, 23);
         exportType.TabIndex = 10;
-		exportType.DropDownStyle = ComboBoxStyle.DropDownList;
         // 
         // exportTypeLabel
         // 
@@ -242,25 +243,24 @@ partial class LocalBatch
         limitRows.TabIndex = 14;
         limitRows.Text = "&Limit to xDS Input Data to Number of Rows";
         limitRows.UseVisualStyleBackColor = true;
-		limitRows.CheckedChanged += LimitRows_CheckedChanged;
-
+        limitRows.CheckedChanged += LimitRows_CheckedChanged;
         // 
         // saveErrorCalcEngineError
         // 
         saveErrorCalcEngineError.AutoSize = true;
-        saveErrorCalcEngineError.Location = new Point(12, 320);
+        saveErrorCalcEngineError.Location = new Point(12, 312);
         saveErrorCalcEngineError.Margin = new Padding(4);
         saveErrorCalcEngineError.Name = "saveErrorCalcEngineError";
         saveErrorCalcEngineError.Size = new Size(220, 19);
         saveErrorCalcEngineError.TabIndex = 16;
         saveErrorCalcEngineError.Text = "&Number of Error CalcEngines to Save";
         saveErrorCalcEngineError.UseVisualStyleBackColor = true;
-		saveErrorCalcEngineError.CheckedChanged += SaveErrorCalcEngineError_CheckedChanged;
+        saveErrorCalcEngineError.CheckedChanged += SaveErrorCalcEngineError_CheckedChanged;
         // 
         // saveErrorCalcEngineCount
         // 
         saveErrorCalcEngineCount.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-        saveErrorCalcEngineCount.Location = new Point(289, 318);
+        saveErrorCalcEngineCount.Location = new Point(289, 310);
         saveErrorCalcEngineCount.Margin = new Padding(4, 3, 4, 3);
         saveErrorCalcEngineCount.Name = "saveErrorCalcEngineCount";
         saveErrorCalcEngineCount.Size = new Size(111, 23);

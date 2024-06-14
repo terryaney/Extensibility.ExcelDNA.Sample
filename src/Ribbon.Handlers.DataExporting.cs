@@ -15,138 +15,135 @@ public partial class Ribbon
 	public void DataExporting_ExportXmlData( IRibbonControl _ ) => ExportData( true );
 	public void DataExporting_ExportJsonData( IRibbonControl _ ) => ExportData( false );
 
-	public void ExportData( bool isXml )
+	private void ExportData( bool isXml )
 	{
-		ExcelAsyncUtil.QueueAsMacro( () =>
+		var owner = new NativeWindow();
+		owner.AssignHandle( new IntPtr( application.Hwnd ) );
+
+		var selection = DnaApplication.Selection;
+		selection = string.IsNullOrEmpty( selection.GetValue<string>() )
+			? new DnaWorksheet( DnaApplication.ActiveWorkbookName(), selection.SheetName() ).RangeOrNull( "DataExport" ) ?? selection
+			: selection;
+
+		if ( string.IsNullOrEmpty( selection.GetValue<string>() ) )
 		{
-			var owner = new NativeWindow();
-			owner.AssignHandle( new IntPtr( application.Hwnd ) );
+			MessageBox.Show( "To export data, you must select the first column header of either a single sheet export configuration (usually the Auth ID) or the 'Sheet' configuration cell of a multi-sheet export configuration.", "Export Data", MessageBoxButtons.OK, MessageBoxIcon.Exclamation );
+			return;
+		}
 
-			var selection = DnaApplication.Selection;
-			selection = string.IsNullOrEmpty( selection.GetValue<string>() )
-				? new DnaWorksheet( DnaApplication.ActiveWorkbookName(), selection.SheetName() ).RangeOrNull( "DataExport" ) ?? selection
-				: selection;
+		var dataExportPath = AddIn.Settings.DataExport.Path;
+		var exportPath = string.IsNullOrWhiteSpace( dataExportPath )
+			? application.ActiveWorkbook.Path
+			: dataExportPath;
 
-			if ( string.IsNullOrEmpty( selection.GetValue<string>() ) )
+		var ext = isXml ? ".xml" : ".json";
+
+		var ws = application.ActiveWorksheet();
+		var clientName = ws.RangeOrNull<string>( "ClientName" );
+		var outputFile =
+			ws.RangeOrNull<string>( "OutputFile" ) ??
+			Path.Combine( exportPath, Path.GetFileNameWithoutExtension( application.ActiveWorkbook.Name ) + ext );
+
+		var config = GetWindowConfiguration( nameof( ExportData ) );
+		using var exportData = new ExportData( config );
+
+		var info = exportData.GetInfo( clientName, outputFile, AddIn.Settings.DataExport.AppendDateToName, isXml, owner );
+
+		if ( info == null ) return;
+
+		var sw = Stopwatch.StartNew();
+		
+		SaveWindowConfiguration( nameof( ExportData ), info.WindowConfiguration );
+
+		var exportFiles = DataExport.Provider.Export( selection, info );
+
+		if ( exportFiles != null && !isXml )
+		{
+			var client = info.ClientName;
+			var authIdToExport = info.AuthIdToExport;
+
+			foreach ( var file in exportFiles )
 			{
-				MessageBox.Show( "To export data, you must select the first column header of either a single sheet export configuration (usually the Auth ID) or the 'Sheet' configuration cell of a multi-sheet export configuration.", "Export Data", MessageBoxButtons.OK, MessageBoxIcon.Exclamation );
-				return;
-			}
-
-			var dataExportPath = AddIn.Settings.DataExport.Path;
-			var exportPath = string.IsNullOrWhiteSpace( dataExportPath )
-				? application.ActiveWorkbook.Path
-				: dataExportPath;
-
-			var ext = isXml ? ".xml" : ".json";
-
-			var ws = application.ActiveWorksheet();
-			var clientName = ws.RangeOrNull<string>( "ClientName" );
-			var outputFile =
-				ws.RangeOrNull<string>( "OutputFile" ) ??
-				Path.Combine( exportPath, Path.GetFileNameWithoutExtension( application.ActiveWorkbook.Name ) + ext );
-
-			var config = GetWindowConfiguration( nameof( ExportData ) );
-			using var exportData = new ExportData( config );
-
-			var info = exportData.GetInfo( clientName, outputFile, AddIn.Settings.DataExport.AppendDateToName, isXml, owner );
-
-			if ( info == null ) return;
-
-			var sw = Stopwatch.StartNew();
-			
-			SaveWindowConfiguration( nameof( ExportData ), info.WindowConfiguration );
-
-			var exportFiles = DataExport.Provider.Export( selection, info );
-
-			if ( exportFiles != null && !isXml )
-			{
-				var client = info.ClientName;
-				var authIdToExport = info.AuthIdToExport;
-
-				foreach ( var file in exportFiles )
+				using ( var fs = File.Create( Path.Combine( Path.GetDirectoryName( file )!, Path.GetFileNameWithoutExtension( file ) + ".json" ) ) )
+				using ( var writer = new Utf8JsonWriter( fs, new JsonWriterOptions { Indented = true } ) )
+				using ( var reader = new xDataDefReader( file ) )
 				{
-					using ( var fs = File.Create( Path.Combine( Path.GetDirectoryName( file )!, Path.GetFileNameWithoutExtension( file ) + ".json" ) ) )
-					using ( var writer = new Utf8JsonWriter( fs, new JsonWriterOptions { Indented = true } ) )
-					using ( var reader = new xDataDefReader( file ) )
+					if ( string.IsNullOrEmpty( authIdToExport ) )
 					{
-						if ( string.IsNullOrEmpty( authIdToExport ) )
-						{
-							writer.WriteStartArray();
-						}
+						writer.WriteStartArray();
+					}
 
-						while ( reader.Read() )
-						{
-							var xDataDef = reader.xDataDef!;
-							var authId = xDataDef.AuthId();
+					while ( reader.Read() )
+					{
+						var xDataDef = reader.xDataDef!;
+						var authId = xDataDef.AuthId();
 
-							if ( string.IsNullOrEmpty( authIdToExport ) || string.Compare( authIdToExport, authId, true ) == 0 )
+						if ( string.IsNullOrEmpty( authIdToExport ) || string.Compare( authIdToExport, authId, true ) == 0 )
+						{
+							writer.WriteStartObject();
+
+							writer.WritePropertyName( "@authId" );
+							writer.WriteStringValue( authId );
+
+							writer.WritePropertyName( "@client" );
+							writer.WriteStringValue( client );
+
+							writer.WritePropertyName( "profile" );
+							writer.WriteStartObject();
+
+							foreach ( var f in xDataDef.Elements( "Profile" ).Elements().Where( e => e.Attribute( "delete" ) == null ) )
 							{
-								writer.WriteStartObject();
+								writer.WritePropertyName( f.Name.LocalName );
+								writer.WriteStringValue( (string)f );
+							}
 
-								writer.WritePropertyName( "@authId" );
-								writer.WriteStringValue( authId );
+							writer.WriteEndObject();
 
-								writer.WritePropertyName( "@client" );
-								writer.WriteStringValue( client );
+							var historyTypes =
+								xDataDef.Elements( "HistoryData" ).Elements( "HistoryItem" )
+									.Where( h => h.Attribute( "hisClear" ) == null )
+									.GroupBy( h => h.hisType() );
 
-								writer.WritePropertyName( "profile" );
-								writer.WriteStartObject();
+							writer.WritePropertyName( "history" );
+							writer.WriteStartObject();
 
-								foreach ( var f in xDataDef.Elements( "Profile" ).Elements().Where( e => e.Attribute( "delete" ) == null ) )
+							foreach ( var historyType in historyTypes )
+							{
+								writer.WritePropertyName( historyType.Key );
+								writer.WriteStartArray();
+
+								foreach ( var row in historyType )
 								{
-									writer.WritePropertyName( f.Name.LocalName );
-									writer.WriteStringValue( (string)f );
-								}
+									writer.WriteStartObject();
 
-								writer.WriteEndObject();
-
-								var historyTypes =
-									xDataDef.Elements( "HistoryData" ).Elements( "HistoryItem" )
-										.Where( h => h.Attribute( "hisClear" ) == null )
-										.GroupBy( h => h.hisType() );
-
-								writer.WritePropertyName( "history" );
-								writer.WriteStartObject();
-
-								foreach ( var historyType in historyTypes )
-								{
-									writer.WritePropertyName( historyType.Key );
-									writer.WriteStartArray();
-
-									foreach ( var row in historyType )
+									foreach ( var f in row.Elements().Where( e => e.Attribute( "delete" ) == null ) )
 									{
-										writer.WriteStartObject();
-
-										foreach ( var f in row.Elements().Where( e => e.Attribute( "delete" ) == null ) )
-										{
-											writer.WritePropertyName( f.Name.LocalName );
-											writer.WriteStringValue( (string)f );
-										}
-
-										writer.WriteEndObject();
+										writer.WritePropertyName( f.Name.LocalName );
+										writer.WriteStringValue( (string)f );
 									}
 
-									writer.WriteEndArray();
+									writer.WriteEndObject();
 								}
 
-								writer.WriteEndObject();
-
-								writer.WriteEndObject();
+								writer.WriteEndArray();
 							}
-						}
 
-						if ( string.IsNullOrEmpty( authIdToExport ) )
-						{
-							writer.WriteEndArray();
+							writer.WriteEndObject();
+
+							writer.WriteEndObject();
 						}
 					}
 
-					File.Delete( file );
+					if ( string.IsNullOrEmpty( authIdToExport ) )
+					{
+						writer.WriteEndArray();
+					}
 				}
+
+				File.Delete( file );
 			}
-			MessageBox.Show( string.Format( "Data successfully exported in {0:0.000} seconds.", sw.Elapsed.TotalSeconds ), "Export Data", MessageBoxButtons.OK, MessageBoxIcon.Information );
-		} );
+		}
+		MessageBox.Show( string.Format( "Data successfully exported in {0:0.000} seconds.", sw.Elapsed.TotalSeconds ), "Export Data", MessageBoxButtons.OK, MessageBoxIcon.Information );
 	}
 
 	public void DataExporting_ExportMappedXmlData( IRibbonControl _ )
@@ -154,24 +151,20 @@ public partial class Ribbon
 		var owner = new NativeWindow();
 		owner.AssignHandle( new IntPtr( application.Hwnd ) );
 
-		ExcelAsyncUtil.QueueAsMacro( () =>
-		{
+		var config = GetWindowConfiguration( nameof( XmlMapping ) );
+		using var xmlMapping = new XmlMapping( config );
 
-			var config = GetWindowConfiguration( nameof( XmlMapping ) );
-			using var xmlMapping = new XmlMapping( config );
+		var ws = application.ActiveWorksheet();
+		var clientName = (string?)ws.RangeOrNull( "ClientName" )?.Offset[ 0, 1 ].Text;
+		var inputFile = (string?)ws.RangeOrNull( "InputFile" )?.Offset[ 0, 1 ].Text;
+		var outputFile = (string?)ws.RangeOrNull( "OutputFile" )?.Offset[ 0, 1 ].Text;
+		
+		var info = xmlMapping.GetInfo( clientName, inputFile, outputFile, owner );
 
-			var ws = application.ActiveWorksheet();
-			var clientName = (string?)ws.RangeOrNull( "ClientName" )?.Offset[ 0, 1 ].Text;
-			var inputFile = (string?)ws.RangeOrNull( "InputFile" )?.Offset[ 0, 1 ].Text;
-			var outputFile = (string?)ws.RangeOrNull( "OutputFile" )?.Offset[ 0, 1 ].Text;
-			
-			var info = xmlMapping.GetInfo( clientName, inputFile, outputFile, owner );
+		if ( info == null ) return;
 
-			if ( info == null ) return;
+		SaveWindowConfiguration( nameof( XmlMapping ), info.WindowConfiguration );
 
-			SaveWindowConfiguration( nameof( XmlMapping ), info.WindowConfiguration );
-
-			new XmlMappingService().ExportXmlData( ws, info );
-		} );
+		new XmlMappingService().ExportXmlData( ws, info );
 	}
 }

@@ -44,8 +44,7 @@ public partial class Ribbon
 		} );
 	}
 
-	public void KatDataStore_ManageCalcEngine( IRibbonControl _ ) => 
-		OpenUrl( $"https://btr.lifeatworkportal.com/admin/management/default.aspx?startPage=lnkCalcEngineManagement&startCE={Path.GetFileNameWithoutExtension( WorkbookState.ManagementName )}" );
+	public void KatDataStore_ManageCalcEngine( IRibbonControl _ ) => OpenUrl( $"https://btr.lifeatworkportal.com/admin/management/default.aspx?startPage=lnkCalcEngineManagement&startCE={Path.GetFileNameWithoutExtension( WorkbookState.ManagementName )}" );
 
 	public void KatDataStore_DownloadLatestCalcEngine( IRibbonControl _ )
 	{
