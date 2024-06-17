@@ -55,7 +55,7 @@ class BatchProcessor
 
 		if ( isXml )
 		{
-			xmlWriter = XmlWriter.Create( outputFile );
+			xmlWriter = XmlWriter.Create( outputFile, new XmlWriterSettings { Async = true } );
 			xmlWriter.WriteStartElement( "Results" );
 		}
 		else
@@ -126,8 +126,8 @@ class BatchProcessor
 		{
 			var isUpdate = string.Compare( responseTab.Type, "Update", true ) == 0;
 
-			var profileUpdates = responseTab.DataUpdates!.Fields;
-			var historyUpdates = responseTab.DataUpdates!.HistoryUpdates;
+			var profileUpdates = responseTab.DataUpdates?.Fields!;
+			var historyUpdates = responseTab.DataUpdates?.HistoryUpdates!;
 
 			if ( isUpdate && UpdateConfiguration == null )
 			{
@@ -205,7 +205,7 @@ class BatchProcessor
 				csvTableName = csvConfigTable.Name;
 				csvTableColumns = csvConfigTable.Specification!.Columns.Select( c => c.Name ).ToArray();
 				csvTableIds = localBatchInfo.ExportType == ExportFormatType.CsvTransposed
-					? csvConfigTable.Rows.Select( r => (string)r![ "@id" ]! ).ToArray()
+					? csvConfigTable.Rows.Select( r => (string)r![ "id" ]! ).ToArray()
 					: null;
 				CsvHeaders = localBatchInfo.ExportType == ExportFormatType.CsvTransposed
 					? csvTableIds!.SelectMany( i => csvTableColumns.Select( c => $"{i}_{c}" ) ).ToArray()
@@ -230,11 +230,13 @@ class BatchProcessor
 			else
 			{
 				var values =
-					csvTableIds!.SelectMany( i =>
-						csvTableColumns!.Select( c =>
-							(string?)exportTable.Rows.FirstOrDefault( r => (string?)r![ "@id" ] == i )?[ c ]
-						)
-					);
+					csvTableIds!.SelectMany( i => {
+						var row = exportTable.Rows.FirstOrDefault( r => (string?)r![ "id" ] == i );
+						var vals = csvTableColumns!.Select( c =>
+							(string?)row?[ c ]
+						);
+						return vals;
+					} );
 				
 				await csvWriter!.WriteLineAsync( new [] { authId }.Concat( values ).GetCsvLine() );
 			}

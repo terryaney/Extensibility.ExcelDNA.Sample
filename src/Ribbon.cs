@@ -25,7 +25,6 @@ using MSExcel = Microsoft.Office.Interop.Excel;
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 /*
-CalcEngineUtilities_LocalBatchCalc
 ConfigurationExporting_ExportWorkbook  - SpecSheet
 
 Review keyboard hotkeys of ribbon

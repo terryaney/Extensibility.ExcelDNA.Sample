@@ -76,9 +76,10 @@ class BatchManager
 
 		try
 		{
-			currentStatus.Report( $"Running calculations {ceContent.Length}, {helpersContent.Length}..." );
+			currentStatus.Report( $"Running calculations..." );
 
 			var allowedErrorCalcEngines = Math.Min( localBatchInfo.ErrorCalcEngines ?? 0, 10 );
+			var errorCount = 0;
 
 			await Parallel.ForEachAsync(
 				ParseProfilesAsync( cancellationToken ),
@@ -104,7 +105,9 @@ class BatchManager
 						currentProgress.Report( localBatchInfo.InputRows != null ? -1 : (int)( profile.StreamPosition / progressSizeReductionFactor ) );
 					}
 					catch ( Exception ex ) when ( ex is not OperationCanceledException )
-					{						
+					{			
+						currentStatus.Report( $"Running calculations ({Interlocked.Increment( ref errorCount )} errors occurred)..." );
+
 						if ( ex is CalcEngineProcessingException && Interlocked.Increment( ref errorCalcEnginesSaved ) < allowedErrorCalcEngines )
 						{
 							var errorCalcEngineFile = Path.Combine( Path.GetDirectoryName( ceBatchPath )!, $"{Path.GetFileNameWithoutExtension( ceBatchPath )}.Error.{profile.AuthId}{Path.GetExtension( ceBatchPath )}" );
@@ -155,7 +158,8 @@ class BatchManager
 			var settings = new XmlWriterSettings
 			{
 				Encoding = Encoding.UTF8,
-				Indent = Debugger.IsAttached
+				Indent = Debugger.IsAttached,
+				Async = true
 			};
 
 			using var xw = XmlWriter.Create( localBatchInfo.OutputFile, settings );
@@ -165,7 +169,7 @@ class BatchManager
 				xw.WriteStartElement( "xDataDefs" );
 				xw.WriteAttributeString( "TotalRows", processors.Sum( p => p.TotalCalculations - p.TotalErrors ).ToString() );
 
-				processors.First( p => p.IsUpdate ).UpdateConfiguration!.WriteTo( xw );
+				await processors.First( p => p.IsUpdate ).UpdateConfiguration!.WriteToAsync( xw, cancellationToken );
 				
 				foreach( var p in processors )
 				{
@@ -190,27 +194,15 @@ class BatchManager
 		{
 			using var sw = new StreamWriter( localBatchInfo.OutputFile );
 
-			if ( processors.Any( p => p.IsUpdate ) )
-			{
-				await sw.WriteLineAsync(
-					( localBatchInfo.ExportType == ExportFormatType.Csv ? new[] { "AuthID", "id" } : new[] { "AuthID" } )
-					.Concat( processors.FirstOrDefault( p => p.CsvHeaders != null )?.CsvHeaders ?? Enumerable.Empty<string>() )
-					.GetCsvLine()
-				);
+			await sw.WriteLineAsync(
+				( localBatchInfo.ExportType == ExportFormatType.Csv ? new[] { "AuthID", "id" } : new[] { "AuthID" } )
+				.Concat( processors.FirstOrDefault( p => p.CsvHeaders != null )?.CsvHeaders ?? Enumerable.Empty<string>() )
+				.GetCsvLine()
+			);
 
-				foreach( var p in processors )
-				{
-					await p.MoveResultsToAsync( sw, cancellationToken );
-				}
-			}
-			else
+			foreach( var p in processors )
 			{
-				await sw.WriteLineAsync( "AuthID,Response" );
-
-				foreach( var p in processors )
-				{
-					await p.MoveResultsToAsync( sw, cancellationToken );
-				}
+				await p.MoveResultsToAsync( sw, cancellationToken );
 			}
 		}
 	}

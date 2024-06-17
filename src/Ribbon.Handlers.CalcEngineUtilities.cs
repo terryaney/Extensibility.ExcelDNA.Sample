@@ -564,8 +564,10 @@ public partial class Ribbon
 			var processingConfig = GetWindowConfiguration( nameof( Processing ) );
 			var batchManager = new BatchCalculations.BatchManager( info, ceBatchPath, helpersBatchPath, serviceProvider, updatesJwtInfo );
 			
-			var errorFile = application.GetWorkbook( Path.GetFileName( batchManager.ErrorFile ) );
-			errorFile?.Close( false );
+			var batchFile = application.GetWorkbook( Path.GetFileName( batchManager.ErrorFile ) );
+			batchFile?.Close( false );
+			batchFile = application.GetWorkbook( Path.GetFileName( info.OutputFile ) );
+			batchFile?.Close( false );
 
 			using var processing = new Processing( "Local Batch Calculation", batchManager.ProgressMax, processingConfig );
 
