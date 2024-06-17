@@ -6,6 +6,7 @@ using System.Xml;
 using System.Xml.Linq;
 using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
+using KAT.Camelot.Abstractions.RBLe;
 using KAT.Camelot.Abstractions.RBLe.Calculations;
 using KAT.Camelot.Data.Repositories;
 using KAT.Camelot.Domain.Extensions;
@@ -65,7 +66,7 @@ public partial class Ribbon
 
 					RunRibbonTask( async () =>
 					{
-						(string AuthId, Dictionary<string, string> Profile, Dictionary<string, JsonArray> History)? data = null;
+						(string AuthId, RBLePayload PayLoad)? data = null;
 						ApiValidation[]? validations = null;
 
 						if ( string.IsNullOrEmpty( info.DataSourceFile ) )
@@ -90,12 +91,12 @@ public partial class Ribbon
 										).ToJsonArray()
 									);
 
-								data = (response.Response!.AuthId, response.Response!.Profile, history);
+								data = (response.Response!.AuthId, new () { Profile = response.Response!.Profile, History = history });
 							}
 						}
 						else
 						{
-							data = await GetInputDataAsync( info, cts.Token );
+							data = await GetRBLePayloadAsync( info, cts.Token );
 						}
 
 						if ( validations != null || data == null )
@@ -164,11 +165,7 @@ public partial class Ribbon
 										CalcEngines = Array.Empty<RequestCalcEngine>(),
 										TraceEnabled = true
 									},
-									Payload = new()
-									{
-										Profile = data.Value.Profile,
-										History = data.Value.History
-									},
+									Payload = data.Value.PayLoad,
 									LookupTables = GetLookupTables( info, globalLookupsConfiguration )
 								};
 
@@ -285,31 +282,17 @@ public partial class Ribbon
 		return lookups;
 	}
 
-	private static async Task<(string AuthId, Dictionary<string, string> Profile, Dictionary<string, JsonArray> History)?> GetInputDataAsync( LoadInputTabInfo info, CancellationToken cancellationToken )
+	private static async Task<(string AuthId, RBLePayload Payload)?> GetRBLePayloadAsync( LoadInputTabInfo info, CancellationToken cancellationToken )
 	{
 		var dateAttribute = XmlConvert.ToString( DateTime.Now, XmlDateTimeSerializationMode.Local );
 		var authorAttribute = AddIn.Settings.KatUserName?.Split( '@' ).First() ?? "LOCAL.DEBUG";
 
 		if ( string.Compare( Path.GetExtension( info.DataSourceFile ), ".json", true ) == 0 )
 		{
-			static (string AuthId, Dictionary<string, string> Profile, Dictionary<string, JsonArray> History) getInputData( JsonObject json, string dateAttribute, string authorAttribute )
-			{
-				var profile =
-					( json[ "profile" ] as JsonObject )!.ToDictionary( p => p.Key, p => p.Value?.ToString() );
-				var history =
-					( json[ "history" ] as JsonObject )!
-						.ToDictionary(
-							p => p.Key,
-							p => ( p.Value as JsonArray )!
-						);
-
-				return ((string)json[ "@authId" ]!, profile, history)!;
-			}
-
 			if ( info.DataSource == LoadInputTab.LocalProfileFile )
 			{
 				var json = ( JsonNode.Parse( await File.ReadAllTextAsync( info.DataSourceFile!, cancellationToken: cancellationToken ) ) as JsonObject )!;
-				return getInputData( json, dateAttribute, authorAttribute );
+				return GetRBLePayload( json /*, dateAttribute, authorAttribute */ );
 			}
 			else
 			{
@@ -319,47 +302,61 @@ public partial class Ribbon
 				{
 					if ( (string?)json![ "@authId" ] == info.AuthId )
 					{
-						return getInputData( json, dateAttribute, authorAttribute );
+						return GetRBLePayload( json /*, dateAttribute, authorAttribute */ );
 					}
 				}
 			}
 		}
 		else
 		{
-			static (string AuthId, Dictionary<string, string> Profile, Dictionary<string, JsonArray> History)? getInputData( XElement? xml, string dateAttribute, string authorAttribute )
-			{
-				if ( xml == null ) return null;
-
-				var profile = xml.Profile().Elements().ToDictionary( e => e.Name.LocalName, e => (string)e );
-				var history = 
-					xml.HistoryItems().GroupBy( h => h.hisType() )
-						.ToDictionary(
-							g => g.Key,
-							g => g.Select( h => 
-								new JsonObject()
-									.AddProperties( 
-										h.Elements()
-											.Select( e => new JsonKeyProperty( e.Name.LocalName, (string)e ) ) 
-									)
-							).ToJsonArray()
-						);
-
-				return ((string)xml.xDataDef().Attribute( "id-auth" )!, profile, history)!;
-			}
-
 			if ( info.DataSource == LoadInputTab.LocalProfileFile )
 			{
 				var xml = XElement.Load( info.DataSourceFile! );
-				return getInputData( xml, dateAttribute, authorAttribute );
+				return GetRBLePayload( xml /*, dateAttribute, authorAttribute */ );
 			}
 			else
 			{
 				using var reader = new xDataDefReader( info.DataSourceFile! );
-				return getInputData( reader.FindAuthId( info.AuthId! ), dateAttribute, authorAttribute );
+				return GetRBLePayload( reader.FindAuthId( info.AuthId! ) /*, dateAttribute, authorAttribute */ );
 			}
 		}
 
 		return null;
+	}
+
+	public static (string AuthId, RBLePayload Payload) GetRBLePayload( JsonObject json /*, string dateAttribute, string authorAttribute */ )
+	{
+		var profile =
+			( json[ "profile" ] as JsonObject )!.ToDictionary( p => p.Key, p => p.Value?.ToString() );
+		var history =
+			( json[ "history" ] as JsonObject )!
+				.ToDictionary(
+					p => p.Key,
+					p => ( p.Value as JsonArray )!
+				);
+
+		return ((string)json[ "@authId" ]!, new() { Profile = profile!, History = history });
+	}
+
+	public static (string AuthId, RBLePayload Payload)? GetRBLePayload( XElement? xml /*, string dateAttribute, string authorAttribute */ )
+	{
+		if ( xml == null ) return null;
+
+		var profile = xml.Profile().Elements().ToDictionary( e => e.Name.LocalName, e => (string)e );
+		var history = 
+			xml.HistoryItems().GroupBy( h => h.hisType() )
+				.ToDictionary(
+					g => g.Key,
+					g => g.Select( h => 
+						new JsonObject()
+							.AddProperties( 
+								h.Elements()
+									.Select( e => new JsonKeyProperty( e.Name.LocalName, (string)e ) ) 
+							)
+					).ToJsonArray()
+				);
+
+		return ((string)xml.xDataDef().Attribute( "id-auth" )!, new() { Profile = profile!, History = history })!;
 	}
 
 	public void CalcEngineUtilities_RunMacros( IRibbonControl _ )
@@ -564,16 +561,13 @@ public partial class Ribbon
 
 			// RunRibbonTask( async () =>
 			// {
-			var fileSize = new FileInfo( info.InputFile ).Length;
-			var reduction = 1;
-			while ( ( fileSize / reduction ) > int.MaxValue )
-			{
-				reduction *= 10;
-			}
-
 			var processingConfig = GetWindowConfiguration( nameof( Processing ) );
-			using var processing = new Processing( "Local Batch Calculation", info.InputRows ?? (int)( fileSize / reduction ), processingConfig );
-			var batchManager = new BatchCalculations.BatchManager( info, ceBatchPath, helpersBatchPath, reduction );
+			var batchManager = new BatchCalculations.BatchManager( info, ceBatchPath, helpersBatchPath, serviceProvider, updatesJwtInfo );
+			
+			var errorFile = application.GetWorkbook( Path.GetFileName( batchManager.ErrorFile ) );
+			errorFile?.Close( false );
+
+			using var processing = new Processing( "Local Batch Calculation", batchManager.ProgressMax, processingConfig );
 
 			var result = await processing.ProcessAsync( batchManager.RunBatchAsync );
 

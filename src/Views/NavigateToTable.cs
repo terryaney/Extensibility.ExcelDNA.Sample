@@ -16,6 +16,7 @@ internal partial class NavigateToTable : Form
 
 		availableTables.Nodes.AddRange(
 			tables
+				.OrderBy( t => t.Name )
 				.Select( t => new TreeNode
 				{
 					Name = t.Name,
@@ -33,7 +34,8 @@ internal partial class NavigateToTable : Form
 			n.Nodes.AddRange(
 				tables
 					.First( t => t.Name == n.Name )
-					.Columns.Select( c => new TreeNode
+					.Columns.OrderBy( c => c.Name )
+					.Select( c => new TreeNode
 					{
 						Name = c.Name,
 						Text = c.Name,

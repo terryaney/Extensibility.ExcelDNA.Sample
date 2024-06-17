@@ -57,8 +57,10 @@ public partial class Ribbon : ExcelRibbon
 
 	public static Ribbon CurrentRibbon { get; private set; } = null!;
 
+	private readonly ServiceProvider serviceProvider;
 	private readonly WorkbookState WorkbookState;
 	private readonly ApiService apiService;
+	private readonly JwtInfo updatesJwtInfo;
 	private readonly RBLe.Dna.DnaCalculationService dnaCalculationService;
 	private readonly IEmailService emailService = new FakeEmailService();
 	private readonly ITextService textService = new FakeTextService();
@@ -113,7 +115,7 @@ public partial class Ribbon : ExcelRibbon
 
 		services.Configure<TheKeepSettings>( theKeepSection );
 		
-		var serviceProvider = services.BuildServiceProvider();
+		serviceProvider = services.BuildServiceProvider();
 
 		var theKeepSettings = serviceProvider.GetRequiredService<IOptionsSnapshot<TheKeepSettings>>();
 		var logger = serviceProvider.GetRequiredService<ILogger<CalculationSourceContext>>();
@@ -128,8 +130,9 @@ public partial class Ribbon : ExcelRibbon
 
 		httpClientFactory = serviceProvider.GetRequiredService<IHttpClientFactory>();
 		apiService = new ApiService( httpClientFactory, xDSRepository );
+		updatesJwtInfo = theKeepSettings.Value.Jwt.RBLe;
 		dnaCalculationService = new RBLe.Dna.DnaCalculationService(
-			httpClientFactory, emailService, textService, theKeepSettings.Value.Jwt.RBLe, logger
+			httpClientFactory, emailService, textService, updatesJwtInfo, logger
 		);
 
 		var chartHelper = new ChartHelper( serviceProvider.GetRequiredService<IStringLocalizer<Infrastructure.ICamelotMarker>>() );
@@ -391,7 +394,7 @@ public partial class Ribbon : ExcelRibbon
 	}
 
 	private bool isSpreadsheetGearLicensed;
-	private IHttpClientFactory httpClientFactory;
+	private readonly IHttpClientFactory httpClientFactory;
 
 	private async Task<bool> EnsureSpreadsheetGearLicenseAsync()
 	{
