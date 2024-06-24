@@ -1,5 +1,4 @@
 ﻿using System.Text.Json.Nodes;
-using System.Windows.Forms;
 using KAT.Camelot.Domain.Extensions;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;

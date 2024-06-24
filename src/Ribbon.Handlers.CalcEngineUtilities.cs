@@ -11,11 +11,11 @@ using KAT.Camelot.Abstractions.RBLe.Calculations;
 using KAT.Camelot.Data.Repositories;
 using KAT.Camelot.Domain.Extensions;
 using KAT.Camelot.Domain.IO;
-using KAT.Camelot.Domain.Telemetry;
 using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 using KAT.Camelot.Extensibility.Excel.AddIn.RBLe.Dna;
 using KAT.Camelot.RBLe.Core;
 using KAT.Camelot.RBLe.Core.Calculations;
+using KAT.Camelot.Telemetry;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
@@ -226,6 +226,32 @@ public partial class Ribbon
 		}
 	}
 
+	private static XElement GetGlobalTablesXml( LookupsConfiguration? globalLookupsConfiguration )
+	{
+		static string getColumnName( string c, bool isDataTable ) => !isDataTable
+			? c
+			: c == "Key" ? "value" : c == "Text" ? "label" : c;
+
+		return
+			new XElement( "Tables",
+				globalLookupsConfiguration?.Tables.Select( t =>
+					new XElement( "Table",
+						new XElement( "TableName", t.Name ),
+						t.Rows.Cast<JsonObject>().Select( r =>
+							new XElement( "TableRow",
+								r.Select( p =>
+									new XElement( "ItemDef",
+										new XAttribute( "Name", getColumnName( p.Key, !t.IsRateTable ) ),
+										p.Value
+									)
+								)
+							)
+						)
+					)
+				)
+			);
+	}
+	
 	private static LookupTable[] GetLookupTables( LoadInputTabInfo info, LookupsConfiguration? globalLookupsConfiguration )
 	{
 		if ( !info.LoadLookupTables ) return Array.Empty<LookupTable>();
@@ -240,26 +266,7 @@ public partial class Ribbon
 			? XElement.Load( clientLookupPath )
 			: new XElement( "DataTableDefs" );
 
-		var globalTables =
-			new XElement( "Tables",
-				globalLookupsConfiguration?.Tables.Select( t =>
-					new XElement( "Table",
-						new XElement( "TableName", t.Name ),
-						t.Rows.Cast<JsonObject>().Select( r =>
-							new XElement( "TableRow",
-								r.Select( p =>
-									new XElement( "ItemDef",
-										new XAttribute( "Name", p.Key ),
-										p.Value
-									)
-								)
-							)
-						)
-					)
-				)
-			);
-
-		xDSRepository.MergeGlobalTables( clientLookups, globalTables );
+		xDSRepository.MergeGlobalTables( clientLookups, GetGlobalTablesXml( globalLookupsConfiguration ) );
 
 		var rblLookups = xDSRepository.MapGlobalTablesToRble( clientLookups.Elements( "DataTable" ) );
 
@@ -268,6 +275,7 @@ public partial class Ribbon
 				.Select( t => new LookupTable
 				{
 					Name = (string)t.Element( "TableName" )!,
+					IsRateTable = (bool?)t.Attribute( "isRateTable" ) ?? false,
 					Rows = new JsonArray
 					(
 						t.Elements( "TableRow" )
@@ -369,6 +377,19 @@ public partial class Ribbon
 			return;
 		}
 
+		// TODO: Supposedly this is not valid (using async) and as soon as an await is hit, it is possible
+		// that the main thread is no longer active and access to COM/C API could result in problems.
+		// https://groups.google.com/g/exceldna/c/XN6cwgYGtIs
+		// Currently, it is working but I probably haven't tested a macro that uses async.  Given items below,
+		// would have to see if a) function works and b) if Excel closes properly (especially if they aren't the
+		// last part of the macro...i.e. more 'CalcEngine access' is required after these calls)
+		/*
+			CreateDataUpdates, ApplyDataUpdates - both read a tab async, but not sure these macros are in use anywhere
+
+			Execute
+			ZelisApi - Does HttpClient request
+			SendEmail/SendText - both use async 'services'
+		*/
 		ExcelAsyncUtil.QueueAsMacro( async () =>
 		{
 			var diagnosticTraceLogger = new DiagnosticTraceLogger();

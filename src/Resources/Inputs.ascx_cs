@@ -1,0 +1,47 @@
+using BTR.Evolution.Core;
+using BTR.Evolution.MadHatter.Administration.Web.Controls;
+using System;
+using System.Linq;
+using System.Text.RegularExpressions;
+
+namespace Administration.Controls
+{
+	public partial class {ClassName} : {BaseClassName}, ICalculationView
+	{
+        public bool UseRBLe => {UseRBLe};
+		public bool ValidateCalculation()
+		{
+			var validations = new[]
+			{
+{InputValidationList}				new { ID = "This Validation Always returns false.  Makes code generation easier", Message = (string)null }
+			};
+
+			foreach ( var validation in validations.Where( v => !string.IsNullOrEmpty( v.Message ) ) )
+			{
+				HtmlHelper.AddErrorMessage( validation.ID, validation.Message );
+			}
+
+			return validations.Any( v => !string.IsNullOrEmpty( v.Message ) ) ? false : true;
+		}
+
+{InputValidationHelpers}
+		#region Web Form Designer generated code
+		override protected void OnInit( EventArgs e )
+		{
+			//
+			// CODEGEN: This call is required by the ASP.NET Web Form Designer.
+			//
+			InitializeComponent();
+			base.OnInit( e );
+		}
+
+		/// <summary>
+		///		Required method for Designer support - do not modify
+		///		the contents of this method with the code editor.
+		/// </summary>
+		private void InitializeComponent()
+		{
+		}
+		#endregion
+	}
+}

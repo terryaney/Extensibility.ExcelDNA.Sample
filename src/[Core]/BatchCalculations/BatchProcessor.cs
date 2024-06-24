@@ -9,6 +9,7 @@ using KAT.Camelot.Domain.Services;
 using KAT.Camelot.Domain.Telemetry;
 using KAT.Camelot.RBLe.Core.Calculations;
 using KAT.Camelot.RBLe.Core.Calculations.SpreadsheetGear;
+using KAT.Camelot.Telemetry;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 

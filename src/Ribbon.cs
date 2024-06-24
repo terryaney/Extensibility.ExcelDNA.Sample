@@ -25,9 +25,6 @@ using MSExcel = Microsoft.Office.Interop.Excel;
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 /*
-ConfigurationExporting_ExportWorkbook  - SpecSheet
-
-Review keyboard hotkeys of ribbon
 Figure out help markdown
 Search for all 'TODO' comments
 */
@@ -66,23 +63,33 @@ public partial class Ribbon : ExcelRibbon
 	private readonly IConfiguration secretsConfiguration;
 	private readonly ICalculationChartBuilder calculationChartBuilder;
 
+	internal static string ExtractStringResource( string resourceName )
+	{
+		var assembly = Assembly.GetExecutingAssembly();
+
+		using var stream = assembly.GetManifestResourceStream( $"KAT.Camelot.Extensibility.Excel.AddIn.Resources.{resourceName}" )!;
+		using var sr = new StreamReader( stream );
+		return sr.ReadToEnd();
+	}
+	internal static byte[] ExtractBinaryResource( string resourceName )
+	{
+		var assembly = Assembly.GetExecutingAssembly();
+
+		using var stream = assembly.GetManifestResourceStream( $"KAT.Camelot.Extensibility.Excel.AddIn.Resources.{resourceName}" )!;
+		using var ms = new MemoryStream();
+		stream.CopyTo( ms );
+		return ms.ToArray();
+	}
+
 	public Ribbon()
 	{
 		application = ( ExcelDnaUtil.Application as MSExcel.Application )!;
 
-		var assembly = Assembly.GetExecutingAssembly();
-
-		using var streamImage = assembly.GetManifestResourceStream( "KAT.Camelot.Extensibility.Excel.AddIn.Resources.ShowScriptBlockMark.png" )!;
-		using var ms = new MemoryStream();
-		streamImage.CopyTo( ms );
-		auditShowLogImage = ms.ToArray();
-
-		using var streamXml = assembly.GetManifestResourceStream( "KAT.Camelot.Extensibility.Excel.AddIn.Resources.Ribbon.xml" )!;
-		using var sr = new StreamReader( streamXml );
-		customUi = sr.ReadToEnd();
+		auditShowLogImage = ExtractBinaryResource( "ShowScriptBlockMark.png" );
+		customUi = ExtractStringResource( "Ribbon.xml" );
 
 		// Create service collection
-        var csPath = Environment.GetEnvironmentVariable( "CAMELOT_CONFIGURATION_PATH" ) ?? @"C:\BTR\GlobalConfiguration";
+		var csPath = Environment.GetEnvironmentVariable( "CAMELOT_CONFIGURATION_PATH" ) ?? @"C:\BTR\GlobalConfiguration";
         var csEnvironment = Environment.GetEnvironmentVariable( "CAMELOT_SECRETS_ENVIRONMENT" );
 
 		secretsConfiguration = new ConfigurationBuilder()

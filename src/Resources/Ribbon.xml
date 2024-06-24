@@ -10,7 +10,7 @@
 					<dynamicMenu id="katDataStoreDebugCalcEnginesMenu" keytip="F" label="Debug Files" imageMso="PageSettings" size="large" getContent="Ribbon_GetContent" invalidateContentOnDrop="true" getEnabled="Ribbon_GetEnabled"/>
 				</group>
 
-				<group id="groupNavigation" keytip="ss" label="Navigation" imageMso="WorkspaceHtmlProperties">
+				<group id="groupNavigation" keytip="nn" label="Navigation" imageMso="WorkspaceHtmlProperties">
 					<button id="navigationTable" keytip="T" screentip="Navigate to Spec/RBLe Table" label="Navigate to Table..." imageMso="FileServerLinkTables" onAction="Ribbon_OnAction" tag="Navigation_NavigateToTable" getEnabled="Ribbon_GetEnabled" size="large" />
 
 					<menu id="navigationExtrasMenu" keytip="V" label="Navigate To" imageMso="NavForward" size="large">
@@ -28,7 +28,7 @@
 					</menu>
 				</group>
 
-				<group id="groupCalcEngineUtilities" keytip="ll" label="CalcEngine Utilities" imageMso="FileCompatibilityChecker">
+				<group id="groupCalcEngineUtilities" keytip="uu" label="CalcEngine Utilities" imageMso="FileCompatibilityChecker">
 					<button id="calcEngineUtilitiesLoadData" keytip="D" label="Load Input Data..." imageMso="ImportMoreMenu" size="large" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_LoadInputTab" getEnabled="Ribbon_GetEnabled"/>
 					<button id="calcEngineUtilitiesRunMacros" keytip="R" label="Run Macros" imageMso="EventOnBeforeChange" size="large" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_RunMacros" getEnabled="Ribbon_GetEnabled"/>
 
@@ -49,13 +49,13 @@
 					</menu>
 				</group>
 
-				<group id="groupDataExporting" keytip="xx" label="xDS Data Exporting" imageMso="ExportXmlFile">
+				<group id="groupDataExporting" keytip="ee" label="xDS Data Exporting" imageMso="ExportXmlFile">
 					<button id="dataExportingxDS" keytip="X" label="Xml Data..." imageMso="ExportXmlFile" size="large" onAction="Ribbon_OnAction" tag="DataExporting_ExportXmlData" getEnabled="Ribbon_GetEnabled"/>
 					<button id="dataExportingJsonData" keytip="J" label="Json Data..." imageMso="CustomizeXSLTMenu" size="large" onAction="Ribbon_OnAction" tag="DataExporting_ExportJsonData" getEnabled="Ribbon_GetEnabled"/>
-					<button id="dataExportingMappedxDSData" keytip="M" label="Mapped Data..." imageMso="ExportBusinessDataCatalogModel" size="large" onAction="Ribbon_OnAction" tag="DataExporting_ExportMappedXmlData" getEnabled="Ribbon_GetEnabled"/>
+					<button id="dataExportingMappedxDSData" keytip="P" label="Mapped Data..." imageMso="ExportBusinessDataCatalogModel" size="large" onAction="Ribbon_OnAction" tag="DataExporting_ExportMappedXmlData" getEnabled="Ribbon_GetEnabled"/>
 				</group>
 
-				<group id="groupAudit" keytip="uu" label="Audit" imageMso="ErrorChecking">
+				<group id="groupAudit" keytip="aa" label="Audit" imageMso="ErrorChecking">
 					<button id="auditShowDependencies" keytip="S" screentip="Show Dependencies for Current Selection" label="Show Dependencies" imageMso="TraceDependentCells" onAction="Ribbon_OnAction" tag="Audit_ShowDependencies" getEnabled="Ribbon_GetEnabled" />
 					<button id="auditHideDependencies" keytip="I" screentip="Hide Dependencies for Current Selection" label="Hide Dependencies" imageMso="TraceDependentRemoveArrows" onAction="Ribbon_OnAction" tag="Audit_HideDependencies" getEnabled="Ribbon_GetEnabled" />
 
@@ -67,7 +67,7 @@
 					</menu>
 				</group>
 
-				<group id="groupKat" label="KAT">
+				<group id="groupKat" keytip="kk" label="KAT">
 					<button id="katEmailBlast" keytip="B" label="Email Blast Utility" imageMso="EmailMergeWizard" onAction="Ribbon_OnAction" getEnabled="Ribbon_GetEnabled" tag="Kat_BlastEmail" size="large"/>
 					<button id="katShowDiagnosticLog" keytip="L" screentip="Show Diagnostics Log" label="Show Log" getImage="Ribbon_GetImage" onAction="Ribbon_OnAction" tag="Kat_ShowLog" size="large" />
 					<button id="katRefreshRibbon" label="Refresh Ribbon" imageMso="Refresh" size="large" onAction="Ribbon_OnAction" tag="Kat_RefreshRibbon" />
@@ -77,7 +77,7 @@
 					</menu>
 				</group>
 
-				<group id="groupConfigurationExporting" keytip="ss" label="Configuration Exporting" imageMso="WorkspaceHtmlProperties" getVisible="Ribbon_GetVisible">
+				<group id="groupConfigurationExporting" keytip="cc" label="Configuration Exporting" imageMso="WorkspaceHtmlProperties" getVisible="Ribbon_GetVisible">
 					<button id="configurationExportingWorkbook" keytip="E" label="Export Configurations" imageMso="WorkspaceHtmlProperties" size="normal" onAction="Ribbon_OnAction" tag="ConfigurationExporting_ExportWorkbook" getEnabled="Ribbon_GetEnabled"/>
 					<button id="configurationExportingGlobalTables" keytip="G" label="Process Global Tables" imageMso="ExportMoreMenu" size="normal" onAction="Ribbon_OnAction" tag="ConfigurationExporting_ProcessGlobalTables" getVisible="Ribbon_GetVisible" getEnabled="Ribbon_GetEnabled"/>
 					<button id="configurationExportingSheet" keytip="U" label="Export Current Sheet" imageMso="DefinePrintStyles" size="normal" onAction="Ribbon_OnAction" tag="ConfigurationExporting_ExportSheet" getEnabled="Ribbon_GetEnabled"/>

@@ -145,6 +145,11 @@ public partial class Ribbon
 
 	private void Application_SheetActivate( object sheet )
 	{
+		if ( skipWorkbookActivateEvents )
+		{
+			return;
+		}
+
 		WorkbookState.UpdateSheet( ( application.ActiveWorkbook.ActiveSheet as MSExcel.Worksheet )! );
 		ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnSheetChange );
 

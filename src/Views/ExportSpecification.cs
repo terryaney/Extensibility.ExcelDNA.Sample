@@ -47,7 +47,7 @@ internal partial class ExportSpecification : Form
 
 	public ExportSpecificationInfo? GetInfo( NativeWindow? owner = null )
 	{
-		locations.Select();
+		ok.Select();
 
 		var dialogResult = ShowDialog( owner );
 
@@ -127,33 +127,32 @@ internal partial class ExportSpecification : Form
 	private void AddLocation_Click( object sender, EventArgs e )
 	{
 		var specProjectFolder = new DirectoryInfo( Path.GetDirectoryName( saveSpecificationLocation )! ).Parent!.FullName;
-		var defaultFileName = Path.Combine( specProjectFolder, "Xml", "Configuration.Xml" );
+		var defaultFileName = Path.Combine( specProjectFolder, "Xml" );
 
 		if ( locations.Items.Cast<string>().FirstOrDefault( l => string.Compare( l, defaultFileName, true ) == 0 ) != null )
 		{
 			defaultFileName = null;
 		}
 
-		var saveDialog = new SaveFileDialog()
+		var openDialog = new FolderBrowserDialog()
 		{
-			Filter = "Xml Files|*.xml",
-			Title = "Save Xml Configuration",
-			OverwritePrompt = true,
-			FileName = defaultFileName,
-			RestoreDirectory = true,
-			InitialDirectory = !string.IsNullOrEmpty( defaultFileName ) ? Path.GetDirectoryName( defaultFileName ) : null
+			AutoUpgradeEnabled = true,
+			Description = "Select Export Location",
+			UseDescriptionForTitle = true,
+			ShowNewFolderButton = true,
+			InitialDirectory = defaultFileName ?? ""
 		};
 
-		if ( saveDialog.ShowDialog() == DialogResult.OK )
+		if ( openDialog.ShowDialog() == DialogResult.OK )
 		{
-			var item = locations.Items.Cast<string>().FirstOrDefault( l => string.Compare( l, saveDialog.FileName, true ) == 0 );
+			var item = locations.Items.Cast<string>().FirstOrDefault( l => string.Compare( l, openDialog.SelectedPath, true ) == 0 );
 			if ( item != null )
 			{
 				locations.SetItemChecked( locations.Items.IndexOf( item ), true );
 			}
 			else
 			{
-				locations.Items.Add( saveDialog.FileName! );
+				locations.Items.Add( openDialog.SelectedPath );
 				locations.SetItemChecked( locations.Items.Count - 1, true );
 			}
 		}

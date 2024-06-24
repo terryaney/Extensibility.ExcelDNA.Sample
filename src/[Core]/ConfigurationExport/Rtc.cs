@@ -4,15 +4,13 @@ using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 using KAT.Camelot.RBLe.Core.Calculations;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
-namespace KAT.Camelot.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn.ConfigurationExport;
 
-public partial class Ribbon
+class Rtc
 {
-	private void ExportRtcData()
+	public void Export( IEnumerable<MSExcel.Worksheet> sheets )
 	{
-		var workbook = application.ActiveWorkbook!;
 		var fileName = @"C:\BTR\Camelot.Old\Websites\Personal\RTC\rtcsettings.json";
-		var sheets = workbook.Sheets.Cast<MSExcel.Worksheet>();
 
 		var clubInfo = sheets.First( s => s.Name == "Club Info" );
 		var indoorStartDate = clubInfo.Range[ "B1" ].GetText();

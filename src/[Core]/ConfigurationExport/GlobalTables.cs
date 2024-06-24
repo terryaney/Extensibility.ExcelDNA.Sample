@@ -1,12 +1,12 @@
-﻿using MSExcel = Microsoft.Office.Interop.Excel;
-using ExcelDna.Integration;
+﻿using System.Globalization;
 using System.Text.Json.Nodes;
-using KAT.Camelot.RBLe.Core.Calculations;
+using ExcelDna.Integration;
 using KAT.Camelot.Domain.Extensions;
-using System.Globalization;
 using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
+using KAT.Camelot.RBLe.Core.Calculations;
+using MSExcel = Microsoft.Office.Interop.Excel;
 
-namespace KAT.Camelot.Extensibility.Excel.AddIn;
+namespace KAT.Camelot.Extensibility.Excel.AddIn.ConfigurationExport;
 
 enum LookupConfigurationType
 {
@@ -16,100 +16,44 @@ enum LookupConfigurationType
 	GlobalTables
 }
 
-public partial class Ribbon
+class GlobalTables
 {
-	private void ExportGlobalTables( string? downloadName = null, bool currentSheet = false )
+	public static JsonObject Export( MSExcel.Worksheet[] sheets )
 	{
-		var owner = new NativeWindow();
-		owner.AssignHandle( new IntPtr( application.Hwnd ) );
+		var globalSpecifications = new JsonObject();
 
-		RunRibbonTask( async () =>
+		if ( sheets.Length == 1 )
 		{
-			using var processGlobalTables = new ProcessGlobalTables( 
-				currentSheet,
-				AddIn.Settings.DataServices,
-				GetWindowConfiguration( nameof( ProcessGlobalTables ) )				
-			);
+			var propertyName = sheets[ 0 ].RangeOrNull<string>( Constants.SpecSheet.RangeNames.SheetType ) == Constants.SpecSheet.SheetTypes.GlobalLookupTables
+				? "dataTables"
+				: "rateTable";
 
-			var info = processGlobalTables.GetInfo( 
-				AddIn.Settings.KatUserName, 
-				await AddIn.Settings.GetClearPasswordAsync(),
-				owner
-			);
-
-			if ( info == null ) return;
-
-			ExcelAsyncUtil.QueueAsMacro( () => application.Cursor = MSExcel.XlMousePointer.xlWait );
-
-			SaveWindowConfiguration( nameof( ProcessGlobalTables ), info.WindowConfiguration );
-			
-			await UpdateAddInCredentialsAsync( info.UserName, info.Password );
-
-			await DownloadLatestCalcEngineAsync( downloadName );
-
-			SetStatusBar( "Processing Global Tables..." );
-
-			ExcelAsyncUtil.QueueAsMacro( () =>
+			globalSpecifications[ propertyName ] = GetGlobalTables( sheets[ 0 ] );
+		}
+		else
+		{
+			foreach( var sheet in sheets )
 			{
-				application.Cursor = MSExcel.XlMousePointer.xlWait;
-				var existing = currentSheet ? application.ActiveWorkbook : application.GetWorkbook( Constants.FileNames.GlobalTables )!;
+				var propertyName = sheet.Name == Constants.SpecSheet.TabNames.DataLookupTables
+					? "dataTables"
+					: "rateTables";
+				globalSpecifications[ propertyName ] = GetGlobalTables( sheet );
+			}
+		}
 
-				var sheets = existing.Worksheets.Cast<MSExcel.Worksheet>().ToDictionary( x => x.Name );
-				var resourceTable = sheets.TryGetValue( Constants.SpecSheet.TabNames.Localization, out var l )
-					? l.RangeOrNull( Constants.SpecSheet.RangeNames.ResourceTable )
-					: null;
+		return globalSpecifications;
+	}
 
-				var globalSpecifications = new JsonObject();
+	private static JsonObject GetGlobalTables( MSExcel.Worksheet worksheet )
+	{
+		var tables = GetGlobalLookupTables( worksheet ).ToJsonArray();
+		var version = worksheet.RangeOrNull<string>( Constants.SpecSheet.RangeNames.SheetVersion );
 
-				static JsonObject getGlobalTables( MSExcel.Worksheet worksheet )
-				{
-					var tables = GetGlobalLookupTables( worksheet ).ToJsonArray();
-					var version = worksheet.RangeOrNull<string>( Constants.SpecSheet.RangeNames.SheetVersion );
-
-					return new JsonObject
-					{
-						{ "version", version },
-						{ "tables", tables }
-					};
-				}
-
-				if ( currentSheet )
-				{
-					var worksheet = application.ActiveWorksheet();
-					
-					var propertyName = worksheet.RangeOrNull<string>( Constants.SpecSheet.RangeNames.SheetType ) == Constants.SpecSheet.SheetTypes.GlobalLookupTables
-						? "dataTables"
-						: "rateTable";
-
-					globalSpecifications[ propertyName ] = getGlobalTables( worksheet );
-				}
-				else
-				{
-					globalSpecifications[ "dataTables" ] = getGlobalTables( sheets[ Constants.SpecSheet.TabNames.DataLookupTables ] );
-					globalSpecifications[ "rateTables" ] = getGlobalTables( sheets[ Constants.SpecSheet.TabNames.RateTables ] );
-				}
-
-				RunRibbonTask( async () => {
-					var validations = await apiService.UpdateGlobalTablesAsync( info.ClientName, info.Targets, globalSpecifications, info.UserName, info.Password );
-
-					if ( validations != null )
-					{
-						ShowValidations( validations );
-						return;
-					}
-
-					ExcelAsyncUtil.QueueAsMacro( () =>
-					{
-						MessageBox.Show( owner, $"Successfully updated Global Tables on following environments.{Environment.NewLine + Environment.NewLine + string.Join( ", ", info.Targets )}", "Update Global Tables" );
-						
-						if ( downloadName != null )
-						{
-							existing.Close( SaveChanges: false );
-						}
-					} );
-				}, "ExportGlobalTables (Processing)" );
-			} );
-		} );
+		return new JsonObject
+		{
+			{ "version", version },
+			{ "tables", tables }
+		};
 	}
 
 	private static IEnumerable<JsonObject> GetGlobalLookupTables( MSExcel.Worksheet worksheet )
