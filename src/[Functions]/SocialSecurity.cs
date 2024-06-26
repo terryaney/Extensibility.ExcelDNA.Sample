@@ -30,8 +30,7 @@ public static class DnaSocialSecurity
 		return SocialSecurity.NormalRetirementDate( dateBirth, simplifiedResults );
 	}
 
-	[DebugFunction]
-	[ExcelFunction( Category = "Financial", Description = "A replacement function for the Cfgena.xla!SSExactPays() function using a single current pay value.  Returns a decimal value representing the age 65 Social Security monthly benefit using exact pays." )]
+	[KatExcelFunction( CreateDebugFunction = true, Category = "Financial", Description = "A replacement function for the Cfgena.xla!SSExactPays() function using a single current pay value.  Returns a decimal value representing the age 65 Social Security monthly benefit using exact pays." )]
 	public static double BTRSSPIA( 
 		[ExcelArgument( "The member's date of birth." )]
 		DateTime dateBirth,

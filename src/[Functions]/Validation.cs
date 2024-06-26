@@ -6,7 +6,7 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn.Functions;
 
 public static class DnaValidation
 {
-	[ExcelFunctionDoc(
+	[KatExcelFunction(
 		Category = "Validation",
 		Description = "Returns whether the provided input is a valid US banking routing number.",
 		Remarks = "<p>The logic for this method was created by following <a href=\"http://www.wikihow.com/Calculate-the-Check-Digit-of-a-Routing-Number-from-an-Illegible-Check\">this routine</a>.</p>"
@@ -26,7 +26,7 @@ public static class DnaValidation
 	) => Validation.ValidateRegEx( value, pattern );
 	
 
-	[ExcelFunctionDoc( 
+	[KatExcelFunction( 
 		Category = "Validation", 
 		Description = "Validates and converts the input string representation of a date and time, supporting culture specific formats, to its Date equivalent.  Throws an exception if not a valid date.",
 		Remarks = "<exception cref=\"ArgumentOutOfRangeException\"><paramref name=\"value\"/> does not contain a valid string representation of a date and time.</exception>"
@@ -34,11 +34,11 @@ public static class DnaValidation
 	public static object BTRParseDate(
 		[ExcelArgument( "A string that contains a date and time to convert." )]
 		string value,
-		[ExcelArgument( "An string that supplies culture-specific format information about 'value'." )]
+		[ExcelArgument( "A string that supplies culture-specific format information about 'value'." )]
 		object? culture = null,
-		[ExcelArgument( "An | delimitted string that supplies a list of allowable formats to attempt to parse 'value'." )]
+		[ExcelArgument( "A | delimitted string that supplies a list of allowable formats to attempt to parse 'value'." )]
 		string? allowedFormats = null,
-		[ExcelArgument( "An , delimitted string that supplies a list of allowable dates to validate against in the format of 1..N, Last, Mon-Sun, Mon-Sun.[N|Last] (Nth occurence of or last day in month), or W1-W5 (first through the fifth week of month).  If the 'pattern' starts with '!' it is a 'not' check." )]
+		[ExcelArgument( "A , delimitted string of allowable dates to validate in the format of 1..N, Last, Mon-Sun, Mon-Sun.[N|Last] (Nth occurence of or last day in month), or W1-W5 (first through the fifth week of month).  If the 'pattern' starts with '!' it is a 'not' check." )]
 		string? validDates = null )
 	{
 		var cultureArg = culture.Check( nameof( culture ), "en-US" );
@@ -61,11 +61,11 @@ public static class DnaValidation
 		DateTime minimum,
 		[ExcelArgument( "A DateTime representing the minimum value allowed if 'value' is a date." )]
 		DateTime maximum,
-		[ExcelArgument( "An string that supplies culture-specific format information about 'value'." )]
+		[ExcelArgument( "A string that supplies culture-specific format information about 'value'." )]
 		object? culture = null,
-		[ExcelArgument( "An | delimitted string that supplies a list of allowable formats to attempt to parse 'value'." )]
+		[ExcelArgument( "A | delimitted string that supplies a list of allowable formats to attempt to parse 'value'." )]
 		string? allowedFormats = null,
-		[ExcelArgument( "An , delimitted string that supplies a list of allowable dates to validate against in the format of 1..N, Last, Mon-Sun, Mon-Sun.[N|Last] (Nth occurence of or last day in month), or W1-W5 (first through the fifth week of month).  If the 'pattern' starts with '!' it is a 'not' check." )]
+		[ExcelArgument( "A , delimitted string of allowable dates to validate in the format of 1..N, Last, Mon-Sun, Mon-Sun.[N|Last] (Nth occurence of or last day in month), or W1-W5 (first through the fifth week of month).  If the 'pattern' starts with '!' it is a 'not' check." )]
 		string? validDates = null )
 	{
 		try
@@ -92,7 +92,7 @@ public static class DnaValidation
 		}
 	}
 
-	[ExcelFunctionDoc( 
+	[KatExcelFunction( 
 		Category = "Validation", 
 		Description = "Validates and converts the input string representation of an age/date, supporting culture specific formats, to its Date equivalent.  Throws an exception if not a valid age/date.",
 		Remarks = "<exception cref=\"ArgumentOutOfRangeException\"><paramref name=\"value\"/> does not contain a valid string representation of a date and time.</exception>"
@@ -164,7 +164,7 @@ public static class DnaValidation
 		}
 	}
 
-	[ExcelFunctionDoc( 
+	[KatExcelFunction( 
 		Category = "Validation", 
 		Description = "Validates and converts the input string representation of a number to its integer (no decimals) equivalent.",
 		Remarks = "<exception cref=\"ArgumentOutOfRangeException\"><paramref name=\"value\"/> does not contain a valid string representation of an integer (whole number).</exception>"
@@ -208,7 +208,7 @@ public static class DnaValidation
 		}
 	}
 
-	[ExcelFunctionDoc( 
+	[KatExcelFunction( 
 		Category = "Validation", 
 		Description = "Validates and converts the input string representation of a number to its decimal equivalent.",
 		Remarks = "<exception cref=\"ArgumentOutOfRangeException\"><paramref name=\"value\"/> does not contain a valid string representation of a decimal number.</exception>"

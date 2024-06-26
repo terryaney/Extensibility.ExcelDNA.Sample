@@ -34,13 +34,13 @@ public static class DnaUtility
 		Description = "Returns a filtered table given a list of filter columns and values to compare." 
 	)]
 	public static object[,] BTRFilter(
-		[ExcelArgument( Description = "Range of cells to filter." )]
+		[ExcelArgument( "Range of cells to filter." )]
 		object[,] table,
-		[ExcelArgument( Description = "Comma delimitted list of column names that should be included in returned range." )]
+		[ExcelArgument( "Comma delimitted list of column names that should be included in returned range." )]
 		string returnColumns,
-		[ExcelArgument( Description = "Optional.  Whether or not to include column headers in result table. Default is true." )]
+		[ExcelArgument( "Optional.  Whether or not to include column headers in result table. Default is true." )]
 		object? includeHeadersInResults = null,
-		[ExcelArgument( Description = "Paired expressions.  First item is column name to search, second item is value to filter." )]
+		[ExcelArgument( "Paired expressions.  First item is column name to search, second item is value to filter." )]
 		params object[] expressions
 	)
 	{
@@ -96,11 +96,15 @@ public static class DnaUtility
 	[ExcelFunction( Category = "General Utility Helpers", Description = "Returns a EBCDIC, extended binary-coded decimal interchange code, encoded string." )]
 	public static string BTREbcdicText( string value, int padLength ) => Utility.GetEbcdicText( value, padLength );
 
-	[ExcelFunction( Category = "General Utility Helpers", Description = "Returns the value (or fallback is not found) from columnToReturn column in a table range (including column headers).  Similar to VLOOKUP but always does exact match, uses column names instead of numbers (prevents issues when columns are inserted or removed), can search specified column instead of always the first, and provides ability to give a default." )]
+	[KatExcelFunction( 
+		Category = "General Utility Helpers", 
+		Description = "Returns the value (or fallback is not found) from columnToReturn column in a table range (including column headers).  Similar to VLOOKUP, but finds exact match, searches specified column versus always the first, and allows for a default.",
+		Summary = "Returns the value (or fallback is not found) from columnToReturn column in a table range (including column headers).  Similar to VLOOKUP but always finds exact match, uses column names instead of numbers (prevents issues when columns are inserted or removed), can search specified column instead of always the first, and provides ability to give a default."
+	)]
 	public static object BTRLookup(
 		[ExcelArgument( "Value to search for." )]
 		object[,] values,
-		[ExcelArgument( Description = "Range of cells to search (first row must be column headers)." )]
+		[ExcelArgument( "Range of cells to search (first row must be column headers)." )]
 		object[,] table,
 		[ExcelArgument( "Optional. Column name containing return value. Last column is default" )]
 		object? columnToReturn = null,
@@ -127,11 +131,15 @@ public static class DnaUtility
 		return isArrayFunction ? returnValues : returnValues[ 0, 0 ]!;
 	}
 
-	[ExcelFunction( Category = "General Utility Helpers", Description = "Concatenates all values (or fallback is not found) from columnToReturn column in a table range (including column headers), using the specified separator between elements.  Similar to VLOOKUP but always does exact match, uses column names instead of numbers (prevents issues when columns are inserted or removed), can search specified column instead of always the first, and provides ability to give a default." )]
+	[KatExcelFunction( 
+		Category = "General Utility Helpers", 
+		Description = "Concatenates all values from columnToReturn in a table with separator between values.  Similar to VLOOKUP but finds exact match, uses column names versus numbers, searches column versus always the first, and provides ability far a default.",
+		Summary = "Concatenates all values (or fallback is not found) from columnToReturn column in a table range (including column headers), using the specified separator between elements.  Similar to VLOOKUP but always does exact match, uses column names instead of numbers (prevents issues when columns are inserted or removed), can search specified column instead of always the first, and provides ability to give a default."
+	)]
 	public static string BTRJoinLookup(
 		[ExcelArgument( "Comma delimitted list of values to search for." )]
 		string values,
-		[ExcelArgument( Description = "Range of cells to search (first row must be column headers)." )]
+		[ExcelArgument( "Range of cells to search (first row must be column headers)." )]
 		object[,] table,
 		[ExcelArgument( "Optional. Column name containing return value. Last column is default" )]
 		object? columnToReturn = null,
@@ -159,7 +167,7 @@ public static class DnaUtility
 	public static object BTREvaluate(
 		[ExcelArgument( "Formula to evaluate with optional {K.id} tokens." )]
 		string formula,
-		[ExcelArgument( Description = "Range of cells to search (first row must be column headers)." )]
+		[ExcelArgument( "Range of cells to search (first row must be column headers)." )]
 		object[,] table,
 		[ExcelArgument( "Optional. Column name containing return value. Last column is default" )]
 		object? columnToReturn = null,

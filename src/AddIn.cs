@@ -1,4 +1,6 @@
-﻿using ExcelDna.Integration;
+﻿using System.Linq.Expressions;
+using System.Reflection;
+using ExcelDna.Integration;
 using ExcelDna.Registration;
 using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
 using Microsoft.Extensions.Configuration;
@@ -92,6 +94,83 @@ public class AddIn : IExcelAddIn
 			.Select( UpdateHelpTopic )
 			.ProcessParamsRegistrations()
 			.RegisterFunctions();
+
+		var exportedAssemblies = ExcelIntegration.GetExportedAssemblies();
+
+		var debugFunctions = exportedAssemblies
+			.SelectMany( a => a.GetTypes() )
+			.SelectMany( t => t.GetMethods() )
+			.Where( m => m.GetCustomAttribute<KatExcelFunctionAttribute>()?.CreateDebugFunction ?? false )
+			.ToList();
+
+		var functionDelegates = 
+			debugFunctions
+				.Select( m => 
+				{
+					var parameters = m.GetParameters().Select( p => Expression.Parameter( p.ParameterType ) ).ToArray();
+
+					var call = Expression.Call( null /* static methods */, m, parameters );
+
+					var exceptionParameter = Expression.Parameter( typeof( Exception ), "ex" );
+
+					var body = Expression.TryCatch(
+						Expression.Convert( call, typeof( object ) ),
+						Expression.Catch( 
+							exceptionParameter, 
+							Expression.Convert(
+								Expression.Property( exceptionParameter, "Message" ),
+								typeof( object )
+							)
+						)
+					);
+					var lambda = Expression.Lambda( body, parameters ).Compile();
+
+					return lambda;
+				} )
+				.ToList();
+
+		var functionAttributes = 
+			debugFunctions
+				.Select( m =>
+				{
+					var excelFunction = m.GetCustomAttribute<KatExcelFunctionAttribute>()!;
+					return new ExcelFunctionAttribute
+					{
+						Name = $"{m.Name}Debug",
+						Description = $"Debug version of {m.Name} that returns value or exception string (instead of #VALUE), see description for {m.Name} for more information.",
+						Category = excelFunction.Category,
+						IsMacroType = excelFunction.IsMacroType
+					};
+				} )
+				.Cast<object>()
+				.ToList();
+
+		var paramAttributes = 
+			debugFunctions
+				.Select( m => {
+					return m.GetParameters()
+						.Select( p =>
+						{
+							var excelArg = p.GetCustomAttribute<ExcelArgumentAttribute>()!;
+							return new ExcelArgumentAttribute
+							{
+								Name = excelArg.Name ?? p.Name,
+								Description = excelArg.Description,
+								AllowReference = excelArg.AllowReference
+							};
+						} )
+						.Cast<object>()
+						.ToList();
+
+				} )
+				.Cast<List<object>>()
+				.ToList();
+
+		ExcelIntegration.RegisterDelegates(
+			functionDelegates,
+			functionAttributes,
+			paramAttributes
+		);
 	}
 
 	private static ExcelFunctionRegistration UpdateHelpTopic( ExcelFunctionRegistration funcReg )
@@ -99,17 +178,5 @@ public class AddIn : IExcelAddIn
 		// TODO: Ability to run markdown help files locally.
 		funcReg.FunctionAttribute.HelpTopic = "http://www.bing.com";
 		return funcReg;
-	}
-
-	private static object DebugFunction( Func<object> func )
-	{
-		try
-		{
-			return func();
-		}
-		catch ( Exception ex )
-		{
-			return ex.Message;
-		}
 	}
 }

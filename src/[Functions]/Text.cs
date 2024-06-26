@@ -144,7 +144,7 @@ public static class Text
 	/// <returns>The string after joining all <paramref name="values"/> with the <paramref name="seperator"/>.</returns>
 	[ExcelFunction( Category = "Formatting", Description = "Joins a range of text strings into one string using seperator." )]
 	public static string BTRJoin(
-		[ExcelArgument( Description = "The string values to join with last parameter being the separator." )]
+		[ExcelArgument( "The string values to join with last parameter being the separator." )]
 		params object[] argsAndSeparator
 	)
 	{
@@ -171,7 +171,7 @@ public static class Text
 		object? seperator = null,
 		[ExcelArgument( "Optional. Whether or not to ignore empty cells.  Default is true" )]
 		object? ignoreEmptyCells = null,
-		[ExcelArgument( Description = "1 to 252 text strings or ranges to be joined." )]
+		[ExcelArgument( "1 to 252 text strings or ranges to be joined." )]
 		params object[] ranges
 	)
 	{
@@ -196,12 +196,12 @@ public static class Text
 
 	[ExcelFunction( Category = "Formatting", Description = "Returns a list of unique values from a given input range.", IsMacroType = true )]
 	public static object[,] BTRUnique(
-		[ExcelArgument( Description = "Range of cells to find unique values contained." )]
+		[ExcelArgument( "Range of cells to find unique values contained." )]
 		object[,] values,
 		object? matchInputOutputSize = null,
 		[ExcelArgument( "Optional. Whether or not to ignore empty cells.  Default is true" )]
 		object? ignoreEmptyCells = null,
-		[ExcelArgument( Description = "1 to 252 ranges to merge." )]
+		[ExcelArgument( "1 to 252 ranges to merge." )]
 		params object[] ranges
 	)
 	{
@@ -280,7 +280,7 @@ public static class Text
 		else
 		{
 			var isArrayFunction = DnaApplication.IsArrayFormula;
-			var output = new object[ System.Math.Max( vals.Length, isArrayFunction ? 2 : 1 ), 1 ];
+			var output = new object[ Math.Max( vals.Length, isArrayFunction ? 2 : 1 ), 1 ];
 
 			for ( var i = 0; i < vals.Length; i++ )
 			{
@@ -316,7 +316,7 @@ public static class Text
 	public static string BTRResourceString(
 		[ExcelArgument( "The resource key indicating which string to return." )]
 		string key,
-		[ExcelArgument( Description = "Range of cells to search.  The first row must be column headers with first column of key and additional columns for each culture or culture-subculture containing the values." )]
+		[ExcelArgument( "Range of cells to search.  The first row must be column headers with first column of key and additional columns for each culture or culture-subculture containing the values." )]
 		object[,] resourceStrings,
 		[ExcelArgument( "Optional. The culture name to lookup.  If not provided, en-US is the default." )]
 		object? cultureName = null,

@@ -88,9 +88,6 @@ internal partial class Processing
 
     #endregion
     private System.Windows.Forms.Button cancel;
-	private System.Windows.Forms.Button ok;
-	private System.Windows.Forms.TextBox tPassword;
-	private System.Windows.Forms.Label lPassword;
 	private System.Windows.Forms.Label processingLabel;
     private ProgressBar progressBar;
 }

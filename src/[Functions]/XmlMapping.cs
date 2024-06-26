@@ -4,7 +4,10 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn.Functions;
 
 public static class XmlMapping
 {
-	[ExcelFunction( Category = "Xml Mapping", Description = "Returns the current ordinal position of the current mapping element being processed.  If 'scopeDepth' is passed, it is the current ordinal position of the ancestor mapping element determined by 'scopeDepth' levels.  Placeholder returning defaultValue in Excel." )]
+	[ExcelFunction( 
+		Category = "Xml Mapping", 
+		Description = "Returns the current ordinal position of the current element being processed.  If 'scopeDepth' is passed, it is the current ordinal position of the ancestor mapping element determined by 'scopeDepth' levels.  Placeholder returning defaultValue in Excel."
+	)]
 	public static int MapOrdinal( 
 		[ExcelArgument( "How many parent levels to walk back up to determine mapping scope.  Default value is one." )] object? scopeDepth = null,
 		[ExcelArgument( "Value to return to make coding specification formulas easier." )] object? defaultValue = null
