@@ -24,11 +24,6 @@ using MSExcel = Microsoft.Office.Interop.Excel;
 
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
-/*
-Figure out help markdown
-Search for all 'TODO' comments
-*/
-
 /// <summary>
 /// KAT Add-In ribbon implementation to support Excel ribbon functionality.
 /// 

@@ -39,9 +39,16 @@ public static class DnaSavings
 		int year,
 		[ExcelArgument( "Required.  Current fund allocations." )]
 		double[ , ] fundAllocations,
-		[ExcelArgument( AllowReference = true, Description = "Optional.  Entered fund allocations (this will override current or future allocations)." )]
+		[KatExcelArgument( 
+			AllowReference = true, 
+			Description = "Optional.  Entered fund allocations (this will override current or future allocations).",
+			Type = typeof( double[] )
+		)]
 		object? inputAllocations = null,
-		[ExcelArgument( "Optional.  If provided allocation will be changed 100% to that target fund." )]
+		[KatExcelArgument(
+			Description = "Optional.  If provided allocation will be changed 100% to that target fund.",
+			Type = typeof( string )
+		)]
 		object? fundIndex = null )
 	{
 		var inputAllocationsArg = inputAllocations as ExcelReference; //  OptionalValues.Check<double[ , ]>( inputAllocations, nameof( inputAllocations ), null );
@@ -84,9 +91,18 @@ public static class DnaSavings
 		int monthEnd,
 		[ExcelArgument( "Required. Investment rate of return." )]
 		double returnRate,
-		[KatExcelArgument( DisplayName = "startPayPeriod", Description = "Optional. Starting pay period. Default to 1." )]
+		[KatExcelArgument( 
+			DisplayName = "startPayPeriod", 
+			Description = "Optional. Starting pay period. Default to 1.",
+			Type = typeof( int ),
+			Default = "1"
+		)]
 		object? startPP = null,
-		[ExcelArgument( "Optional. Use mid point contributions timing calculation method." )]
+		[KatExcelArgument(
+			Description = "Optional. Use mid point contributions timing calculation method.",
+			Type = typeof( bool ),
+			Default = "false"
+		)]
 		object? midPointCont = null,
 		[ExcelArgument( "Optional. Rounding, Defaulted to 0 decimals" )]
 		int rounding = 0 )
@@ -100,7 +116,18 @@ public static class DnaSavings
 		CreateDebugFunction = true,
 		Category = "Financial",
 		Description = "DOC: Han, Cfgena replacement?  Returns 401k contributions/match.",
-		Remarks = "<p>Both 'matchParam' and 'contributionParam' are a | delimited list of periods.  Each period is in the form of <i>M:P:P:P</i> where M is number of months for this period, and each P is a tier of a , seperated pair of decimal values.</p><p>The 'matchType' and 'contributionType' determine how each tier of numbers are processed.  Each tier's value pairs are described below:</p><ul><li>CalculationMatchType.MultiplierBasedOnPercent - ContrbutionPercent, Multiplier</li><li>CalculationMatchType.MultiplierBasedOnDollars - ContributionDollars, Multiplier</li><li>CalculationMatchType.ERMatchPercentBasedOnPercent - EEContributionPercent, ERContributionPercent</li><li>CalculationMatchType.ERMatchDollarsBasedOnDollars - ContributionDollars, ERContributionDollars</li><li>CalculationContributionType.PercentBasedOnAge - Age, ContributionPercent</li><li>CalculationContributionType.PercentBasedOnService - Service, ContributionPercent</li><li>CalculationContributionType.PercentBasedOnAgePlusService - AgePlusService, ContributionPercent</li><li>CalculationContributionType.DollarsBasedOnAge - Age, ContributionDollars</li><li>CalculationContributionType.DollarsBasedOnService - Service, ContributionDollars</li><li>CalculationContributionType.DollarsBasedOnAgePlusService - AgePlusService, ContributionDollars</li></ul>"
+		Remarks = @"Both 'matchParam' and 'contributionParam' are a | delimited list of periods.  Each period is in the form of `M:P:P:P` where `M` is number of months for this period, and each `P` is a tier of a `,` seperated pair of decimal values.
+The `matchType` and `contributionType` determine how each tier of numbers are processed.  Each tier's value pairs are described below:
+1. `CalculationMatchType.MultiplierBasedOnPercent` - ContrbutionPercent, Multiplier
+1. CalculationMatchType.MultiplierBasedOnDollars` - ContributionDollars, Multiplier
+1. `CalculationMatchType.ERMatchPercentBasedOnPercent` - EEContributionPercent, ERContributionPercent
+1. `CalculationMatchType.ERMatchDollarsBasedOnDollars` - ContributionDollars, ERContributionDollars
+1. `CalculationContributionType.PercentBasedOnAge` - Age, ContributionPercent
+1. `CalculationContributionType.PercentBasedOnService` - Service, ContributionPercent
+1. `CalculationContributionType.PercentBasedOnAgePlusService` - AgePlusService, ContributionPercent
+1. `CalculationContributionType.DollarsBasedOnAge` - Age, ContributionDollars
+1. `CalculationContributionType.DollarsBasedOnService` - Service, ContributionDollars
+1. `CalculationContributionType.DollarsBasedOnAgePlusService` - AgePlusService, ContributionDollars"
 	)]
 	public static double[,] BTRGetContributions(
 		[KatExcelArgument( DisplayName = "matchType", Description = "Required.  The MatchType to use for calculations.  MultiplierBasedOnPercent = 1, MultiplierBasedOnDollars = 2, ERMatchPercentBasedOnPercent = 3, ERMatchDollarsBasedOnDollars = 4." )]
@@ -147,7 +174,12 @@ public static class DnaSavings
 		double aPt = 0d,
 		[KatExcelArgument( DisplayName = "afterTaxFlatPerPayPeriod", Description = "Optional.  Flat $ after-tax contribution amount per pay period." )]
 		double aF = 0d,
-		[KatExcelArgument( DisplayName = "startPayPeriod", Description = "Optional.  Starting Pay period.  Defaults to 1." )]
+		[KatExcelArgument( 
+			DisplayName = "startPayPeriod", 
+			Description = "Optional.  Starting Pay period.  Defaults to 1.",
+			Type = typeof( int ),
+			Default = "1"
+		)]
 		object? sPP = null,
 		[KatExcelArgument( DisplayName = "ytdPay", Description = "Optional.  YTD savings pay." )]
 		double yPy = 0d,
@@ -177,7 +209,12 @@ public static class DnaSavings
 		int mFr = 0,
 		[KatExcelArgument( DisplayName = "erContributionFrequency", Description = "Optional.  Frequency of ER Contribution in a year." )]
 		int erCFr = 0,
-		[KatExcelArgument( DisplayName = "preTaxRothPayIsLimited", Description = "Optional.  Employee Pretax/Roth & Catchup Contributions is based on limited pay." )]
+		[KatExcelArgument( 
+			DisplayName = "preTaxRothPayIsLimited", 
+			Description = "Optional.  Employee Pretax/Roth & Catchup Contributions is based on limited pay.",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? pRoPyL = null,
 		[KatExcelArgument( DisplayName = "midPointContribution", Description = "Optional.  Use mid point contributions timing calculation method." )]
 		bool midC = false,
@@ -201,7 +238,12 @@ public static class DnaSavings
 		bool toNQ = false,
 		[KatExcelArgument( DisplayName = "limitAfterTax", Description = "Optional.  Aftertax limit." )]
 		double lA = 0d,
-		[KatExcelArgument( DisplayName = "isOverflowToCatchUp", Description = "Optional.  Overflow from preTax to catchup." )]
+		[KatExcelArgument( 
+			DisplayName = "isOverflowToCatchUp", 
+			Description = "Optional.  Overflow from preTax to catchup.",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? toCU = null,
 		[KatExcelArgument( DisplayName = "preTaxCatchUpPercentage", Description = "Optional.  Pre-tax catchup contribution as a % of pay." )]
 		double pCUPt = 0d,
@@ -211,7 +253,12 @@ public static class DnaSavings
 		double roCUPt = 0d,
 		[KatExcelArgument( DisplayName = "rothCatchUpFlatPerPayPeriod", Description = "Optional.  Flat $ Roth catchup contribution amount per pay period." )]
 		double roCUF = 0d,
-		[KatExcelArgument( DisplayName = "matchPayIsLimited", Description = "Optional.  Employer match is based on limited pay." )]
+		[KatExcelArgument( 
+			DisplayName = "matchPayIsLimited", 
+			Description = "Optional.  Employer match is based on limited pay.",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? mPyL = null
 	)
 	{
@@ -282,7 +329,12 @@ public static class DnaSavings
 		double aPt = 0d,
 		[KatExcelArgument( DisplayName = "afterTaxFlatPerPayPeriod", Description = "Optional.  Flat $ after-tax contribution amount per pay period." )]
 		double aF = 0d,
-		[KatExcelArgument( DisplayName = "startPayPeriod", Description = "Optional.  Starting Pay period.  Defaults to 1." )]
+		[KatExcelArgument( 
+			DisplayName = "startPayPeriod", 
+			Description = "Optional.  Starting Pay period.  Defaults to 1.",
+			Type = typeof( int ),
+			Default = "1"
+		)]
 		object? sPP = null,
 		[KatExcelArgument( DisplayName = "ytdPay", Description = "Optional.  YTD savings pay." )]
 		double yPy = 0d,
@@ -304,7 +356,12 @@ public static class DnaSavings
 		bool retY = false,
 		[KatExcelArgument( DisplayName = "matchFrequency", Description = "Optional.  Frequency of match in a year." )]
 		int mFr = 0,
-		[KatExcelArgument( DisplayName = "preTaxRothPayIsLimited", Description = "Optional.  Employee Pretax/Roth & Catchup Contributions is based on limited pay." )]
+		[KatExcelArgument( 
+			DisplayName = "preTaxRothPayIsLimited", 
+			Description = "Optional.  Employee Pretax/Roth & Catchup Contributions is based on limited pay.",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? pRoPyL = null,
 		[KatExcelArgument( DisplayName = "midPointContribution", Description = "Optional.  Use mid point contributions timing calculation method." )]
 		bool midC = false,
@@ -328,7 +385,12 @@ public static class DnaSavings
 		bool toNQ = false,
 		[KatExcelArgument( DisplayName = "limitAfterTax", Description = "Optional.  Aftertax limit." )]
 		double lA = 0d,
-		[KatExcelArgument( DisplayName = "isOverFlowToCatchUp", Description = "Optional.  Overflow from preTax to catchup." )]
+		[KatExcelArgument( 
+			DisplayName = "isOverFlowToCatchUp", 
+			Description = "Optional.  Overflow from preTax to catchup.",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? toCU = null,
 		[KatExcelArgument( DisplayName = "preTaxCatchUpPercentage", Description = "Optional.  Pre-tax catchup contribution as a % of pay." )]
 		double pCUPt = 0d,
@@ -338,7 +400,12 @@ public static class DnaSavings
 		double roCUPt = 0d,
 		[KatExcelArgument( DisplayName = "rothCatchUpFlatPerPayPeriod", Description = "Optional.  Flat $ Roth catchup contribution amount per pay period." )]
 		double roCUF = 0d,
-		[KatExcelArgument( DisplayName = "matchPayIsLimited", Description = "Optional.  Employer match is based on limited pay." )]
+		[KatExcelArgument( 
+			DisplayName = "matchPayIsLimited", 
+			Description = "Optional.  Employer match is based on limited pay.",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? mPyL = null
 	)
 	{
@@ -407,7 +474,12 @@ public static class DnaSavings
 		double aftPct = 0d,
 		[KatExcelArgument( DisplayName = "afterTaxFlatPerPayPeriod", Description = "Optional.  Flat $ after-tax contribution amount per pay period." )]
 		double aftFPPP = 0d,
-		[KatExcelArgument( DisplayName = "startPayPeriod", Description = "Optional.  Starting Pay period.  Defaults to 1." )]
+		[KatExcelArgument( 
+			DisplayName = "startPayPeriod", 
+			Description = "Optional.  Starting Pay period.  Defaults to 1.",
+			Type = typeof( int ),
+			Default = "1"
+		)]
 		object? stPP = null,
 		[KatExcelArgument( DisplayName = "ytdPay", Description = "Optional.  YTD savings pay." )]
 		double yrPay = 0d,
@@ -429,7 +501,12 @@ public static class DnaSavings
 		int mFreq = 0,
 		[KatExcelArgument( DisplayName = "limitAfterTax", Description = "Optional.  Aftertax limit." )]
 		double lAft = 0d,
-		[KatExcelArgument( DisplayName = "isOverflowToCatchUp", Description = "Optional.  Overflow from preTax to catchup." )]
+		[KatExcelArgument( 
+			DisplayName = "isOverflowToCatchUp", 
+			Description = "Optional.  Overflow from preTax to catchup.",
+			Type = typeof( bool ),
+			Default = "true"
+		 )]
 		object? toCUp = null,
 		[KatExcelArgument( DisplayName = "preTaxCatchUpPercentage", Description = "Optional.  Pre-tax catchup contribution as a % of pay." )]
 		double preCUpPct = 0d,
@@ -482,7 +559,12 @@ public static class DnaSavings
 		double rateInfl,
 		[KatExcelArgument( DisplayName = "rateOfReturn", Description = "Required.  Investment rate of return." )]
 		double rateReturn,
-		[KatExcelArgument( DisplayName = "startPayPeriod", Description = "Optional.  Starting Pay period.  Defaults to 1." )]
+		[KatExcelArgument( 
+			DisplayName = "startPayPeriod", 
+			Description = "Optional.  Starting Pay period.  Defaults to 1.",
+			Type = typeof( int ),
+			Default = "1"
+		)]
 		object? startPP = null,
 		[ExcelArgument( "Optional.  YTD savings pay." )]
 		double ytdPay = 0d,
@@ -496,9 +578,19 @@ public static class DnaSavings
 		double erContAnnualLimit = 0d,
 		[KatExcelArgument( DisplayName = "erContributionFrequency", Description = "Optional.  Frequency of ER Contribution in a year." )]
 		int erContFreq = 0,
-		[KatExcelArgument( DisplayName = "midPointContribution", Description = "Optional.  Use mid point contributions timing calculation method." )]
+		[KatExcelArgument( 
+			DisplayName = "midPointContribution", 
+			Description = "Optional.  Use mid point contributions timing calculation method.",
+			Type = typeof( bool ),
+			Default = "false"
+		)]
 		object? midPointCont = null,
-		[KatExcelArgument( DisplayName = "noLimit", Description = "Optional.  Don't apply IRS limit." )]
+		[KatExcelArgument( 
+			DisplayName = "noLimit", 
+			Description = "Optional.  Don't apply IRS limit.",
+			Type = typeof( bool ),
+			Default = "false"
+		)]
 		object? noLim = null,
 		[KatExcelArgument( DisplayName = "limitPay", Description = "Optional.  Pay Limit." )]
 		double limPay = 0d,
@@ -547,7 +639,12 @@ public static class DnaSavings
 		double rateOfPayIncrease,
 		[KatExcelArgument( DisplayName = "rateOfInflation", Description = "Required.  Inflation rate (used to project limits)." )]
 		double inflRate,
-		[KatExcelArgument( DisplayName = "startPayPeriod", Description = "Required.  Investment rate of return." )]
+		[KatExcelArgument( 
+			DisplayName = "startPayPeriod", 
+			Description = "Optional.  Starting pay period.  Defaults to 1.",
+			Type = typeof( int ),
+			Default = "1"
+		)]
 		object? startPP = null,
 		[ExcelArgument( "Optional.  YTD savings pay." )]
 		double ytdPay = 0d,
@@ -585,9 +682,17 @@ public static class DnaSavings
 		int matchType,
 		[ExcelArgument( "Required.  | delimited list of periods.  Each period is in the form of M:P:P where M is number of months for this period, and each P is a tier of a , seperated pair of decimal values." )]
 		string matchParam,
-		[ExcelArgument( "Optional.  Number of Pay period in a year.  Default is 1." )]
+		[KatExcelArgument(
+			Description = "Optional.  Number of Pay period in a year.  Default is 1.",
+			Type = typeof( int ),
+			Default = "1"
+		)]
 		object? payPeriod = null,
-		[ExcelArgument( "Optional.  Current Pay Period.  Default is 1." )]
+		[KatExcelArgument(
+			Description = "Optional.  Current Pay Period.  Default is 1.",
+			Type = typeof( int ),
+			Default = "1"
+		)]
 		object? currPayPeriod = null )
 	{
 		var payPeriodArg = payPeriod.Check( nameof( payPeriod ), 1 );

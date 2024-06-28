@@ -44,11 +44,23 @@ public static class DnaMathUtitlies
 			Summary = "Required. A schedule of payment dates that corresponds to the cash flow payments. Dates may occur in any order. Dates should be entered by using the DATE function, or as results of other formulas or functions. For example, use DATE(2008,5,23) for the 23rd day of May, 2008. Problems can occur if dates are entered as text."
 		)]
 		double[] dates,
-		[ExcelArgument( "Optional. The default is 25." )]
+		[KatExcelArgument(
+			Description = "Optional. The default is 25.",
+			Type = typeof( int ),
+			Default = "25"
+		)]
 		object? iterations = null,
-		[ExcelArgument( "Optional. The default is 5.0." )]
+		[KatExcelArgument(
+			Description = "Optional. The default is 5.0.",
+			Type = typeof( double ),
+			Default = "5.0"
+		)]
 		object? maxRate = null,
-		[ExcelArgument( "Optional. The default is true." )]
+		[KatExcelArgument(
+			Description = "Optional. The default is true.",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? truncateTime = null 
 	)
 	{

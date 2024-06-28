@@ -6,29 +6,24 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn.Functions;
 
 public static class Date
 {
-	/// <summary>
-	/// Given a <paramref name="startDate"/> date and day of week, find the next date whose day of the week equals <paramref name="desiredDay"/> and <paramref name="dateType"/>.
-	/// </summary>
-	/// <param name="startDate">The target date.</param>
-	/// <param name="desiredDay">Monday, Tuesday, ..., Friday representing which day you want.</param>
-	/// <param name="dateType">Date increment type.  PreviousWeek, NextWeek, PreviousDay, NextDay.</param>
-	/// <returns><paramref name="startDate"/> converted to the first day of the month coincident or following.</returns>
-	/// <remarks>
-	/// <para>If <paramref name="startDate"/> DayOfWeek equals <paramref name="desiredDay"/> and <paramref name="dateType"/> is Next or Previous, startDate is returned.</para>
-	/// <para>If dateType is PreviousWeek or NextWeek, the desiredDay before the previous Sunday or after the next Sunday, respectively, will be returned.</para>
-	/// <para>If dateType is Previous or Next, the first occurrence of the desiredDay in the appropriate direction will be returned.</para>
-	/// <para>desiredDay can be abbreviated to mon, tue, wed, thu, fri, sat, and sun.</para>
-	/// <para>dateType can be abbreviated to pw, prevweek, nw, pd, prevday, previous, prev, nd, and next.</para>
-	/// </remarks>
-	[ExcelFunction( Category = "Date Helpers", Description = "Given a startDate date and day of week, find the next date whose day of the week equals desiredDay and dateType." )]
+	[KatExcelFunction( 
+		Category = "Date Helpers", 
+		Description = "Given a `startDate` date and day of week, find the next date whose day of the week equals `desiredDay` and `dateType`.",
+		Returns = "`startDate` converted to the first day of the month coincident or following.",
+		Remarks = @"1. If `startDate.DayOfWeek` equals `desiredDay` and `dateType` is `Next` or `Previous`, `startDate` is returned.
+1. If `dateType` is `PreviousWeek` or `NextWeek`, the `desiredDay` before the previous Sunday or after the next Sunday, respectively, will be returned.
+1. If `dateType` is `Previous` or `Next`, the first occurrence of the `desiredDay` in the appropriate direction will be returned.
+1. `desiredDay` can be abbreviated to `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, and `sun`.
+1. `dateType` can be abbreviated to `pw`, `prevweek`, `nw`, `pd`, `prevday`, `previous`, `prev`, `nd`, and `next`."
+	)]
 	public static double BTRGetDateForDay(
 		[ExcelArgument( "The target date." )]
 		DateTime startDate,
 		[ExcelArgument( "Monday, Tuesday, ..., Friday representing which day you want." )]
 		string desiredDay,
-		[ExcelArgument( "Date increment type.  PreviousWeek, NextWeek, PreviousDay, NextDay." )]
+		[ExcelArgument( "Date increment type.  `PreviousWeek`, `NextWeek`, `PreviousDay`, `NextDay`." )]
 		string dateType 
-	) => Utility.GetDateForDay( ( startDate < new DateTime( 1900, 3, 1 ) ? startDate.AddDays( 1 ) : startDate ), desiredDay, dateType );
+	) => Utility.GetDateForDay(  startDate < new DateTime( 1900, 3, 1 ) ? startDate.AddDays( 1 ) : startDate , desiredDay, dateType );
 	
 
 	[ExcelFunction( Category = "Date Helpers", Description = "Returns a DateTime object converted to the first day of the month coincident or following." )]
@@ -54,7 +49,7 @@ public static class Date
 		int months 
 	) => target.AddMonths( months ).FromLotus();	
 
-	[ExcelFunction( Category = "Date Helpers", Description = "HAN: Argument documentation. Determine retirement eligibility." )]
+	[ExcelFunction( Category = "Date Helpers", Description = "TODO: HAN: Argument documentation. Determine retirement eligibility." )]
 	public static string BTRRetirementEligible(
 		int mode,
 		long appendix,
@@ -101,9 +96,9 @@ public static class Date
 		DateTime start,
 		[ExcelArgument( "The end date." )]
 		DateTime end,
-		[ExcelArgument( "Optional.  1 for Years, 2 for Months, 3 for FullMonths and 4 for Days.  Default is 1." )]
+		[KatExcelArgument( Description = "Optional.  1 for Years, 2 for Months, 3 for FullMonths and 4 for Days.  Default is 1.", Type = typeof( int ), Default = "1" )]
 		object? interval = null,
-		[ExcelArgument( "Optional.  Whether or not to include the last day as part of the calculation.  Default is false." )]
+		[KatExcelArgument( Description = "Optional.  Whether or not to include the last day as part of the calculation.  Default is false.", Type = typeof( bool ), Default = "false" )]
 		object? inclusive = null
 	) => start.DateDiff( end, interval.Check( nameof( interval ), 1 ), inclusive.Check( nameof( inclusive ), false ) );
 }

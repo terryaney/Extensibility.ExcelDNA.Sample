@@ -7,9 +7,16 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<RootNamespace>KAT.Camelot.Extensibility.Excel.AddIn</RootNamespace>
 		<AssemblyName>KAT.Camelot.Extensibility.Excel.AddIn</AssemblyName>
+		<!--
+		<DocumentationFile>bin\$(Configuration)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+		-->
 		<KATVersionPrefix>1.0.*</KATVersionPrefix>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
+		<RunExcelDnaPack>false</RunExcelDnaPack>
+		<ExcelDnaCreate32BitAddIn>false</ExcelDnaCreate32BitAddIn>
+	</PropertyGroup>
 	<PropertyGroup>
 		<!-- 
 			ExcelDna Settings
@@ -45,10 +52,11 @@
 		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="7.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="7.0.0" />
 
-		<PackageReference Include="ExcelDna.AddIn" Version="1.8.0-alpha2" />
-		<PackageReference Include="ExcelDna.IntelliSense" Version="1.8.0-alpha2" />
+		<PackageReference Include="ExcelDna.AddIn" Version="1.8.0" />
+		<PackageReference Include="ExcelDna.IntelliSense" Version="1.8.0" />
+		<PackageReference Include="ExcelDna.Registration" Version="1.8.0" />
 		<PackageReference Include="ExcelDna.Interop" Version="15.0.1" />
-		<PackageReference Include="ExcelDna.Registration" Version="1.8.0-alpha2" />
+		
 		<PackageReference Include="SpreadsheetGear" Version="9.2.28" />
 		<PackageReference Include="XLParser" Version="1.7.2" />
 	</ItemGroup>

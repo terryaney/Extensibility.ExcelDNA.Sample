@@ -82,7 +82,7 @@ public class DataExportSettings
 
 public class Help
 {
-	public string Url { get; init; } = "https://github.com/terryaney/Extensibility.ExcelDNA.Sample";
+	public string Url { get; init; } = "https://github.com/terryaney/Documentation.Camelot/blob/main/RBLe/ExcelAddIn.md";
 	public string? OfflineUrl { get; init; }
 	public bool Offline { get; init; }
 	public string GetOfflineUrl() => OfflineUrl ?? "file:///" + Path.Combine( AddIn.XllPath, "Resources", "Help", "readme.md" );

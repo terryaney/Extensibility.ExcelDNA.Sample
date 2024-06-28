@@ -9,24 +9,39 @@ public static class XmlMapping
 		Description = "Returns the current ordinal position of the current element being processed.  If 'scopeDepth' is passed, it is the current ordinal position of the ancestor mapping element determined by 'scopeDepth' levels.  Placeholder returning defaultValue in Excel."
 	)]
 	public static int MapOrdinal( 
-		[ExcelArgument( "How many parent levels to walk back up to determine mapping scope.  Default value is one." )] object? scopeDepth = null,
-		[ExcelArgument( "Value to return to make coding specification formulas easier." )] object? defaultValue = null
+		[KatExcelArgument(
+			Description = "How many parent levels to walk back up to determine mapping scope.  Default value is one.",
+			Type = typeof( int ),
+			Default = "1"
+		)] object? scopeDepth = null,
+		[KatExcelArgument(
+			Description = "Value to return to make coding specification formulas easier.",
+			Type = typeof( int ),
+			Default = "1"
+		)] object? defaultValue = null
 	) => defaultValue.Check( nameof( defaultValue ), 1 );
 
 	[ExcelFunction( Category = "Xml Mapping", Description = "Returns 'fieldName' (element or attribute) value from provided Xml datasource.  Placeholder returning defaultValue in Excel." )]
 	public static string MapValue( 
 		[ExcelArgument( "The name of the xml element or attribute." )] string fieldName, 
-		[ExcelArgument( "Value to return to make coding specification formulas easier." )] object? defaultValue = null 
+		[KatExcelArgument(
+			Description = "Value to return to make coding specification formulas easier.",
+			Type = typeof( string ),
+			Default = "`fieldName`"
+		)] object? defaultValue = null 
 	) => defaultValue.Check( nameof( defaultValue ), fieldName );
 	
 	[ExcelFunction( Category = "Xml Mapping", Description = "Converts a value into a number.  Needed for 'strong typing' in calculated expressions." )]
 	public static double MapToNumber(
 		[ExcelArgument( "The value to attempt to convert to a number." )] object value,
-		[ExcelArgument( "Value to return to make coding specification formulas easier." )] object? defaultValue = null )
+		[KatExcelArgument(
+			Description = "Value to return to make coding specification formulas easier.",
+			Type = typeof( double )
+		)] object? defaultValue = null )
 	{
 		var defaultValueArg = defaultValue.Check<double?>( nameof( defaultValue ), null );
 
-		if ( ( value is string v && double.TryParse( v, out var d ) ) ) return d;
+		if (  value is string v && double.TryParse( v, out var d )  ) return d;
 
 		try
 		{
@@ -41,12 +56,15 @@ public static class XmlMapping
 	[ExcelFunction( Category = "Xml Mapping", Description = "Converts a value into a date.  Needed for 'strong typing' in calculated expressions." )]
 	public static DateTime MapToDate(
 		[ExcelArgument( "The value to attempt to convert to a date." )] object value,
-		[ExcelArgument( "Value to return to make coding specification formulas easier." )] object? defaultValue = null 
+		[KatExcelArgument(
+			Description = "Value to return to make coding specification formulas easier.",
+			Type = typeof( DateTime )
+		)] object? defaultValue = null 
 	)
 	{
 		var defaultValueArg = defaultValue.Check<DateTime?>( nameof( defaultValue ), null );
 
-		if ( ( value is string v && DateTime.TryParse( v, out var d ) ) ) return d;
+		if (  value is string v && DateTime.TryParse( v, out var d )  ) return d;
 
 		try
 		{
@@ -62,7 +80,11 @@ public static class XmlMapping
 	public static string MapFormatValue(
 		[ExcelArgument( "The value (or model field) to format." )] object? value,
 		[ExcelArgument( "A valid C# format string in the format of {0:format}." )] string format,
-		[ExcelArgument( "Value to return to make coding specification formulas easier." )] object? defaultValue = null 
+		[KatExcelArgument(
+			Description = "Value to return to make coding specification formulas easier.",
+			Type = typeof( string ),
+			Default = "[MapFormatValue(`value`, \"`format`\")]"
+		)] object? defaultValue = null 
 	)
 	{
 		var defaultValueArg = defaultValue.Check( nameof( defaultValue ), $"[MapFormatValue({value}, \"{format.Replace( "\"", "\\\"" )}\")]" );

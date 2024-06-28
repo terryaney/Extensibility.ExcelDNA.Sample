@@ -55,9 +55,14 @@ public class AddIn : IExcelAddIn
 		RegisterFunctions();
 
 		ExcelIntegration.RegisterUnhandledExceptionHandler( UnhandledExceptionHandler );
+
+		ExcelDna.IntelliSense.IntelliSenseServer.Install();
 	}
 
-	public void AutoClose() { }
+	public void AutoClose()
+	{
+		ExcelDna.IntelliSense.IntelliSenseServer.Uninstall();
+	}
 
 	/// <summary>
 	/// Global exception handler for all unhandled exceptions in ExcelDna functions.
@@ -175,8 +180,7 @@ public class AddIn : IExcelAddIn
 
 	private static ExcelFunctionRegistration UpdateHelpTopic( ExcelFunctionRegistration funcReg )
 	{
-		// TODO: Ability to run markdown help files locally.
-		funcReg.FunctionAttribute.HelpTopic = "http://www.bing.com";
+		funcReg.FunctionAttribute.HelpTopic = $"https://github.com/terryaney/Documentation.Camelot/blob/main/RBLe/RBLe{funcReg.FunctionAttribute.Category.Replace( " ", "" )}.{funcReg.FunctionAttribute.Name}.md";
 		return funcReg;
 	}
 }

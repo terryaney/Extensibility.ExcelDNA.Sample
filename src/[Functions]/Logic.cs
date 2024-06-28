@@ -38,9 +38,17 @@ public static class Logic
 		string keys,
 		[ExcelArgument( "Table containing the columns holding keys and values to find and do a falsy check (#error, 0, FALSE)." )]
 		object[,] table,
-		[ExcelArgument( "The column (1..table columns) number containing the value to compare to ensure not falsy.  Default is the last column of 'table' parameter." )]
+		[KatExcelArgument(
+			Description = "The column (1..table columns) number containing the value to compare to ensure not falsy.  Default is the last column of 'table' parameter.",
+			Type = typeof( int ),
+			Default = "table.Columns.Length"
+		)]
 		object? valueColumn = null,
-		[ExcelArgument( "Whether or not a case sensitive search is performed. Default is false." )]
+		[KatExcelArgument(
+			Description = "Whether or not a case sensitive search is performed. Default is false.",
+			Type = typeof( bool ),
+			Default = "false"
+		)]
 		object? caseSensitive = null
 	)
 	{
@@ -75,9 +83,17 @@ public static class Logic
 		string keys,
 		[ExcelArgument( "Table containing the columns holding keys and values to find and do a falsy check (#error, 0, FALSE)." )]
 		object[,] table,
-		[ExcelArgument( "The column (1..table columns) number containing the value to compare to ensure not falsy.  Default is the last column of 'table' parameter." )]
+		[KatExcelArgument(
+			Description = "The column (1..table columns) number containing the value to compare to ensure not falsy.  Default is the last column of 'table' parameter.",
+			Type = typeof( int ),
+			Default = "table.Columns.Length"
+		)]
 		object? valueColumn = null,
-		[ExcelArgument( "Whether or not a case sensitive search is performed. Default is false." )]
+		[KatExcelArgument(
+			Description = "Whether or not a case sensitive search is performed. Default is false.",
+			Type = typeof( bool ),
+			Default = "false"
+		)]
 		object? caseSensitive = null
 	)
 	{
@@ -131,7 +147,11 @@ public static class Logic
 		object value,
 		[ExcelArgument( "Table containing values to search." )]
 		object[,] table,
-		[ExcelArgument( "Whether or not a case sensitive search is performed. Default is false." )]
+		[KatExcelArgument(
+			Description = "Whether or not a case sensitive search is performed. Default is false.",
+			Type = typeof( bool ),
+			Default = "false"
+		)]
 		object? caseSensitive = null
 	)
 	{

@@ -13,7 +13,11 @@ public static class DnaUtility
 		string text,
 		[ExcelArgument( "The text to search for." )]
 		string find,
-		[ExcelArgument( "Optional.  Whether or not the search is case insensitive or not.  True is the default." )]
+		[KatExcelArgument(
+			Description = "Optional.  Whether or not the search is case insensitive or not.  True is the default.",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? caseInsensitive = null
 	)
 	{
@@ -38,7 +42,11 @@ public static class DnaUtility
 		object[,] table,
 		[ExcelArgument( "Comma delimitted list of column names that should be included in returned range." )]
 		string returnColumns,
-		[ExcelArgument( "Optional.  Whether or not to include column headers in result table. Default is true." )]
+		[KatExcelArgument(
+			Description = "Optional.  Whether or not to include column headers in result table. Default is true.",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? includeHeadersInResults = null,
 		[ExcelArgument( "Paired expressions.  First item is column name to search, second item is value to filter." )]
 		params object[] expressions
@@ -106,13 +114,27 @@ public static class DnaUtility
 		object[,] values,
 		[ExcelArgument( "Range of cells to search (first row must be column headers)." )]
 		object[,] table,
-		[ExcelArgument( "Optional. Column name containing return value. Last column is default" )]
+		[KatExcelArgument(
+			Description = "Optional. Column name containing return value. Last column is default",
+			Type = typeof( string )
+		)]
 		object? columnToReturn = null,
-		[ExcelArgument( "Optional. Column name to search.  First column is default." )]
+		[KatExcelArgument(
+			Description = "Optional. Column name to search.  First column is default.",
+			Type = typeof( string )
+		)]
 		object? columnToSearch = null,
-		[ExcelArgument( "Optional.  Value to return if a match is not found.  #N/A is the default." )]
+		[KatExcelArgument(
+			Description = "Optional.  Value to return if a match is not found.  #N/A is the default.",
+			Type = typeof( object ),
+			Default = "#N/A"
+		)]
 		object? fallback = null,
-		[ExcelArgument( "Optional.  Whether or not search is case sensitive. false is the default." )]
+		[KatExcelArgument(
+			Description = "Optional.  Whether or not search is case sensitive. false is the default.",
+			Type = typeof( bool ),
+			Default = "false"
+		)]
 		object? caseSensitive = null
 	)
 	{
@@ -141,15 +163,33 @@ public static class DnaUtility
 		string values,
 		[ExcelArgument( "Range of cells to search (first row must be column headers)." )]
 		object[,] table,
-		[ExcelArgument( "Optional. Column name containing return value. Last column is default" )]
+		[KatExcelArgument(
+			Description = "Optional. Column name containing return value. Last column is default",
+			Type = typeof( string )
+		)]
 		object? columnToReturn = null,
-		[ExcelArgument( "Optional. Column name to search.  First column is default." )]
+		[KatExcelArgument(
+			Description = "Optional. Column name to search.  First column is default.",
+			Type = typeof( string )
+		)]
 		object? columnToSearch = null,
-		[ExcelArgument( "Optional.  Value to return if a match is not found.  #N/A is the default." )]
+		[KatExcelArgument(
+			Description = "Optional.  Value to return if a match is not found.  #N/A is the default.",
+			Type = typeof( object ),
+			Default = "#N/A"
+		)]
 		object? fallback = null,
-		[ExcelArgument( "Optional.  Whether or not search is case sensitive. false is the default." )]
+		[KatExcelArgument(
+			Description = "Optional.  Whether or not search is case sensitive. false is the default.",
+			Type = typeof( bool ),
+			Default = "false"
+		)]
 		object? caseSensitive = null,
-		[ExcelArgument( "Optional. The string to use as a separator.  The separator is included in the return string only if values has more than one element. ', ' is the default." )]
+		[KatExcelArgument(
+			Description = "Optional. The string to use as a separator.  The separator is included in the return string only if values has more than one element. ', ' is the default.",
+			Type = typeof( string ),
+			Default = ", "
+		)]
 		object? separator = null
 	) =>
 		Utility.JoinLookup(
@@ -169,11 +209,21 @@ public static class DnaUtility
 		string formula,
 		[ExcelArgument( "Range of cells to search (first row must be column headers)." )]
 		object[,] table,
-		[ExcelArgument( "Optional. Column name containing return value. Last column is default" )]
+		[KatExcelArgument(
+			Description = "Optional. Column name containing return value. Last column is default",
+			Type = typeof( string )
+		)]
 		object? columnToReturn = null,
-		[ExcelArgument( "Optional. Column name to search.  First column is default." )]
+		[KatExcelArgument(
+			Description = "Optional. Column name to search.  First column is default.",
+			Type = typeof( string )
+		)]
 		object? columnToSearch = null,
-		[ExcelArgument( "Optional.  Whether or not search is case sensitive. false is the default." )]
+		[KatExcelArgument(
+			Description = "Optional.  Whether or not search is case sensitive. false is the default.",
+			Type = typeof( bool ),
+			Default = "false"
+		)]
 		object? caseSensitive = null
 	)
 	{

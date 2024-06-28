@@ -12,7 +12,11 @@ public static class DnaSocialSecurity
 	public static double BTRSSNRA(
 		[ExcelArgument( "The member's date of birth." )] 
 		DateTime dateBirth,
-		[ExcelArgument( "Simplified integer values (e.g. for Covered Compensation and IRC 415 limit purposes), otherwise actual values for Social Security use." )]
+		[KatExcelArgument(
+			Description = "Simplified integer values (e.g. for Covered Compensation and IRC 415 limit purposes), otherwise actual values for Social Security use.",
+			Type = typeof( bool ),
+			Default = "false"
+		)]
 		object? simplifiedResultsArg = null )
 	{
 		var simplifiedResults = simplifiedResultsArg.Check( "simplifiedResults", false );
@@ -23,7 +27,11 @@ public static class DnaSocialSecurity
 	public static DateTime BTRSSNRD(
 		[ExcelArgument( "The member's date of birth." )] 
 		DateTime dateBirth,
-		[ExcelArgument( "Simplified integer values (e.g. for Covered Compensation and IRC 415 limit purposes), otherwise actual values for Social Security use." )] 
+		[KatExcelArgument(
+			Description = "Simplified integer values (e.g. for Covered Compensation and IRC 415 limit purposes), otherwise actual values for Social Security use.",
+			Type = typeof( bool ),
+			Default = "false"
+		)]
 		object? simplifiedResultsArg = null )
 	{
 		var simplifiedResults = simplifiedResultsArg.Check( "simplifiedResults", false );
@@ -40,29 +48,69 @@ public static class DnaSocialSecurity
 		double ageRetire,
 		[ExcelArgument( "The member's annual compensation for current Social Security year.  Annual compensation will be projected for any missing years from age 18 through the year before payment start." )]
 		double payCurrent,
-		[ExcelArgument( "NAW increase rate." )]
+		[KatExcelArgument(
+			Description = "NAW increase rate.",
+			Type = typeof( double ),
+			Default = "0.045"
+		)]
 		object? rateNAW = null,
-		[ExcelArgument( "Future pay increase rate." )]
+		[KatExcelArgument(
+			Description = "Future pay increase rate.",
+			Type = typeof( double ),
+			Default = "0.05"
+		)]
 		object? rateFuturePay = null,
 		[ExcelArgument( "Backward pay increase rate." )]
 		double rateBackPay = 0,
-		[ExcelArgument( "Add NAW to backward pay increase rate (TRUE or FALSE)." )]
+		[KatExcelArgument(
+			Description = "Add NAW to backward pay increase rate (TRUE or FALSE).",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? addNAWToBackPay = null,
-		[ExcelArgument( "CPI increase rate." )]
+		[KatExcelArgument(
+			Description = "CPI increase rate.",
+			Type = typeof( double ),
+			Default = "0.04"
+		)]
 		object? rateCOLA = null,
 		[ExcelArgument( "Social Security law year." )]
 		int lawYear = 0,
-		[ExcelArgument( "Type of pay after the year before termination year: C=project one more year at rateFuturePay then stay constant till the year before commencement year, L= stay constant till the year before commencement year., Z=zero pay starting termination year." )]
+		[KatExcelArgument(
+			Description = "Type of pay after the year before termination year: C=project one more year at rateFuturePay then stay constant till the year before commencement year, L= stay constant till the year before commencement year., Z=zero pay starting termination year.",
+			Type = typeof( string ),
+			Default = "C"
+		)]
 		object? futurePayType = null,
-		[ExcelArgument( "The first age when emeber started receiving compensation." )]
+		[KatExcelArgument(
+			Description = "The first age when emeber started receiving compensation.",
+			Type = typeof( int ),
+			Default = "18"
+		)]
 		object? firstPayAge = null,
-		[ExcelArgument( "Stop NAW growth after termination?" )]
+		[KatExcelArgument(
+			Description = "Stop NAW growth after termination?",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? stopNAWGrowth = null,
-		[ExcelArgument("Last pay year")]
+		[KatExcelArgument(
+			Description = "Last pay year",
+			Type = typeof( int ),
+			Default = "0"
+		)]
 		object? lastPayYear = null,
-		[ExcelArgument("Include post NRD Increase?")]
+		[KatExcelArgument(
+			Description = "Include post NRD Increase?",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? postNRDIncrease = null,
-		[ExcelArgument("Year COLA Stops")]
+		[KatExcelArgument(
+			Description = "Year COLA Stops",
+			Type = typeof( int ),
+			Default = "0"
+		)]
 		object? yearCOLAStops = null 
 	)
 	{
@@ -83,29 +131,65 @@ public static class DnaSocialSecurity
 		double ageRetire,
 		[ExcelArgument( "The member's annual compensations ending at current Social Security year.  Annual compensation will be projected for any missing years from age 18 through the year before payment start." )]
 		double[] actualPay,
-		[ExcelArgument( "NAW increase rate." )]
+		[KatExcelArgument(
+			Description = "NAW increase rate.",
+			Type = typeof( double ),
+			Default = "0.045"
+		)]
 		object? rateNAW = null,
-		[ExcelArgument( "Future pay increase rate." )]
+		[KatExcelArgument(
+			Description = "Future pay increase rate.",
+			Type = typeof( double ),
+			Default = "0.05"
+		)]
 		object? rateFuturePay = null,
 		[ExcelArgument( "Backward pay increase rate." )]
 		double rateBackPay = 0,
-		[ExcelArgument( "Add NAW to backward pay increase rate (TRUE or FALSE)." )]
+		[KatExcelArgument(
+			Description = "Add NAW to backward pay increase rate (TRUE or FALSE).",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? addNAWToBackPay = null,
-		[ExcelArgument( "CPI increase rate." )]
+		[KatExcelArgument(
+			Description = "CPI increase rate.",
+			Type = typeof( double ),
+			Default = "0.04"
+		)]
 		object? rateCOLA = null,
 		[ExcelArgument( "Ending year of compensation in the compensation array." )]
 		int lastPayYear = 0,
 		[ExcelArgument( "Social Security law year." )]
 		int lawYear = 0,
-		[ExcelArgument( "Type of pay after the year before termination year: C=project one more year at rateFuturePay then stay constant till the year before commencement year, L= stay constant till the year before commencement year., Z=zero pay starting termination year." )]
+		[KatExcelArgument(
+			Description = "Type of pay after the year before termination year: C=project one more year at rateFuturePay then stay constant till the year before commencement year, L= stay constant till the year before commencement year., Z=zero pay starting termination year.",
+			Type = typeof( string ),
+			Default = "C"
+		)]
 		object? futurePayType = null,
-		[ExcelArgument( "The first age when meeber started receiving compensation." )]
+		[KatExcelArgument(
+			Description = "The first age when emeber started receiving compensation.",
+			Type = typeof( int ),
+			Default = "18"
+		)]
 		object? firstPayAge = null,
-		[ExcelArgument( "Stop NAW growth after termination?" )]
+		[KatExcelArgument(
+			Description = "Stop NAW growth after termination?",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? stopNAWGrowth = null,
-		[ExcelArgument("Include post NRD increase?")]
+		[KatExcelArgument(
+			Description = "Include post NRD increase?",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? postNRDIncrease = null,
-		[ExcelArgument("Year COLA Stops")]
+		[KatExcelArgument(
+			Description = "Year COLA Stops",
+			Type = typeof( int ),
+			Default = "0"
+		)]
 		object? yearCOLAStops = null 
 	)
 	{
@@ -127,7 +211,11 @@ public static class DnaSocialSecurity
 	public static double BTRWageBase(
 		[ExcelArgument( "Year of requested wage base." )]
 		int yearEvent,
-		[ExcelArgument( "NAW increase rate, defaulted to 4.5%." )]
+		[KatExcelArgument(
+			Description = "NAW increase rate, defaulted to 4.5%.",
+			Type = typeof( double ),
+			Default = "0.045"
+		)]
 		object? rateNAW = null,
 		[ExcelArgument( "SS law year, defaulted to current law year." )]
 		int lawYear = 0,
@@ -144,7 +232,11 @@ public static class DnaSocialSecurity
 	public static double BTRNAW(
 		[ExcelArgument( "Year of requested wage base." )]
 		int yearEvent,
-		[ExcelArgument( "NAW increase rate, defaulted to 4.5%." )]
+		[KatExcelArgument(
+			Description = "NAW increase rate, defaulted to 4.5%.",
+			Type = typeof( double ),
+			Default = "0.045"
+		)]
 		object? rateNAW = null,
 		[ExcelArgument( "SS law year, defaulted to current law year." )]
 		int lawYear = 0 
@@ -159,7 +251,11 @@ public static class DnaSocialSecurity
 	public static double BTRCoveredComp(
 		[ExcelArgument( "The member's year of birth." )]
 		int yearBirth,
-		[ExcelArgument( "NAW increase rate, defaulted to 4.5%." )]
+		[KatExcelArgument(
+			Description = "NAW increase rate, defaulted to 4.5%.",
+			Type = typeof( double ),
+			Default = "0.045"
+		)]
 		object? rateNAW = null,
 		[ExcelArgument( "Year of requested covered compensation." )]
 		int yearEvent = 0,

@@ -6,7 +6,9 @@ public class KatExcelArgumentAttribute : ExcelArgumentAttribute
 {
 	public string? Summary = null;
 	public string? DisplayName = null;
-	
+	public Type? Type = null;
+	public string? Default = null;
+
 	public KatExcelArgumentAttribute() { }
 
 	public KatExcelArgumentAttribute( string description )

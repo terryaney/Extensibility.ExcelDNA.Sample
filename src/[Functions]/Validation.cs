@@ -9,7 +9,7 @@ public static class DnaValidation
 	[KatExcelFunction(
 		Category = "Validation",
 		Description = "Returns whether the provided input is a valid US banking routing number.",
-		Remarks = "<p>The logic for this method was created by following <a href=\"http://www.wikihow.com/Calculate-the-Check-Digit-of-a-Routing-Number-from-an-Illegible-Check\">this routine</a>.</p>"
+		Remarks = "The logic for this method was created by following [this routine](http://www.wikihow.com/Calculate-the-Check-Digit-of-a-Routing-Number-from-an-Illegible-Check)."
 	)]
 	public static bool BTRValidateRoutingNumber( 
 		[ExcelArgument( "The routing number input provided by user to validate." )] 
@@ -29,16 +29,20 @@ public static class DnaValidation
 	[KatExcelFunction( 
 		Category = "Validation", 
 		Description = "Validates and converts the input string representation of a date and time, supporting culture specific formats, to its Date equivalent.  Throws an exception if not a valid date.",
-		Remarks = "<exception cref=\"ArgumentOutOfRangeException\"><paramref name=\"value\"/> does not contain a valid string representation of a date and time.</exception>"
+		Exceptions = "`ArgumentOutOfRangeException` - `value` does not contain a valid string representation of a date and time."
 	)]
 	public static object BTRParseDate(
 		[ExcelArgument( "A string that contains a date and time to convert." )]
 		string value,
-		[ExcelArgument( "A string that supplies culture-specific format information about 'value'." )]
+		[KatExcelArgument(
+			Description = "A string that supplies culture-specific format information about `value`.",
+			Type = typeof( string ),
+			Default = "en-US"
+		)]
 		object? culture = null,
-		[ExcelArgument( "A | delimitted string that supplies a list of allowable formats to attempt to parse 'value'." )]
+		[ExcelArgument( "A `|` delimitted string that supplies a list of allowable formats to attempt to parse `value`." )]
 		string? allowedFormats = null,
-		[ExcelArgument( "A , delimitted string of allowable dates to validate in the format of 1..N, Last, Mon-Sun, Mon-Sun.[N|Last] (Nth occurence of or last day in month), or W1-W5 (first through the fifth week of month).  If the 'pattern' starts with '!' it is a 'not' check." )]
+		[ExcelArgument( "A `,` delimitted string of allowable dates to validate in the format of 1..N, Last, Mon-Sun, Mon-Sun.[N|Last] (Nth occurence of or last day in month), or W1-W5 (first through the fifth week of month).  If the 'pattern' starts with '!' it is a 'not' check." )]
 		string? validDates = null )
 	{
 		var cultureArg = culture.Check( nameof( culture ), "en-US" );
@@ -57,15 +61,19 @@ public static class DnaValidation
 	public static double BTRValidateDate(
 		[ExcelArgument( "A string that contains a date and time to convert." )]
 		string value,
-		[ExcelArgument( "A DateTime representing the minimum value allowed if 'value' is a date." )]
+		[ExcelArgument( "A DateTime representing the minimum value allowed if `value` is a date." )]
 		DateTime minimum,
-		[ExcelArgument( "A DateTime representing the minimum value allowed if 'value' is a date." )]
+		[ExcelArgument( "A DateTime representing the minimum value allowed if `value` is a date." )]
 		DateTime maximum,
-		[ExcelArgument( "A string that supplies culture-specific format information about 'value'." )]
+		[KatExcelArgument(
+			Description = "A string that supplies culture-specific format information about `value`.",
+			Type = typeof( string ),
+			Default = "en-US"
+		)]
 		object? culture = null,
-		[ExcelArgument( "A | delimitted string that supplies a list of allowable formats to attempt to parse 'value'." )]
+		[ExcelArgument( "A `|` delimitted string that supplies a list of allowable formats to attempt to parse `value`." )]
 		string? allowedFormats = null,
-		[ExcelArgument( "A , delimitted string of allowable dates to validate in the format of 1..N, Last, Mon-Sun, Mon-Sun.[N|Last] (Nth occurence of or last day in month), or W1-W5 (first through the fifth week of month).  If the 'pattern' starts with '!' it is a 'not' check." )]
+		[ExcelArgument( "A `,` delimitted string of allowable dates to validate in the format of 1..N, Last, Mon-Sun, Mon-Sun.[N|Last] (Nth occurence of or last day in month), or W1-W5 (first through the fifth week of month).  If the 'pattern' starts with '!' it is a 'not' check." )]
 		string? validDates = null )
 	{
 		try
@@ -95,18 +103,26 @@ public static class DnaValidation
 	[KatExcelFunction( 
 		Category = "Validation", 
 		Description = "Validates and converts the input string representation of an age/date, supporting culture specific formats, to its Date equivalent.  Throws an exception if not a valid age/date.",
-		Remarks = "<exception cref=\"ArgumentOutOfRangeException\"><paramref name=\"value\"/> does not contain a valid string representation of a date and time.</exception>"
+		Exceptions = "`ArgumentOutOfRangeException` - `value` does not contain a valid string representation of a date and time."
 	)]
 	public static object BTRParseAgeDate(
 		[ExcelArgument( "A string that contains a date or age to convert." )]
 		string value,
 		[ExcelArgument( "The participant's date of birth." )]
 		DateTime dateBirth,
-		[ExcelArgument( "Additional options to apply to date (FirstOfMonthOrCoincident=1, LastOfMonthOrCoincident=2)." )]
+		[KatExcelArgument(
+			Description = "Additional options to apply to date (FirstOfMonthOrCoincident=1, LastOfMonthOrCoincident=2).",
+			Type = typeof( DateOptionsType ),
+			Default = "DateOptionsType.None"
+		)]
 		object? dateOptions = null,
-		[ExcelArgument( "An string that supplies culture-specific format information about 'value'." )]
+		[KatExcelArgument(
+			Description = "A string that supplies culture-specific format information about `value`.",
+			Type = typeof( string ),
+			Default = "en-US"
+		)]
 		object? culture = null,
-		[ExcelArgument( "An | delimitted string that supplies a list of allowable formats to attempt to parse 'value'." )]
+		[ExcelArgument( "A `|` delimitted string that supplies a list of allowable formats to attempt to parse `value`." )]
 		string? allowedFormats = null )
 	{
 		//(Functions.CalculationContributionType)contributionType
@@ -128,15 +144,23 @@ public static class DnaValidation
 		string value,
 		[ExcelArgument( "The participant's date of birth." )]
 		DateTime dateBirth,
-		[ExcelArgument( "A DateTime representing the minimum value allowed if 'value' is a date." )]
+		[ExcelArgument( "A DateTime representing the minimum value allowed if `value` is a date." )]
 		DateTime minimum,
-		[ExcelArgument( "A DateTime representing the minimum value allowed if 'value' is a date." )]
+		[ExcelArgument( "A DateTime representing the minimum value allowed if `value` is a date." )]
 		DateTime maximum,
-		[ExcelArgument( "Additional options to apply to date (FirstOfMonthOrCoincident=1, LastOfMonthOrCoincident=2)." )]
+		[KatExcelArgument(
+			Description = "Additional options to apply to date (FirstOfMonthOrCoincident=1, LastOfMonthOrCoincident=2).",
+			Type = typeof( DateOptionsType ),
+			Default = "DateOptionsType.None"
+		)]
 		object? dateOptions = null,
-		[ExcelArgument( "An string that supplies culture-specific format information about 'value'." )]
+		[KatExcelArgument(
+			Description = "A string that supplies culture-specific format information about `value`.",
+			Type = typeof( string ),
+			Default = "en-US"
+		)]
 		object? culture = null,
-		[ExcelArgument( "An | delimitted string that supplies a list of allowable formats to attempt to parse 'value'." )]
+		[ExcelArgument( "A `|` delimitted string that supplies a list of allowable formats to attempt to parse `value`." )]
 		string? allowedFormats = null )
 	{
 		try
@@ -167,12 +191,16 @@ public static class DnaValidation
 	[KatExcelFunction( 
 		Category = "Validation", 
 		Description = "Validates and converts the input string representation of a number to its integer (no decimals) equivalent.",
-		Remarks = "<exception cref=\"ArgumentOutOfRangeException\"><paramref name=\"value\"/> does not contain a valid string representation of an integer (whole number).</exception>"
+		Exceptions = "`ArgumentOutOfRangeException` - `value` does not contain a valid string representation of a an integer (whole number)."
 	)]
 	public static double BTRParseInteger(
 		[ExcelArgument( "A string that contains a number to convert." )]
 		string value,
-		[ExcelArgument( "An string that supplies culture-specific format information about 'value'." )]
+		[KatExcelArgument(
+			Description = "A string that supplies culture-specific format information about `value`.",
+			Type = typeof( string ),
+			Default = "en-US"
+		)]
 		object? culture = null )
 	{
 		var cultureArg = culture.Check( nameof( culture ), "en-US" );
@@ -183,11 +211,15 @@ public static class DnaValidation
 	public static double BTRValidateInteger(
 		[ExcelArgument( "A string that contains a date and time to convert." )]
 		string value,
-		[ExcelArgument( "A integer representing the minimum value allowed if 'value' is a integer." )]
+		[ExcelArgument( "A integer representing the minimum value allowed if `value` is a integer." )]
 		int minimum,
-		[ExcelArgument( "A integer representing the minimum value allowed if 'value' is a integer." )]
+		[ExcelArgument( "A integer representing the minimum value allowed if `value` is a integer." )]
 		int maximum,
-		[ExcelArgument( "An string that supplies culture-specific format information about 'value'." )]
+		[KatExcelArgument(
+			Description = "A string that supplies culture-specific format information about `value`.",
+			Type = typeof( string ),
+			Default = "en-US"
+		)]
 		object? culture = null )
 	{
 		try
@@ -211,12 +243,16 @@ public static class DnaValidation
 	[KatExcelFunction( 
 		Category = "Validation", 
 		Description = "Validates and converts the input string representation of a number to its decimal equivalent.",
-		Remarks = "<exception cref=\"ArgumentOutOfRangeException\"><paramref name=\"value\"/> does not contain a valid string representation of a decimal number.</exception>"
+		Exceptions = "`ArgumentOutOfRangeException` - `value` does not contain a valid string representation of a an decimal number."
 	)]
 	public static double BTRParseDecimal(
 		[ExcelArgument( "A string that contains a number to convert." )]
 		string value,
-		[ExcelArgument( "An string that supplies culture-specific format information about 'value'." )]
+		[KatExcelArgument(
+			Description = "A string that supplies culture-specific format information about `value`.",
+			Type = typeof( string ),
+			Default = "en-US"
+		)]
 		object? culture = null )
 	{
 		var cultureArg = culture.Check( nameof( culture ), "en-US" );
@@ -227,13 +263,20 @@ public static class DnaValidation
 	public static double BTRValidateDecimal(
 		[ExcelArgument( "A string that contains a date and time to convert." )]
 		string value,
-		[ExcelArgument( "A double representing the minimum value allowed if 'value' is a double." )]
+		[ExcelArgument( "A double representing the minimum value allowed if `value` is a double." )]
 		double minimum,
-		[ExcelArgument( "A double representing the minimum value allowed if 'value' is a double." )]
+		[ExcelArgument( "A double representing the minimum value allowed if `value` is a double." )]
 		double maximum,
-		[ExcelArgument( "An string that supplies culture-specific format information about 'value'." )]
+		[KatExcelArgument(
+			Description = "A string that supplies culture-specific format information about `value`.",
+			Type = typeof( string ),
+			Default = "en-US"
+		)]
 		object? culture = null,
-		[ExcelArgument( "An integer value representing the maximum number of decimal places allowed." )]
+		[KatExcelArgument(
+			Description = "An integer value representing the maximum number of decimal places allowed.",
+			Type = typeof( int )
+		)]
 		object? decimalPlaces = null )
 	{
 		try

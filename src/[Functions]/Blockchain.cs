@@ -9,7 +9,11 @@ public static class DnaBlockchain
 	public static string BTRHashString(
 		[ExcelArgument( "The value to hash." )]
 		string value,
-		[ExcelArgument( "Optional.  The hash implementation to use (i.e. Sha256)." )]
+		[KatExcelArgument(
+			Description = "Optional.  The hash implementation to use (i.e. Sha256).",
+			Type = typeof( string ),
+			Default = "Sha256"
+		)]
 		object? hashType = null 
 	)
 	{
@@ -21,7 +25,11 @@ public static class DnaBlockchain
 	public static string BTRHashByteString(
 		[ExcelArgument( "The value to hash." )]
 		string byteString,
-		[ExcelArgument( "Optional.  The hash implementation to use (i.e. Sha256)." )]
+		[KatExcelArgument(
+			Description = "Optional.  The hash implementation to use (i.e. Sha256).",
+			Type = typeof( string ),
+			Default = "Sha256"
+		)]
 		object? hashType = null 
 	)
 	{
@@ -33,7 +41,11 @@ public static class DnaBlockchain
 	public static string BTRHashFile(
 		[ExcelArgument( "The file name to hash." )]
 		string fileName,
-		[ExcelArgument( "Optional.  The hash implementation to use (i.e. Sha256)." )]
+		[KatExcelArgument(
+			Description = "Optional.  The hash implementation to use (i.e. Sha256).",
+			Type = typeof( string ),
+			Default = "Sha256"
+		)]
 		object? hashType = null 
 	)
 	{

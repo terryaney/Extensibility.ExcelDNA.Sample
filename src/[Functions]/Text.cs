@@ -7,38 +7,40 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn.Functions;
 
 public static class Text
 {
-	/// <summary>
-	/// Formats a numeric value to a string representation using the specified format and culture-specific format information.
-	/// </summary>
-	/// <param name="value">The numeric value to apply formatting to.</param>
-	/// <param name="format">A numeric format string.</param>
-	/// <param name="culture">An string that supplies culture-specific formatting information.  The default value is <c>en-US</c>.</param>
-	/// <returns>The string representation of the value of this instance as specified by <paramref name="format"/> and <paramref name="culture"/>.</returns>
-	/// <remarks>The BTRNumberFormat method is similar to Excel's Format() function with the exception that BTRNumberFormat can dynamically format a number based on <paramref name="culture"/> using the same <paramref name="format"/> string.</remarks>
-	/// <seealso href="http://msdn.microsoft.com/en-us/library/dwhawy9k(v=vs.110).aspx">Standard Numeric Format Strings</seealso>
-	/// <seealso href="http://msdn.microsoft.com/en-us/library/0c899ak8(v=vs.110).aspx">Custom Numeric Format Strings</seealso>
-	/// <example>
-	/// This sample shows how to format a numeric value to currency format with a single format string but changes based on culture.
-	/// <code>
-	/// // Assume this comes from the iCurrentCulture input.
-	/// string culture = "en-US";
-	/// // Assume this comes from a calculated result.
-	/// double value = 10.5;
-	/// // currencyValue would have "$10.50" for a value.
-	/// string currencyValue = BTRNumberFormat( value, "c", culture );
-	/// // If culture was French...
-	/// culture = "fr-FR";
-	/// // currencyValue would have "10,50 €" for a value.
-	/// currencyValue = BTRNumberFormat( value, "c", culture );
-	/// </code>
-	/// </example>
-	[ExcelFunction( Category = "Formatting", Description = "Formats a numeric value to a string representation using the specified format and culture-specific format information." )]
+	[KatExcelFunction( 
+		Category = "Formatting", 
+		Description = "Formats a numeric value to a string representation using the specified format and culture-specific format information.",
+		Returns = "The string representation of the value of this instance as specified by `format` and `culture`.",
+		Remarks = @"The `BTRNumberFormat` method is similar to Excel's `Format()` function with the exception that `BTRNumberFormat` can dynamically format a number based on `culture` using the same `format` string.
+
+*See Also*
+[Standard Numeric Format Strings](http://msdn.microsoft.com/en-us/library/dwhawy9k(v=vs.110).aspx)
+[Custom Numeric Format Strings](http://msdn.microsoft.com/en-us/library/0c899ak8(v=vs.110).aspx)",
+		Example = @"This sample shows how to format a numeric value to currency format with a single format string but changes based on culture.
+
+```
+// Assume this comes from the iCurrentCulture input.
+string culture = ""en-US"";
+// Assume this comes from a calculated result.
+double value = 10.5;
+// currencyValue would have ""$10.50"" for a value.
+string currencyValue = BTRNumberFormat( value, ""c"", culture );
+// If culture was French...
+culture = ""fr-FR"";
+// currencyValue would have ""10,50 €"" for a value.
+currencyValue = BTRNumberFormat( value, ""c"", culture );
+```"
+	)]
 	public static string BTRNumberFormat(
-		[ExcelArgument( "The number to apply a format to." )]
+		[ExcelArgument( "The numeric value to apply formatting to." )]
 		double value,
 		[ExcelArgument( "The C# string format to apply.  View the function's help for more detail on possible values." )]
 		string format,
-		[ExcelArgument( "Optional.  The culture name in the format languagecode2-country/regioncode2.  See 'National Language Support (NLS) API Reference' for available names." )]
+		[KatExcelArgument(
+			Description = "Optional.  The culture name in the format languagecode2-country/regioncode2 (default of `en-US`).  See 'National Language Support (NLS) API Reference' for available names.",
+			Type = typeof( string ),
+			Default = "en-US"
+		)]
 		object? culture = null
 	)
 	{
@@ -46,38 +48,41 @@ public static class Text
 		return Utility.LocaleFormat( value, format, cultureArg );
 	}
 
-	/// <summary>
-	/// Formats a Date value to a string representation using the specified format and culture-specific format information.
-	/// </summary>
-	/// <param name="value">The Date value to apply formatting to.</param>
-	/// <param name="format">A numeric format string.</param>
-	/// <param name="culture">An string that supplies culture-specific formatting information.  The default value is <c>en-US</c>.</param>
-	/// <returns>The string representation of the value of this instance as specified by <paramref name="format"/> and <paramref name="culture"/>.</returns>
-	/// <remarks>The BTRDateFormat method is similar to Excel's Format() function with the exception that BTRDateFormat can dynamically format a date based on <paramref name="culture"/> using the same <paramref name="format"/> string.</remarks>
-	/// <seealso href="http://msdn.microsoft.com/en-us/library/az4se3k1(v=vs.110).aspx">Standard Date and Time Format Strings</seealso>
-	/// <seealso href="http://msdn.microsoft.com/en-us/library/8kb3ddd4(v=vs.110).aspx">Custom Date and Time Format Strings</seealso>
-	/// <example>
-	/// This sample shows how to format a date value to 'short date' format with a single format string, but changes based on culture.
-	/// <code>
-	/// // Assume this comes from the iCurrentCulture input.
-	/// string culture = "en-US";
-	/// // Assume this comes from a calculated result.
-	/// DateTime value = new DateTime( 1973, 5, 9 );
-	/// // dateValue would have "5/9/1973" for a value.
-	/// string dateValue = BTRDateFormat( value, "d", culture );
-	/// // If culture was French...
-	/// culture = "fr-FR";
-	/// // currencyValue would have "09/05/1973" for a value.
-	/// dateValue = BTRDateFormat( value, "d", culture );
-	/// </code>
-	/// </example>
-	[ExcelFunction( Category = "Formatting", Description = "Formats a Date value to a string representation using the specified format and culture-specific format information." )]
+	[KatExcelFunction( 
+		Category = "Formatting", 
+		Description = "Formats a Date value to a string representation using the specified format and culture-specific format information.",
+		Returns = "The string representation of the value of this instance as specified by `format` and `culture`.",
+		Remarks = @"The `BTRDateFormat` method is similar to Excel's `Format()` function with the exception that `BTRDateFormat` can dynamically format a date based on `culture` using the same `format` string.
+
+*See Also*
+[Standard Date and Time Format Strings](http://msdn.microsoft.com/en-us/library/az4se3k1(v=vs.110).aspx)
+[Custom Date and Time Format Strings](http://msdn.microsoft.com/en-us/library/8kb3ddd4(v=vs.110).aspx)",
+		Example = @"This sample shows how to format a date value to 'short date' format with a single format string but changes based on culture.
+
+```
+// Assume this comes from the iCurrentCulture input.
+string culture = ""en-US"";
+// Assume this comes from a calculated result.
+DateTime value = new DateTime( 1973, 5, 9 );
+// dateValue would have ""5/9/1973"" for a value.
+string dateValue = BTRDateFormat( value, ""d"", culture );
+// If culture was French...
+culture = ""fr-FR"";
+// dateValue would have ""09/05/1973"" for a value.
+dateValue = BTRDateFormat( value, ""d"", culture );
+```"
+
+	)]
 	public static string BTRDateFormat(
 		[ExcelArgument( "The date to apply a format to." )]
 		object value,
 		[ExcelArgument( "The C# string format to apply.  View the function's help for more detail on possible values." )]
 		string format,
-		[ExcelArgument( "Optional.  The culture name in the format languagecode2-country/regioncode2.  See 'National Language Support (NLS) API Reference' for available names." )]
+		[KatExcelArgument(
+			Description = "Optional.  The culture name in the format languagecode2-country/regioncode2 (default of `en-US`).  See 'National Language Support (NLS) API Reference' for available names.",
+			Type = typeof( string ),
+			Default = "en-US"
+		)]
 		object? culture = null 
 	)
 	{
@@ -99,50 +104,51 @@ public static class Text
 		);
 	}
 
-	/// <summary>
-	/// Builds a string using the template with zero based subsitution tokens (i.e. {0}, {1}, ...) and substitutes them for the supplied parameters.
-	/// </summary>
-	/// <param name="template">The string template to use in the builder with zero based subsitution tokens (i.e. {0}, {1}, ...).</param>
-	/// <param name="parameters">The parameters to substitute into the string template.</param>
-	/// <returns>The string after subsituting all <paramref name="parameters"/> into the <paramref name="template"/>.</returns>
-	/// <remarks>The BTRStringBuilder method is similar to C#'s string.Format() function.</remarks>
-	/// <seealso href="http://msdn.microsoft.com/en-us/library/dwhawy9k(v=vs.110).aspx">Standard Numeric Format Strings</seealso>
-	/// <seealso href="http://msdn.microsoft.com/en-us/library/0c899ak8(v=vs.110).aspx">Custom Numeric Format Strings</seealso>
-	[ExcelFunction( Category = "Formatting", Description = "Builds a string using the template with zero based subsitution tokens (i.e. {0}, {1}, ...) and substitutes them for the supplied parameters." )]
+	[KatExcelFunction( 
+		Category = "Formatting", 
+		Description = "Builds a string using the template with zero based subsitution tokens (i.e. `{0}`, `{1}`, ...) and substitutes them for the supplied parameters.",
+		Returns = "The string after substituting all `parameters` into the `template`.",
+		Remarks = @"The `BTRStringBuilder` method is similar to C#'s `string.Format()` function.
+
+*See Also*
+[Standard Numeric Format Strings](http://msdn.microsoft.com/en-us/library/dwhawy9k(v=vs.110).aspx)
+[Custom Numeric Format Strings](http://msdn.microsoft.com/en-us/library/0c899ak8(v=vs.110).aspx)
+[Standard Date and Time Format Strings](http://msdn.microsoft.com/en-us/library/az4se3k1(v=vs.110).aspx)
+[Custom Date and Time Format Strings](http://msdn.microsoft.com/en-us/library/8kb3ddd4(v=vs.110).aspx)"
+	)]
 	public static string BTRStringBuilder(
-		[ExcelArgument( "The string template to use in the builder with zero based subsitution tokens (i.e. {0}, {1}, ...)." )]
+		[ExcelArgument( "The string template to use in the builder with zero based subsitution tokens (i.e. `{0}`, `{1}`, ...)." )]
 		string template,
 		[ExcelArgument( "The parameters to substitute into the string template." )]
 		params object[] parameters
 	) => Utility.StringFormat( null, template, parameters, ExcelEmpty.Value, typeof( ExcelError ), DateTime.FromOADate );
 
-	/// <summary>
-	/// Builds a string using the template with zero based subsitution tokens (i.e. {0}, {1}, ...) and substitutes them for the supplied parameters.
-	/// </summary>
-	/// <param name="placeHolders">A space delimitted open and closing placeholder to use for token matching (i.e. {{ }}, << >>, or < >).</param>
-	/// <param name="template">The string template to use in the builder with zero based subsitution tokens (i.e. {0}, {1}, ...).</param>
-	/// <param name="parameters">The parameters to substitute into the string template.</param>
-	/// <returns>The string after subsituting all <paramref name="parameters"/> into the <paramref name="template"/>.</returns>
-	/// <remarks>The BTRStringBuilder method is similar to C#'s string.Format() function.</remarks>
-	/// <seealso href="http://msdn.microsoft.com/en-us/library/dwhawy9k(v=vs.110).aspx">Standard Numeric Format Strings</seealso>
-	/// <seealso href="http://msdn.microsoft.com/en-us/library/0c899ak8(v=vs.110).aspx">Custom Numeric Format Strings</seealso>
-	[ExcelFunction( Category = "Formatting", Description = "Builds a string using the template with zero based subsitution tokens (i.e. {0}, {1}, ...) and substitutes them for the supplied parameters." )]
+	[KatExcelFunction( 
+		Category = "Formatting", 
+		Description = "Builds a string using the template with zero based subsitution tokens (i.e. {0}, {1}, ...) and substitutes them for the supplied parameters.",
+		Returns = "The string after substituting all `parameters` into the `template`.",
+		Remarks = @"The `BTRStringBuilder` method is similar to C#'s `string.Format()` function.
+
+*See Also*
+[Standard Numeric Format Strings](http://msdn.microsoft.com/en-us/library/dwhawy9k(v=vs.110).aspx)
+[Custom Numeric Format Strings](http://msdn.microsoft.com/en-us/library/0c899ak8(v=vs.110).aspx)
+[Standard Date and Time Format Strings](http://msdn.microsoft.com/en-us/library/az4se3k1(v=vs.110).aspx)
+[Custom Date and Time Format Strings](http://msdn.microsoft.com/en-us/library/8kb3ddd4(v=vs.110).aspx)"
+	)]
 	public static string BTRStringBuilderWithPlaceholder(
-		[ExcelArgument( "A space delimitted open and closing placeholder to use for token matching (i.e. {{ }}, << >>, or < >)." )]
+		[ExcelArgument( "A space delimitted open and closing placeholder to use for token matching (i.e. `{{ }}`, `<< >>`, or `< >`)." )]
 		string placeHolders,
-		[ExcelArgument( "The string template to use in the builder with zero based subsitution tokens (i.e. {0}, {1}, ...)." )]
+		[ExcelArgument( "The string template to use in the builder with zero based subsitution tokens (i.e. `{0}`, `{1}`, ...)." )]
 		string template,
 		[ExcelArgument( "The parameters to substitute into the string template." )]
 		params object[] parameters
 	) => Utility.StringFormat( placeHolders.Split( ' ' ), template, parameters, ExcelEmpty.Value, typeof( ExcelError ), DateTime.FromOADate );
 	
-	/// <summary>
-	/// Joins a range of text strings into one string using seperator.
-	/// </summary>
-	/// <param name="values">The string values to join together</param>
-	/// <param name="seperator">Optional seperator to use between the strings (empty string if omitted).</param>
-	/// <returns>The string after joining all <paramref name="values"/> with the <paramref name="seperator"/>.</returns>
-	[ExcelFunction( Category = "Formatting", Description = "Joins a range of text strings into one string using seperator." )]
+	[KatExcelFunction( 
+		Category = "Formatting", 
+		Description = "Joins a range of text strings into one string using seperator.",
+		Returns = "The string after joining all 'values' (all but last of `argsAndSeparator`) with the 'seperator' (last `argsAndSeparator`)."
+	)]
 	public static string BTRJoin(
 		[ExcelArgument( "The string values to join with last parameter being the separator." )]
 		params object[] argsAndSeparator
@@ -169,7 +175,11 @@ public static class Text
 	public static string BTRTextJoin(
 		[ExcelArgument( "Optional. The separator to use between values. Default is empty string." )]
 		object? seperator = null,
-		[ExcelArgument( "Optional. Whether or not to ignore empty cells.  Default is true" )]
+		[KatExcelArgument(
+			Description = "Optional. Whether or not to ignore empty cells.  Default is true",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? ignoreEmptyCells = null,
 		[ExcelArgument( "1 to 252 text strings or ranges to be joined." )]
 		params object[] ranges
@@ -198,8 +208,17 @@ public static class Text
 	public static object[,] BTRUnique(
 		[ExcelArgument( "Range of cells to find unique values contained." )]
 		object[,] values,
+		[KatExcelArgument(
+			Description = "Optional. Whether or not to match size of `values` or the output from unique list when returning an array.  Default is true",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? matchInputOutputSize = null,
-		[ExcelArgument( "Optional. Whether or not to ignore empty cells.  Default is true" )]
+		[KatExcelArgument(
+			Description = "Optional. Whether or not to ignore empty cells.  Default is true",
+			Type = typeof( bool ),
+			Default = "true"
+		)]
 		object? ignoreEmptyCells = null,
 		[ExcelArgument( "1 to 252 ranges to merge." )]
 		params object[] ranges
@@ -261,11 +280,23 @@ public static class Text
 	public static object BTRSplit(
 		[ExcelArgument( "Delimmited list of values to split into an array." )]
 		string listValues,
-		[ExcelArgument( "Optional.  Single character used to delimit the list.  Comma is the default." )]
+		[KatExcelArgument(
+			Description = "Optional.  Single character used to delimit the list.  Comma is the default.",
+			Type = typeof( string ),
+			Default = ","
+		)]
 		object? delimiter = null,
-		[ExcelArgument( "Optional.  If BTRSplit is not sheet array formula, but used inline in cell formula, can provide 1 based index of value to return to eliminate need of INDEX() call." )]
+		[KatExcelArgument(
+			Description = "Optional.  If BTRSplit is not sheet array formula, but used inline in cell formula, can provide 1 based index of value to return to eliminate need of INDEX() call.",
+			Type = typeof( int ),
+			Default = null
+		)]
 		object? index = null,
-		[ExcelArgument( "Optional.  If index is provided and is out of range of the values array, return this as the value.  Default is to return #VALUE." )]
+		[KatExcelArgument(
+			Description = "Optional.  If index is provided and is out of range of the values array, return this as the value.  Default is to return #VALUE.",
+			Type = typeof( string ),
+			Default = null
+		)]
 		object? indexOutOfRangeDefault = null )
 	{
 		var delimiterArg = delimiter.Check( nameof( delimiter ), "," )[ 0 ];
@@ -318,20 +349,28 @@ public static class Text
 		string key,
 		[ExcelArgument( "Range of cells to search.  The first row must be column headers with first column of key and additional columns for each culture or culture-subculture containing the values." )]
 		object[,] resourceStrings,
-		[ExcelArgument( "Optional. The culture name to lookup.  If not provided, en-US is the default." )]
-		object? cultureName = null,
-		[ExcelArgument( "Optional. The name of the key column.  If not provided, 'key' is the default." )]
+		[KatExcelArgument(
+			Description = "Optional. The culture name to lookup.  If not provided, en-US is the default.",
+			Type = typeof( string ),
+			Default = "en-US"
+		)]
+		object? culture = null,
+		[KatExcelArgument(
+			Description = "Optional. The name of the key column.  If not provided, 'key' is the default.",
+			Type = typeof( string ),
+			Default = "`key`"
+		)]
 		object? keyName = null
 	)
 	{
-		var cultureNameArg = cultureName.Check( nameof( cultureName ), "en-US" );
+		var cultureArg = culture.Check( nameof( culture ), "en-US" );
 
 		var culturesToCheck = new[]
 		{
-			cultureNameArg,
-			cultureNameArg.IndexOf( "-" ) > -1 ? cultureNameArg[ ..cultureNameArg.IndexOf( "-" ) ] : null,
-			string.Compare( cultureNameArg, "en-US", true ) != 0 ? "en-US" : null,
-			string.Compare( cultureNameArg.Split( '-' )[ 0 ], "en", true ) != 0 ? "en" : null
+			cultureArg,
+			cultureArg.IndexOf( "-" ) > -1 ? cultureArg[ ..cultureArg.IndexOf( "-" ) ] : null,
+			string.Compare( cultureArg, "en-US", true ) != 0 ? "en-US" : null,
+			string.Compare( cultureArg.Split( '-' )[ 0 ], "en", true ) != 0 ? "en" : null
 		}.Where( c => c != null );
 
 		foreach ( var c in culturesToCheck )
