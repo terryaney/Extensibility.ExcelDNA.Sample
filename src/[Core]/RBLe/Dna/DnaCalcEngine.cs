@@ -189,7 +189,7 @@ class DnaCalcEngine : ICalcEngine<DnaWorkbook, DnaWorksheet, ExcelReference, Exc
 		
 		try
 		{
-			if ( dnaValue is ExcelError r )
+			if ( dnaValue is ExcelError r && typeof( T ) != typeof( object ) )
 			{
 				throw new ApplicationException( r == ExcelError.ExcelErrorRef
 					? $"Processing Macro variables in formula << {formula} >> failed.  Make sure all cell references have Sheet! prefix in the formula, even if cells are located on RBLMacro tab."

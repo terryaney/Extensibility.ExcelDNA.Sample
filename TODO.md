@@ -2,7 +2,12 @@
 
 1. Document my intellisense journey
 1. Ability to run markdown help files locally.
-1. Search for all 'TODO' comments
+1. Search for all 'TODO' comments (code and documentation project)
+1. Documentation
+	1. Do UI Builder documenation (or result builder)
+		1. RBL CalcEngines / RBL Result Tabs and the ResultBuilder Framework
+		1. RBL UI Builder
+	1. Review ### RBLe Macro Actions to make sure I have all items
 
 1. [Custom Intellisense/Help Info](https://github.com/Excel-DNA/IntelliSense/issues/21) - read this and linked topic to see what's possible
 	1. https://github.com/Excel-DNA/Tutorials/blob/master/SpecialTopics/IntelliSenseForVBAFunctions/README.md

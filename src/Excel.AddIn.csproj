@@ -72,14 +72,17 @@
 
 	<ItemGroup>
 		<Content Include="appsettings.json">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</Content>
 		<Content Include="appsettings.secrets.json">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</Content>
+		<AppSettingsFiles Include="appsettings.*" />
 	</ItemGroup>
-
-	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Command="powershell -Command &quot;Get-ChildItem -Path '$(TargetFrameworkDirectory)' -Filter 'Microsoft.Extensions.Configuration*.dll' | ForEach-Object { Copy-Item -Path $_.FullName -Destination '$(OutDir)' }&quot;" />
-	</Target>	
+	<Target Name="CopyAppSettingsIfNotExists" AfterTargets="AfterBuild">
+		<Copy SourceFiles="@(AppSettingsFiles)" 
+			DestinationFolder="$(OutputPath)" 
+			Condition="!Exists('$(OutputPath)%(Filename)%(Extension)')" 
+			SkipUnchangedFiles="true" />
+	</Target>
 </Project>
