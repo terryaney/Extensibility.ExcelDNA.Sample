@@ -51,6 +51,7 @@
 			"label": "build Excel Add-In",
 			"dependsOn": [
 				"build - MSBuild",
+				"build - generate docs",
 				"build - post"
 			],
 			"dependsOrder": "sequence",
@@ -74,6 +75,20 @@
 				"showReuseMessage": false
 			},
 			"problemMatcher": "$msCompile"
+		},
+		{
+			"label": "build - generate docs",
+			"command": "lprun8.exe",
+			"type": "process",
+			"presentation": {
+				"echo": false,
+				"showReuseMessage": false
+			},
+			"hide": true,
+			"args": [
+				"${workspaceFolder:Excel.AddIn}\\.vscode\\DnaDocumentation\\Generate.linq"
+			],
+			"problemMatcher": []
 		},
 		{
 			"label": "build - post",

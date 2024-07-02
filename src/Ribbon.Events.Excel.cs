@@ -1,4 +1,5 @@
 ﻿using ExcelDna.Integration;
+using KAT.Camelot.Abstractions.Api.Contracts.Excel.V1.Requests;
 using KAT.Camelot.Domain.Extensions;
 using MSExcel = Microsoft.Office.Interop.Excel;
 
@@ -135,8 +136,6 @@ public partial class Ribbon
 
 				if ( info != null )
 				{
-					skipProcessSaveHistory = true;
-					wb.Save();
 					RunRibbonTask( () => UploadCalcEngineToManagementSiteAsync( info ) );
 				}
 			} );
@@ -208,68 +207,74 @@ public partial class Ribbon
 		{
 			using var saveHistory = new SaveHistory( workbook, WorkbookState, GetWindowConfiguration( nameof( SaveHistory ) ) );
 
+			var owner = new NativeWindow();
+			owner.AssignHandle( new IntPtr( application.Hwnd ) );
+
 			var info = saveHistory.GetInfo( 
 				AddIn.Settings.SaveHistoryName, 
 				AddIn.Settings.KatUserName, 
-				password 
+				password,
+				owner
 			);
 
-			if ( info.Result == DialogResult.Ignore )
+			if ( info.Result == DialogResult.Cancel )
 			{
 				return null;
 			}
 
 			SaveWindowConfiguration( nameof( SaveHistory ), info.WindowConfiguration );
 
-			var currentVersion = (string?)info.VersionRange.Text;
+			// Update history log
+			var descriptions = 
+				info.Description?
+					.Split( new[] { "\r\n", "\n" }, StringSplitOptions.None )
+					.Select( d => d.Replace( "\t", "  " ) )
+					.Reverse()
+					.ToArray() ?? Array.Empty<string>();
 
-			if ( info.Result != DialogResult.Retry )
+			var historyRange = info.HistoryRange.Offset[ 2, 0 ];
+			var historySheet = historyRange.Worksheet;
+
+			for (var i = 0; i < descriptions.Length; i++)
 			{
-				// Update history log
-				var descriptions = 
-					info.Description?
-						.Split( new[] { "\r\n", "\n" }, StringSplitOptions.None )
-						.Select( d => d.Replace( "\t", "  " ) )
-						.Reverse()
-						.ToArray() ?? Array.Empty<string>();
+				historyRange.Offset[ 1, 0 ].EntireRow.Insert( MSExcel.XlInsertShiftDirection.xlShiftDown );
+				historySheet.Range[ historyRange, historyRange.Offset[ 0, 3 ] ].Copy( historyRange.Offset[ 1, 0 ] );
+				historySheet.Range[ historyRange, historyRange.Offset[ 0, 3 ] ].Value = null;
 
-				var historyRange = info.HistoryRange.Offset[ 2, 0 ];
-				var historySheet = historyRange.Worksheet;
+				historyRange.Offset[ 0, 3 ].Value = descriptions[ i ];
 
-				for (var i = 0; i < descriptions.Length; i++)
+				// If last row...
+				if ( i == descriptions.Length - 1 )
 				{
-					historyRange.Offset[ 1, 0 ].EntireRow.Insert( MSExcel.XlInsertShiftDirection.xlShiftDown );
-					historySheet.Range[ historyRange, historyRange.Offset[ 0, 3 ] ].Copy( historyRange.Offset[ 1, 0 ] );
-					historySheet.Range[ historyRange, historyRange.Offset[ 0, 3 ] ].Value = null;
-
-					historyRange.Offset[ 0, 3 ].Value = descriptions[ i ];
-
-					// If last row...
-					if ( i == descriptions.Length - 1 )
-					{
-						historyRange.Value = info.Version;
-						historyRange.Offset[ 0, 1 ].Value = string.Format( "{0:MM/dd/yyyy hh:mm tt}", DateTime.Now );
-						historyRange.Offset[ 0, 2 ].Value = info.Author;
-					}
+					historyRange.Value = info.Version;
+					historyRange.Offset[ 0, 1 ].Value = string.Format( "{0:MM/dd/yyyy hh:mm tt}", DateTime.Now );
+					historyRange.Offset[ 0, 2 ].Value = info.Author;
 				}
-
-				info.VersionRange.Value = double.Parse( info.Version );
 			}
 
-			return info.Result != DialogResult.OK 
-				? new()
+			info.VersionRange.Value = double.Parse( info.Version );
+
+			skipProcessSaveHistory = true;
+			try
+			{
+				workbook.Save();
+			}
+			finally
+			{
+				skipProcessSaveHistory = false;
+			}
+
+			return info.Result == DialogResult.Continue
+				? new() // 'Continue' uploads file
 				{
 					UserName = info.UserName,
 					Password = info.Password,
-					ForceUpload = info.ForceUpload,
-					ExpectedVersion = currentVersion,
 					WindowConfiguration = info.WindowConfiguration, // not needed but my class derived from requirement
 					FullName = application.ActiveWorkbook.FullName
 				} 
-				: null;
+				: null; // 'OK' only updates history log, no upload
 		}
 
-		skipProcessSaveHistory = false;
 		return null;
 	}
 
@@ -279,11 +284,15 @@ public partial class Ribbon
 		{
 			await UpdateAddInCredentialsAsync( info.UserName, info.Password );
 
-			var ceContent = await File.ReadAllBytesAsync( info.FullName );
-
 			SetStatusBar( "Uploading CalcEngine to Management Site..." );
 
-			// TODO: Upload ceContent, need to pass userName, password, expectedVersion, forceUpload (boolean) and confirm it can be done
+			var validations = await apiService.UploadCalcEngineAsync( info.FullName, info.UserName, info.Password );
+
+			if ( validations != null )
+			{
+				ShowValidations( validations );
+				return;
+			}
 
 			SetStatusBar( "CalcEngine successfully uploaded to Management Site." );
 
@@ -293,13 +302,9 @@ public partial class Ribbon
 				ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
 			} );
 		}
-		catch ( Exception ex )
+		catch
 		{
 			ClearStatusBar();
-			ExcelAsyncUtil.QueueAsMacro( () =>
-			{
-				MessageBox.Show( "Uploading CalcEngine to Management Site FAILED. " + ex.Message, "Upload Failed", MessageBoxButtons.OK, MessageBoxIcon.Error );
-			} );
 			throw;
 		}
 	}

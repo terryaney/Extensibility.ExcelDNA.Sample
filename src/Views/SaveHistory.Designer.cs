@@ -1,4 +1,6 @@
-﻿namespace KAT.Camelot.Extensibility.Excel.AddIn;
+﻿
+
+namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 internal partial class SaveHistory
 {
@@ -29,33 +31,32 @@ internal partial class SaveHistory
     private void InitializeComponent()
     {
         components = new System.ComponentModel.Container();
-        label1 = new Label();
+        authorLabel = new Label();
         author = new TextBox();
         skip = new Button();
         ok = new Button();
         version = new TextBox();
         versionLabel = new Label();
         description = new TextBox();
-        label2 = new Label();
+        descriptionLabel = new Label();
         errorProvider = new ErrorProvider(components);
         lManagementSite = new Label();
         tUserName = new TextBox();
         lUserName = new Label();
         tPassword = new TextBox();
         lPassword = new Label();
-        forceUpload = new CheckBox();
         ((System.ComponentModel.ISupportInitialize)errorProvider).BeginInit();
         SuspendLayout();
         // 
-        // label1
+        // authorLabel
         // 
-        label1.AutoSize = true;
-        label1.Location = new Point(15, 11);
-        label1.Margin = new Padding(4, 0, 4, 0);
-        label1.Name = "label1";
-        label1.Size = new Size(47, 15);
-        label1.TabIndex = 0;
-        label1.Text = "&Author:";
+        authorLabel.AutoSize = true;
+        authorLabel.Location = new Point(15, 11);
+        authorLabel.Margin = new Padding(4, 0, 4, 0);
+        authorLabel.Name = "authorLabel";
+        authorLabel.Size = new Size(47, 15);
+        authorLabel.TabIndex = 0;
+        authorLabel.Text = "&Author:";
         // 
         // author
         // 
@@ -69,7 +70,7 @@ internal partial class SaveHistory
         // skip
         // 
         skip.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-        skip.DialogResult = DialogResult.Ignore;
+        skip.DialogResult = DialogResult.Cancel;
         skip.Location = new Point(426, 249);
         skip.Margin = new Padding(4);
         skip.Name = "skip";
@@ -84,7 +85,7 @@ internal partial class SaveHistory
         ok.Location = new Point(325, 249);
         ok.Margin = new Padding(4);
         ok.Name = "ok";
-        ok.Size = new Size(94, 26);
+		ok.Size = new Size(94, 26);
         ok.TabIndex = 12;
         ok.Text = "A&pply/Upload";
         ok.UseVisualStyleBackColor = true;
@@ -120,15 +121,15 @@ internal partial class SaveHistory
         description.Size = new Size(496, 58);
         description.TabIndex = 5;
         // 
-        // label2
+        // descriptionLabel
         // 
-        label2.AutoSize = true;
-        label2.Location = new Point(15, 58);
-        label2.Margin = new Padding(4, 0, 4, 0);
-        label2.Name = "label2";
-        label2.Size = new Size(70, 15);
-        label2.TabIndex = 4;
-        label2.Text = "&Description:";
+        descriptionLabel.AutoSize = true;
+        descriptionLabel.Location = new Point(15, 58);
+        descriptionLabel.Margin = new Padding(4, 0, 4, 0);
+        descriptionLabel.Name = "descriptionLabel";
+        descriptionLabel.Size = new Size(70, 15);
+        descriptionLabel.TabIndex = 4;
+        descriptionLabel.Text = "&Description:";
         // 
         // errorProvider
         // 
@@ -188,17 +189,6 @@ internal partial class SaveHistory
         lPassword.TabIndex = 9;
         lPassword.Text = "&Password";
         // 
-        // forceUpload
-        // 
-        forceUpload.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
-        forceUpload.AutoSize = true;
-        forceUpload.Location = new Point(18, 218);
-        forceUpload.Name = "forceUpload";
-        forceUpload.Size = new Size(371, 19);
-        forceUpload.TabIndex = 11;
-        forceUpload.Text = "&Force upload without checking Management Site's lastest version";
-        forceUpload.UseVisualStyleBackColor = true;
-        // 
         // SaveHistory
         // 
         AcceptButton = ok;
@@ -206,20 +196,19 @@ internal partial class SaveHistory
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = skip;
         ClientSize = new Size(539, 297);
-        Controls.Add(forceUpload);
         Controls.Add(tPassword);
         Controls.Add(lPassword);
         Controls.Add(tUserName);
         Controls.Add(lUserName);
         Controls.Add(lManagementSite);
         Controls.Add(description);
-        Controls.Add(label2);
+        Controls.Add(descriptionLabel);
         Controls.Add(version);
         Controls.Add(versionLabel);
         Controls.Add(ok);
         Controls.Add(skip);
         Controls.Add(author);
-        Controls.Add(label1);
+        Controls.Add(authorLabel);
         Margin = new Padding(4);
         MaximizeBox = false;
         MaximumSize = new Size(813, 453);
@@ -235,21 +224,20 @@ internal partial class SaveHistory
         PerformLayout();
     }
 
-    #endregion
+	#endregion
 
-    private System.Windows.Forms.Label label1;
+	private System.Windows.Forms.Label authorLabel;
 	private System.Windows.Forms.TextBox author;
 	private System.Windows.Forms.Button skip;
 	private System.Windows.Forms.Button ok;
 	private System.Windows.Forms.TextBox version;
 	private System.Windows.Forms.Label versionLabel;
 	private System.Windows.Forms.TextBox description;
-	private System.Windows.Forms.Label label2;
+	private System.Windows.Forms.Label descriptionLabel;
 	private System.Windows.Forms.ErrorProvider errorProvider;
 	private System.Windows.Forms.TextBox tPassword;
 	private System.Windows.Forms.Label lPassword;
 	private System.Windows.Forms.TextBox tUserName;
 	private System.Windows.Forms.Label lUserName;
 	private System.Windows.Forms.Label lManagementSite;
-	private System.Windows.Forms.CheckBox forceUpload;
 }

@@ -46,6 +46,7 @@ partial class NavigateToTable
         imageList.TransparentColor = Color.Transparent;
         imageList.Images.SetKeyName(0, "Table");
         imageList.Images.SetKeyName(1, "Row");
+        imageList.Images.SetKeyName(2, "Sheet");
         // 
         // availableTables
         // 
@@ -102,7 +103,7 @@ partial class NavigateToTable
         // NavigateToTable
         // 
         AcceptButton = ok;
-        AutoScaleDimensions = new SizeF(6F, 13F);
+        AutoScaleDimensions = new SizeF(8F, 17F);
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = cancel;
         ClientSize = new Size(484, 236);

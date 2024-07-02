@@ -11,7 +11,6 @@ internal class SaveHistoryInfo
 	public string Author { get; init; } = null!;
 	public string UserName { get; init; } = null!;
 	public string Password { get; init; } = null!;
-	public bool ForceUpload { get; init; }
 
 	public MSExcel.Range HistoryRange { get; init; } = null!;
 	public MSExcel.Range VersionRange { get; init; } = null!;

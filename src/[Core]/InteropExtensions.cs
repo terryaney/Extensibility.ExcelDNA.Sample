@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
@@ -107,6 +108,20 @@ public static class InteropExtensions
 		}
 	}
 
+	public static T? ValueOrNull<T>( this MSExcel.Range? range )
+	{
+		try
+		{
+			return typeof( T ) == typeof( string )
+				? (T?)range?.Text
+				: (T?)range?.Value;
+		}
+		catch ( ApplicationException ) { throw; }
+		catch ( Exception ex )
+		{
+			throw new ApplicationException( $"Unable to get worksheet named range value from {range?.Address}.", ex );
+		}
+	}
 	public static string GetText( this MSExcel.Range range ) => ( range.Text as string )!;
 	public static string GetFormula( this MSExcel.Range range ) => ( range.Formula as string )!;
 

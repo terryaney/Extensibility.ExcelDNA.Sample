@@ -214,13 +214,16 @@ namespace Excel.AddIn.Setup
 					Directory.SetAccessControl( installPath, ds );
 				}
 
-				if ( File.Exists( Path.Combine( installPath, xllName ) ) )
-				{
-					File.Delete( Path.Combine( installPath, xllName ) );
-				}
-
-				var filesToCopy = new[] { xllName, "appsettings.json" }
-					.Select( f => Path.Combine( installPath, f ) )
+				var filesToCopy = new[] { xllName, "appsettings.json", "KAT.Extensibility.Excel.intellisense.xml" }
+					.Select( f =>
+					{
+						var path = Path.Combine( installPath, f );
+						if ( f != "appsettings.json" && File.Exists( path ) )
+						{
+							File.Delete( path );
+						}
+						return path;
+					} )
 					.Where( f => !File.Exists( f ) )
 					.ToArray();
 

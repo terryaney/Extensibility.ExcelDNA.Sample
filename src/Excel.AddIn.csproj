@@ -72,6 +72,16 @@
 
 	<ItemGroup>
 		<Content Include="appsettings.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+		<Content Include="appsettings.secrets.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
+	<!--
+	<ItemGroup>
+		<Content Include="appsettings.json">
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</Content>
 		<Content Include="appsettings.secrets.json">
@@ -85,4 +95,5 @@
 			Condition="!Exists('$(OutputPath)%(Filename)%(Extension)')" 
 			SkipUnchangedFiles="true" />
 	</Target>
+	-->
 </Project>

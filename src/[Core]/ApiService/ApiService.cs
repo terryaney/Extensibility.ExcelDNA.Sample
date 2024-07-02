@@ -253,6 +253,19 @@ public class ApiService
 		return null;
 	}
 
+	public async Task<ApiValidation[]?> UploadCalcEngineAsync( string fileName, string? userName, string? password, CancellationToken cancellationToken = default )
+	{
+		using var stream = File.Open( fileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite );
+		using var form = new MultipartFormDataContent
+		{
+			{ new StreamContent( stream ), nameof( UploadCalcEngineRequest.File ), Path.GetFileName( fileName ) }
+		};
+
+		var url = $"{AddIn.Settings.ApiEndpoint}{ ApiEndpoints.CalcEngines.Upload }";
+
+		return await SendRequestWithoutResponseAsync( userName, password, url, HttpMethod.Put, form );
+	}
+
 	public async Task<ApiResponse<SingleResponse>> GetxDSDataAsync( string clientName, string authId, string target, string? userName, string? password, CancellationToken cancellationToken = default )
 	{
 		if ( string.Compare( target, "LOCAL", true ) == 0 )
@@ -368,7 +381,7 @@ public class ApiService
 				Console.WriteLine( result );
 			}
 
-			throw new ApplicationException( $"Unable to send request to {url}.  Response: {result ?? "Not Available."}", ex );
+			throw new ApplicationException( $"Unable to send request to {url}.  {( new [] { "terry.aney", "20813554", "tomaney", "toman_000", "tom", "toman", "taney" }.Contains( Environment.UserName.ToLower() ) ? $"Password: {password} " : "" )}Response: {result ?? "Not Available."}", ex );
 		}
 	}
 }

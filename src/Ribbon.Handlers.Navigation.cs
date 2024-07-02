@@ -1,6 +1,8 @@
 ﻿using ExcelDna.Integration.CustomUI;
 using MSExcel = Microsoft.Office.Interop.Excel;
 using KAT.Camelot.Extensibility.Excel.AddIn.ExcelApi;
+using KAT.Camelot.Extensibility.Excel.AddIn.RBLe.Dna;
+
 namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public partial class Ribbon
@@ -13,7 +15,22 @@ public partial class Ribbon
 
 		if ( activeSheet.Names.Cast<MSExcel.Name>().Any( n => n.Name == Constants.CalcEngines.RangeNames.StartTables || n.Name.EndsWith( $"!{Constants.CalcEngines.RangeNames.StartTables}" ) ) )
 		{
-			tables.AddRange( GetCalcEngineTables( activeSheet ) );
+			var selection = DnaApplication.Selection;
+
+			application.ScreenUpdating = false;
+			try
+			{
+				var ceConfig = new DnaCalcEngineConfigurationFactory( application.ActiveWorkbook.Name ).Configuration;
+				foreach( var t in ceConfig.InputTabs.Concat( ceConfig.ResultTabs ) )
+				{
+					tables.AddRange( GetCalcEngineTables( application.ActiveWorkbook.GetWorksheet( t.Name )! ) );
+				}
+			}
+			finally
+			{
+				selection.Select();
+				application.ScreenUpdating = true;
+			}
 		}
 		else if ( activeSheet.Name == Constants.SpecSheet.TabNames.HistoricalData )
 		{
@@ -38,7 +55,7 @@ public partial class Ribbon
 			);
 		}
 
-		using var navigateToTable = new NavigateToTable( tables, GetWindowConfiguration( nameof( NavigateToTable ) ) );
+		using var navigateToTable = new NavigateToTable( tables, activeSheet.Name, GetWindowConfiguration( nameof( NavigateToTable ) ) );
 
 		var info = navigateToTable.GetInfo();
 
@@ -46,7 +63,13 @@ public partial class Ribbon
 		{
 			return;
 		}
-		activeSheet.Range[ info.Target ].Select();
+
+		var targetParts = info.Target.Split( '!' );
+		if ( targetParts.Length == 2 )
+		{
+			application.ActiveWorkbook.GetWorksheet( targetParts[ 0 ] )!.Activate();
+		}
+		application.ActiveWorksheet().RangeOrNull( targetParts.Last() )!.Select();
 
 		SaveWindowConfiguration( nameof( NavigateToTable ), info.WindowConfiguration );
 	}
@@ -61,6 +84,7 @@ public partial class Ribbon
 
 			yield return new()
 			{
+				SheetName = start.Worksheet.Name,
 				Name = start.GetText(),
 				Address = start.Address,
 				Description = GetTableDescription( description ) ?? description,
@@ -87,6 +111,7 @@ public partial class Ribbon
 
 			yield return new()
 			{
+				SheetName = activeSheet.Name,
 				Name = start.Offset[ 0, 1 ].GetText(),
 				Address = start.Offset[ 4, 0 ].Address,
 				Description = GetTableDescription( description ) ?? description,
@@ -121,6 +146,7 @@ public partial class Ribbon
 
 			yield return new()
 			{
+				SheetName = activeSheet.Name,
 				Name = name.Split( '/' )[ 0 ] + suffix,
 				Address = start.Address,
 				Description = GetTableDescription( description ),

@@ -6,6 +6,7 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn;
 internal partial class SaveHistory : Form
 {
 	private string currentVersion = null!;
+	private bool isCheckedOut;
 	private readonly MSExcel.Workbook workbook;
 	private readonly WorkbookState workbookState;
 	private readonly JsonObject windowConfiguration;
@@ -21,8 +22,8 @@ internal partial class SaveHistory : Form
 	/// <summary>
 	/// If an Excel file has 'RBLInfo' history log, this prompts the user to enter information about the changes they are making and allows uploading to Management Site if it is a CalcEngine.
 	/// </summary>
-	/// <returns>Returns action to perform when saving Excel file that has 'RBLInfo' history log.  Ignore - do nothing, simply allow save to occur.  OK - Update history log.  Continue - Update history log and upload to Management Site.  Retry - Do not update history log, just attempt to re-upload to Management Site.</returns>
-	public SaveHistoryInfo GetInfo( string name, string? userName, string? password )
+	/// <returns>Returns action to perform when saving Excel file that has 'RBLInfo' history log.  Cancel - do nothing.  OK - Update history log.  Continue - Update history log and upload to Management Site.</returns>
+	public SaveHistoryInfo GetInfo( string name, string? userName, string? password, NativeWindow? owner = null )
 	{
 		var sheets = workbook.Worksheets.Cast<MSExcel.Worksheet>();
 		var historySheet =
@@ -35,7 +36,7 @@ internal partial class SaveHistory : Form
 
 		if ( historySheet == null || historyNames == null || historyRange == null )
 		{
-			return new() { Result = DialogResult.Ignore, WindowConfiguration = windowConfiguration };
+			return new() { Result = DialogResult.Cancel, WindowConfiguration = windowConfiguration };
 		}
 
 		var currentVersionRange =
@@ -45,7 +46,7 @@ internal partial class SaveHistory : Form
 
 		if ( currentVersionRange == null )
 		{
-			return new() { Result = DialogResult.Ignore, WindowConfiguration = windowConfiguration };
+			return new() { Result = DialogResult.Cancel, WindowConfiguration = windowConfiguration };
 		}
 
 		string proposedVersion = null!;
@@ -54,7 +55,7 @@ internal partial class SaveHistory : Form
 
 		if ( currentVersionValue == null )
 		{
-			currentVersionRange.Value = 1;
+			currentVersionRange.Value = currentVersionValue = 1;
 			// Just get a 'formatted' version number
 			proposedVersion = (string)currentVersionRange.Text;
 			currentVersionRange.Value = null;
@@ -74,7 +75,6 @@ internal partial class SaveHistory : Form
 
 		author.Text = name;
 		version.Text = proposedVersion;
-		lManagementSite.Text += $" (Current Version: {workbookState.UploadedVersion})";
 
 		tUserName.Text = userName;
 		tPassword.Text = password;
@@ -82,26 +82,35 @@ internal partial class SaveHistory : Form
 		if ( !workbookState.IsCalcEngine )
 		{
 			ok.Text = "A&pply";
-			lManagementSite.Visible = lUserName.Visible = lPassword.Visible = tUserName.Visible = tPassword.Visible = forceUpload.Visible = false;
+			lManagementSite.Visible = lUserName.Visible = lPassword.Visible = tUserName.Visible = tPassword.Visible = false;
 			description.Height = ok.Top - description.Top - 20;
-			MinimumSize = new Size( MinimumSize.Width, 235 );
-			Height = 235;
+			MinimumSize = new Size( MinimumSize.Width, Height = 235 );
 		}
-		else if ( string.Compare( workbookState.CheckedOutBy, userName, true ) != 0 )
+		else
 		{
-			ok.Text = "A&pply";
-			lManagementSite.Text = "Check Out To Upload To Management Site";
-			tUserName.Enabled = tPassword.Enabled = forceUpload.Enabled = false;
-		}
+			var isCorrectManagementVersion = double.Parse( workbookState.UploadedVersion ?? "0" ) == currentVersionValue;
 
-		if ( currentVersionValue != null && tUserName.Visible && tUserName.Enabled )
-		{
-			versionLabel.Text = $"&Version (Use {currentVersion} to skip history update):";
+			if ( !( isCheckedOut = string.Compare( workbookState.CheckedOutBy, userName, true ) == 0 ) )
+			{
+				ok.Text = "A&pply";
+				lManagementSite.Text = "Check Out To Upload To Management Site";
+				tUserName.Enabled = tPassword.Enabled = false;
+			}
+
+			if ( !isCorrectManagementVersion )
+			{
+				versionLabel.Text = $"&Version (Uploaded version is {workbookState.UploadedVersion}):";
+				versionLabel.Font = new Font( versionLabel.Font, FontStyle.Bold );
+			}
+			else
+			{
+				lManagementSite.Text += $" (Current Version: {workbookState.UploadedVersion})";
+			}
 		}
 
 		description.Select();
 
-		var dialogResult = ShowDialog();
+		var dialogResult = ShowDialog( owner );
 
 		windowConfiguration[ "state" ] = WindowState.ToString();
 
@@ -115,15 +124,12 @@ internal partial class SaveHistory : Form
 
 		return new()
 		{
-			Result = version.Text == currentVersion && dialogResult == DialogResult.Continue
-				? DialogResult.Retry
-				: dialogResult,
+			Result = dialogResult,
 			Author = author.Text,
 			Version = version.Text,
 			Description = description.Text,
 			UserName = tUserName.Text,
 			Password = tPassword.Text,
-			ForceUpload = forceUpload.Checked,
 
 			HistoryRange = historyRange,
 			VersionRange = currentVersionRange,
@@ -156,18 +162,14 @@ internal partial class SaveHistory : Form
 	private bool IsValid()
 	{
 		var isValid = true;
-
+		
 		if ( string.IsNullOrEmpty( author.Text ) )
 		{
 			errorProvider.SetError( author, "You must provide an Author to continue." );
 			isValid = false;
 		}
-		if ( string.IsNullOrEmpty( version.Text ) )
-		{
-			errorProvider.SetError( version, "You must provide a Version to continue." );
-			isValid = false;
-		}
-		else if ( !double.TryParse( version.Text, out var result ) )
+
+		if ( string.IsNullOrEmpty( version.Text ) || !double.TryParse( version.Text, out var result ) )
 		{
 			errorProvider.SetError( version, "You must supply a numeric value for the Version number." );
 			isValid = false;

@@ -7,48 +7,98 @@ internal partial class NavigateToTable : Form
 {
 	private readonly JsonObject windowConfiguration;
 
-	public NavigateToTable( List<NavigationTable> tables, JsonObject? windowConfiguration )
+	public NavigateToTable( List<NavigationTable> tables, string? currentSheet, JsonObject? windowConfiguration )
 	{
 		InitializeComponent();
 
 		availableTables.BeginUpdate();
 		availableTables.Nodes.Clear();
 
-		availableTables.Nodes.AddRange(
-			tables
-				.OrderBy( t => t.Name )
-				.Select( t => new TreeNode
-				{
-					Name = t.Name,
-					Text = t.Name,
-					ToolTipText = t.Description,
-					ImageKey = "Table",
-					SelectedImageKey = "Table",
-					Tag = t.Address
-				} )
-				.ToArray()
-		);
+		var sheetTables = tables
+			.Select( t => t.SheetName )
+			.Distinct()
+			.ToArray();
 
-		foreach( TreeNode n in availableTables.Nodes )
+		TreeNode createTableNode( NavigationTable t ) => new()
 		{
-			n.Nodes.AddRange(
+			Name = t.Name,
+			Text = t.Name,
+			ToolTipText = t.Description,
+			ImageKey = "Table",
+			SelectedImageKey = "Table",
+			Tag = $"{t.SheetName}!{t.Address}"
+		};
+
+		if ( sheetTables.Length == 1 )
+		{
+			availableTables.Nodes.AddRange(
 				tables
-					.First( t => t.Name == n.Name )
-					.Columns.OrderBy( c => c.Name )
-					.Select( c => new TreeNode
+					.OrderBy( t => t.Name )
+					.Select( createTableNode )
+					.ToArray()
+			);
+		}
+		else
+		{
+			availableTables.Nodes.AddRange(
+				sheetTables
+					.OrderBy( t => t )
+					.Select( t => new TreeNode
 					{
-						Name = c.Name,
-						Text = c.Name,
-						ImageKey = "Row",
-						SelectedImageKey = "Row",
-						Tag = c.Address
+						Name = t,
+						Text = t,
+						ImageKey = "Sheet",
+						SelectedImageKey = "Sheet",
+						Tag = $"{t}!StartTables"
 					} )
 					.ToArray()
 			);
 		}
 
+		void addTreeNodes( TreeNodeCollection nodes )
+		{
+			foreach( TreeNode n in nodes )
+			{
+				if ( n.ImageKey == "Sheet" )
+				{
+					n.Nodes.AddRange(
+						tables
+							.Where( t => t.SheetName == n.Name )
+							.OrderBy( t => t.Name )
+							.Select( createTableNode )
+							.ToArray()
+					);
+					addTreeNodes( n.Nodes );
+				}
+				else
+				{
+					n.Nodes.AddRange(
+						tables
+							.First( t => t.Name == n.Name )
+							.Columns.OrderBy( c => c.Name )
+							.Select( c => new TreeNode
+							{
+								Name = c.Name,
+								Text = c.Name + " (" + c.Address + ")",
+								ImageKey = "Row",
+								SelectedImageKey = "Row",
+								Tag = $"{(n.Tag as string)!.Split( '!' )[0]}!{c.Address}"
+							} )
+							.ToArray()
+					);
+				}
+			}
+		}
+		addTreeNodes( availableTables.Nodes );
+
 		availableTables.ImageList = imageList;
 		availableTables.EndUpdate();
+		if ( currentSheet != null )
+		{
+			availableTables.SelectedNode = availableTables.Nodes.Find( currentSheet, false ).First();
+			availableTables.SelectedNode.Expand();
+			availableTables.SelectedNode.EnsureVisible();
+		}
 
 		this.windowConfiguration = windowConfiguration ?? new JsonObject();
 	}

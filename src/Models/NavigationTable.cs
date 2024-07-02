@@ -2,6 +2,7 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn;
 
 public class NavigationTable : NavigationTarget
 {
+	public required string SheetName { get; init; }
 	public string? Description { get; init; }
 	public required NavigationTarget[] Columns { get; init; }
 }
