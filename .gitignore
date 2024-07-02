@@ -1,2 +1,3 @@
 appsettings.secrets.json
-*.xll
+dist/Resources/*.xll
+dist/Resources/*.xml
