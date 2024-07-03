@@ -250,11 +250,12 @@ public partial class Ribbon : ExcelRibbon
 			}
 			catch ( Exception ex )
 			{
+				ExcelAsyncUtil.QueueAsMacro( () =>
+				{
+					application.Cursor = MSExcel.XlMousePointer.xlDefault;
+					application.ScreenUpdating = true;
+				} );
 				ShowException( ex, actionName );
-			}
-			finally
-			{
-				ExcelAsyncUtil.QueueAsMacro( () => application.Cursor = MSExcel.XlMousePointer.xlDefault );
 			}
 		} );
 	}
@@ -329,8 +330,15 @@ public partial class Ribbon : ExcelRibbon
 
 			if ( info != null )
 			{
-				await UpdateAddInCredentialsAsync( info.UserName, info.Password );
-				SaveWindowConfiguration( nameof( Credentials ), info.WindowConfiguration );
+				try
+				{
+					await UpdateAddInCredentialsAsync( info.UserName, info.Password );
+					SaveWindowConfiguration( nameof( Credentials ), info.WindowConfiguration );
+				}
+				finally
+				{
+					ExcelAsyncUtil.QueueAsMacro( () => application.Cursor = MSExcel.XlMousePointer.xlDefault );
+				}
 			}
 		}
 	}
@@ -427,13 +435,17 @@ public partial class Ribbon : ExcelRibbon
 	}
 
 	private void SetStatusBar( string message ) => ExcelAsyncUtil.QueueAsMacro( () => application.StatusBar = $"KAT: {message}" );
-	private void ClearStatusBar() => ExcelAsyncUtil.QueueAsMacro( () => {
-		if ( ( (string?)application.StatusBar ?? "" ).StartsWith( "KAT: " ) )
-		{
-			application.StatusBar = "";
-			application.Cursor = MSExcel.XlMousePointer.xlDefault;
-		}
-	} );
+	private void ClearStatusBar( bool defaultCursor = false ) => 
+		ExcelAsyncUtil.QueueAsMacro( () => {
+			if ( ( (string?)application.StatusBar ?? "" ).StartsWith( "KAT: " ) )
+			{
+				application.StatusBar = "";
+			}
+			if ( defaultCursor )
+			{
+				application.Cursor = MSExcel.XlMousePointer.xlDefault;
+			}
+		} );
 	private void InvalidateRibbon() => ExcelAsyncUtil.QueueAsMacro( () => {
 		ribbon.Invalidate();
 		application.Cursor = MSExcel.XlMousePointer.xlDefault;
@@ -480,7 +492,11 @@ public partial class Ribbon : ExcelRibbon
 
 		if ( openFile )
 		{
-			ExcelAsyncUtil.QueueAsMacro( () => application.Workbooks.Open( fullName ) );
+			ExcelAsyncUtil.QueueAsMacro( () =>
+			{
+				application.Workbooks.Open( fullName );
+				application.Cursor = MSExcel.XlMousePointer.xlDefault;
+			} );
 		}
 	}
 

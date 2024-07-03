@@ -239,7 +239,7 @@ public partial class Ribbon
 				}
 			}
 
-			ClearStatusBar();
+			ClearStatusBar( true );
 
 			if ( results.Count > 0 )
 			{

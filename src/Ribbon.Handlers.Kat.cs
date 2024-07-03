@@ -117,6 +117,7 @@ public partial class Ribbon
 
 						ExcelAsyncUtil.QueueAsMacro( () =>
 						{
+							application.Cursor = MSExcel.XlMousePointer.xlDefault;
 							MessageBox.Show( "You KAT Email Blast job was successfully submitted.  You will be notified when it completes.", "KAT Email Blast", MessageBoxButtons.OK, MessageBoxIcon.Information );
 
 							RunRibbonTask( async () =>
@@ -129,13 +130,15 @@ public partial class Ribbon
 									return;
 								}
 
-								ExcelAsyncUtil.QueueAsMacro( () => MessageBox.Show( "The KAT Email Blast job completed successfully!", "KAT Email Blast", MessageBoxButtons.OK, MessageBoxIcon.Information ) );
+								ExcelAsyncUtil.QueueAsMacro( () => { 
+									MessageBox.Show( "The KAT Email Blast job completed successfully!", "KAT Email Blast", MessageBoxButtons.OK, MessageBoxIcon.Information ); 
+								} );
 							} );
 						} );
 					}
 					catch ( Exception ex )
 					{
-						ClearStatusBar();
+						ClearStatusBar( true );
 						ExcelAsyncUtil.QueueAsMacro( () => {
 							MessageBox.Show( "Submitting Email Blast Job FAILED. " + ex.Message, "Email Blast", MessageBoxButtons.OK, MessageBoxIcon.Error );
 						} );

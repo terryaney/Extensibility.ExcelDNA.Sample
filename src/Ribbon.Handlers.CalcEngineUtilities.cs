@@ -104,6 +104,7 @@ public partial class Ribbon
 							ExcelAsyncUtil.QueueAsMacro( () =>
 							{
 								application.ScreenUpdating = true;
+								application.Cursor = MSExcel.XlMousePointer.xlDefault;
 								if ( validations != null )
 								{
 									ShowValidations( validations );
@@ -122,8 +123,6 @@ public partial class Ribbon
 
 						ExcelAsyncUtil.QueueAsMacro( () =>
 						{
-							application.Cursor = MSExcel.XlMousePointer.xlWait;
-
 							try
 							{
 								var fileName = application.ActiveWorkbook.Name;

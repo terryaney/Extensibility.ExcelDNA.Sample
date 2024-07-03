@@ -78,6 +78,7 @@ public partial class Ribbon
 					{
 						ShowValidations( validations );
 					}
+					application.Cursor = MSExcel.XlMousePointer.xlDefault;
 				} );
 			} );
 		}
@@ -132,11 +133,23 @@ public partial class Ribbon
 
 			ExcelAsyncUtil.QueueAsMacro( () =>
 			{
-				var info = ProcessSaveHistory( wb, password );
-
-				if ( info != null )
+				try
 				{
-					RunRibbonTask( () => UploadCalcEngineToManagementSiteAsync( info ) );
+					var info = ProcessSaveHistory( wb, password );
+
+					if ( info != null )
+					{
+						RunRibbonTask( () => UploadCalcEngineToManagementSiteAsync( info ) );
+					}
+					else
+					{
+						application.Cursor = MSExcel.XlMousePointer.xlDefault;
+					}
+				}
+				catch
+				{
+					application.Cursor = MSExcel.XlMousePointer.xlDefault;
+					throw;
 				}
 			} );
 		} );
@@ -222,6 +235,8 @@ public partial class Ribbon
 				return null;
 			}
 
+			application.Cursor = MSExcel.XlMousePointer.xlWait;
+
 			SaveWindowConfiguration( nameof( SaveHistory ), info.WindowConfiguration );
 
 			// Update history log
@@ -288,23 +303,29 @@ public partial class Ribbon
 
 			var validations = await apiService.UploadCalcEngineAsync( info.FullName, info.UserName, info.Password );
 
-			if ( validations != null )
+			try
 			{
-				ShowValidations( validations );
-				return;
+				if ( validations != null )
+				{
+					ShowValidations( validations );
+					return;
+				}
+
+				SetStatusBar( "CalcEngine successfully uploaded to Management Site." );
 			}
-
-			SetStatusBar( "CalcEngine successfully uploaded to Management Site." );
-
-			ExcelAsyncUtil.QueueAsMacro( () =>
+			finally
 			{
-				WorkbookState.UpdateVersion( application.ActiveWorkbook );
-				ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
-			} );
+				ExcelAsyncUtil.QueueAsMacro( () =>
+				{
+					WorkbookState.UpdateVersion( application.ActiveWorkbook );
+					ribbon.Invalidate(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
+					application.Cursor = MSExcel.XlMousePointer.xlDefault;
+				} );
+			}
 		}
 		catch
 		{
-			ClearStatusBar();
+			ClearStatusBar( true );
 			throw;
 		}
 	}

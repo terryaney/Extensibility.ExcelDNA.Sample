@@ -20,6 +20,7 @@ public partial class Ribbon
 			}
 			finally
 			{
+				application.Cursor = MSExcel.XlMousePointer.xlDefault;
 				InvalidateRibbon(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
 			}
 		} );
@@ -39,6 +40,7 @@ public partial class Ribbon
 			}
 			finally
 			{
+				application.Cursor = MSExcel.XlMousePointer.xlDefault;
 				InvalidateRibbon(); // .InvalidateControls( RibbonStatesToInvalidateOnCalcEngineManagement );
 			}
 		} );
@@ -62,13 +64,20 @@ public partial class Ribbon
 			var response = await apiService.DownloadDebugAsync( WorkbookState.ManagementName, int.Parse( versionKey ), AddIn.Settings.KatUserName, await AddIn.Settings.GetClearPasswordAsync() );
 
 			ExcelAsyncUtil.QueueAsMacro( () => {
-				if ( response.Validations != null )
+				try
 				{
-					LogValidations( response.Validations );
-					return;
-				}
+					if ( response.Validations != null )
+					{
+						LogValidations( response.Validations );
+						return;
+					}
 
-				application.Workbooks.Open( response.Response! );
+					application.Workbooks.Open( response.Response! );
+				}
+				finally
+				{
+					application.Cursor = MSExcel.XlMousePointer.xlDefault;
+				}
 			} );
 		} );
 	}

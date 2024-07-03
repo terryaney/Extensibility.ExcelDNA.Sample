@@ -24,6 +24,8 @@ async Task Main( string[] args )
 		};
 
 		formatOutput = args.Select(a => getArgument(a, "tool")).FirstOrDefault(a => !string.IsNullOrEmpty(a)) != "Visual Studio";
+		var isDebug = args.Select(a => getArgument(a, "configurationname")).FirstOrDefault(a => !string.IsNullOrEmpty(a)) == "Debug";
+
 		WriteLine($"\r\n========== KAT Tools Documentation Processing ==========\r\n", false);
 
 		var assembly = typeof(Ribbon).Assembly;
@@ -69,7 +71,8 @@ async Task Main( string[] args )
 
 		XNamespace ns = "http://schemas.excel-dna.net/intellisense/1.0";
 
-		WriteLine("Generating KAT.Extensibility.Excel.intellisense.xml...", true);
+		var fileName = isDebug ? "KAT.Extensibility.Excel.Debug.intellisense.xml" : "KAT.Extensibility.Excel.intellisense.xml";
+		WriteLine($"Generating {fileName}...", true);
 		var intelliSense =
 			new XElement(ns + "IntelliSense",
 				new XElement(ns + "FunctionInfo",
@@ -89,10 +92,16 @@ async Task Main( string[] args )
 				)
 			);
 
-		WriteLine("Saving KAT.Extensibility.Excel.intellisense.xml", true);
-		intelliSense.Save(@"C:\BTR\Camelot\Extensibility\Excel.AddIn\src\bin\Debug\net7.0-windows\KAT.Extensibility.Excel.intellisense.xml");
-		intelliSense.Save(@"C:\BTR\Camelot\Extensibility\Excel.AddIn\.vscode\DnaDocumentation\KAT.Extensibility.Excel.intellisense.xml");
-		intelliSense.Save(@"C:\BTR\Camelot\Extensibility\Excel.AddIn\dist\Resources\KAT.Extensibility.Excel.intellisense.xml");
+		WriteLine($"Saving {fileName}", true);
+		if ( isDebug )
+		{
+			intelliSense.Save(@$"C:\BTR\Camelot\Extensibility\Excel.AddIn\src\bin\Debug\net7.0-windows\{fileName}");
+		}
+		else
+		{
+			intelliSense.Save(@$"C:\BTR\Camelot\Extensibility\Excel.AddIn\.vscode\DnaDocumentation\{fileName}");
+			intelliSense.Save(@$"C:\BTR\Camelot\Extensibility\Excel.AddIn\dist\Resources\{fileName}");
+		}
 
 		WriteLine("Generating Markdown Documentation...", true);
 		var functionCategories = info

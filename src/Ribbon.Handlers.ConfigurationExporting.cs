@@ -68,6 +68,7 @@ public partial class Ribbon
 				if ( info == null ) return;
 
 				application.Cursor = MSExcel.XlMousePointer.xlWait;
+				application.ScreenUpdating = false;
 
 				SaveWindowConfiguration( nameof( ProcessGlobalTables ), info.WindowConfiguration );
 
@@ -80,41 +81,57 @@ public partial class Ribbon
 
 					ExcelAsyncUtil.QueueAsMacro( () =>
 					{
-						application.Cursor = MSExcel.XlMousePointer.xlWait;
-						application.ScreenUpdating = false;
+						try
+						{
+							var existing = currentSheet ? application.ActiveWorkbook : application.GetWorkbook( Constants.FileNames.GlobalTables )!;
 
-						var existing = currentSheet ? application.ActiveWorkbook : application.GetWorkbook( Constants.FileNames.GlobalTables )!;
+							var sheets = existing.Worksheets.Cast<MSExcel.Worksheet>().ToDictionary( x => x.Name );
+							var resourceTable = sheets.TryGetValue( Constants.SpecSheet.TabNames.Localization, out var l )
+								? l.RangeOrNull( Constants.SpecSheet.RangeNames.ResourceTable )
+								: null;
 
-						var sheets = existing.Worksheets.Cast<MSExcel.Worksheet>().ToDictionary( x => x.Name );
-						var resourceTable = sheets.TryGetValue( Constants.SpecSheet.TabNames.Localization, out var l )
-							? l.RangeOrNull( Constants.SpecSheet.RangeNames.ResourceTable )
-							: null;
+							var globalSpecifications = ConfigurationExport.GlobalTables.Export( currentSheet
+								? new [] { application.ActiveWorksheet() }
+								: new [] { sheets[ Constants.SpecSheet.TabNames.DataLookupTables ], sheets[ Constants.SpecSheet.TabNames.RateTables ] }
+							);
 
-						var globalSpecifications = ConfigurationExport.GlobalTables.Export( currentSheet
-							? new [] { application.ActiveWorksheet() }
-							: new [] { sheets[ Constants.SpecSheet.TabNames.DataLookupTables ], sheets[ Constants.SpecSheet.TabNames.RateTables ] }
-						);
+							RunRibbonTask( async () => {
+								var validations = await apiService.UpdateGlobalTablesAsync( info.ClientName, info.Targets, globalSpecifications, info.UserName, info.Password );
 
-						RunRibbonTask( async () => {
-							var validations = await apiService.UpdateGlobalTablesAsync( info.ClientName, info.Targets, globalSpecifications, info.UserName, info.Password );
-
-							ExcelAsyncUtil.QueueAsMacro( () =>
-							{
-								if ( downloadName != null )
+								ExcelAsyncUtil.QueueAsMacro( () =>
 								{
-									existing.Close( SaveChanges: false );
-								}
-								application.ScreenUpdating = true;
+									try
+									{
+										if ( downloadName != null )
+										{
+											existing.Close( SaveChanges: false );
+										}
 
-								if ( validations != null )
-								{
-									ShowValidations( validations );
-									return;
-								}
+										if ( validations != null )
+										{
+											ShowValidations( validations );
+											return;
+										}
 
-								MessageBox.Show( owner, $"Successfully updated Global Tables on following environments.{Environment.NewLine + Environment.NewLine + string.Join( ", ", info.Targets )}", "Update Global Tables" );
-							} );
-						}, "ExportGlobalTables (Processing)" );
+										application.ScreenUpdating = true;
+										application.Cursor = MSExcel.XlMousePointer.xlDefault;
+										MessageBox.Show( owner, $"Successfully updated Global Tables on following environments.{Environment.NewLine + Environment.NewLine + string.Join( ", ", info.Targets )}", "Update Global Tables" );
+									}
+									catch
+									{
+										application.ScreenUpdating = true;
+										application.Cursor = MSExcel.XlMousePointer.xlDefault;
+										throw;
+									}
+								} );
+							}, "ExportGlobalTables (Processing)" );
+						}
+						catch
+						{
+							application.Cursor = MSExcel.XlMousePointer.xlDefault;
+							application.ScreenUpdating = true;
+							throw;
+						}
 					} );
 				}, "ExportGlobalTables (Initialization)" );
 			} );

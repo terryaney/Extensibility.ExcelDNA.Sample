@@ -16,7 +16,14 @@
 	<PropertyGroup Condition="'$(Configuration)'=='Debug'">
 		<RunExcelDnaPack>false</RunExcelDnaPack>
 		<ExcelDnaCreate32BitAddIn>false</ExcelDnaCreate32BitAddIn>
+		<ExcelAddInName>KAT Tools (Debug)</ExcelAddInName>
+		<ExcelAddInFileName>KAT.Extensibility.Excel.Debug</ExcelAddInFileName>
 	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)'!='Debug'">
+		<ExcelAddInName>KAT Tools</ExcelAddInName>
+		<ExcelAddInFileName>KAT.Extensibility.Excel</ExcelAddInFileName>
+	</PropertyGroup>
+	
 	<PropertyGroup>
 		<!-- 
 			ExcelDna Settings
@@ -28,9 +35,6 @@
 		<ExcelDnaPackXllSuffix>%none%</ExcelDnaPackXllSuffix>
 		<ExcelAddInExplicitExports>true</ExcelAddInExplicitExports>
 		<ExcelAddInExplicitRegistration>true</ExcelAddInExplicitRegistration>
-		<ExcelAddInComServer>true</ExcelAddInComServer>
-		<ExcelAddInName>KAT Tools</ExcelAddInName>
-		<ExcelAddInFileName>KAT.Extensibility.Excel</ExcelAddInFileName>
 		<ExcelDnaPublishPath>packed</ExcelDnaPublishPath>
 	</PropertyGroup>
 

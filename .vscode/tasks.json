@@ -86,7 +86,8 @@
 			},
 			"hide": true,
 			"args": [
-				"${workspaceFolder:Excel.AddIn}\\.vscode\\DnaDocumentation\\Generate.linq"
+				"${workspaceFolder:Excel.AddIn}\\.vscode\\DnaDocumentation\\Generate.linq",
+				"ConfigurationName:${input:buildType}"
 			],
 			"problemMatcher": []
 		},
