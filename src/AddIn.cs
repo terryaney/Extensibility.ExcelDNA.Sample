@@ -50,11 +50,11 @@ public class AddIn : IExcelAddIn
 			} 
 		);
 
+		ExcelIntegration.RegisterUnhandledExceptionHandler( UnhandledExceptionHandler );
+
 		settingsProcessor.Changed( "appsettings.json" );
 
 		RegisterFunctions();
-
-		ExcelIntegration.RegisterUnhandledExceptionHandler( UnhandledExceptionHandler );
 
 		ExcelDna.IntelliSense.IntelliSenseServer.Install();
 	}

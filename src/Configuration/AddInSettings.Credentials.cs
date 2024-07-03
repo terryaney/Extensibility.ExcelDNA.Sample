@@ -26,13 +26,13 @@ public partial class AddInSettings
 			clearPassword = KatPassword; // password is in clear text
 			return clearPassword;
 		}
-		
+
 		try
 		{
 			var macAddress = GetMacAddress();
 			var decryptedSetting = await Cryptography3DES.DefaultDecryptAsync( KatPassword );
 			var macAddressHash = Hash.SHA256Hash( macAddress );
-			
+
 			if ( !decryptedSetting.StartsWith( macAddressHash ) ) return null;
 
 			return clearPassword = await Cryptography3DES.DefaultDecryptAsync( decryptedSetting[ macAddressHash.Length.. ] );
@@ -47,8 +47,10 @@ public partial class AddInSettings
 	{
 		foreach ( var nic in NetworkInterface.GetAllNetworkInterfaces() )
 		{
-			// Only consider Ethernet network interfaces
-			if ( nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet && nic.OperationalStatus == OperationalStatus.Up )
+			if ( 
+				( nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet || nic.NetworkInterfaceType == NetworkInterfaceType.Wireless80211 ) && 
+				nic.OperationalStatus == OperationalStatus.Up 
+			)
 			{
 				return nic.GetPhysicalAddress().ToString();
 			}
