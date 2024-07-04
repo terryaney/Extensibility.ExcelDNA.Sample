@@ -172,19 +172,26 @@ public partial class Ribbon
 	{
 		await EnsureAddInCredentialsAsync();
 
-		var response = await apiService.GetDebugFilesAsync(
-			WorkbookState.ManagementName,
-			AddIn.Settings.KatUserName,
-			await AddIn.Settings.GetClearPasswordAsync()
-		);
-
-		if ( response.Validations != null )
+		try
 		{
-			LogValidations( response.Validations );
-			return Enumerable.Empty<DebugFile>();
-		}
+			var response = await apiService.GetDebugFilesAsync(
+				WorkbookState.ManagementName,
+				AddIn.Settings.KatUserName,
+				await AddIn.Settings.GetClearPasswordAsync()
+			);
 
-		return response.Response!;
+			if ( response.Validations != null )
+			{
+				LogValidations( response.Validations );
+				return Enumerable.Empty<DebugFile>();
+			}
+
+			return response.Response!;
+		}
+		finally
+		{
+			ExcelDna.Integration.ExcelAsyncUtil.QueueAsMacro( () => application.Cursor = MSExcel.XlMousePointer.xlDefault );
+		}
 	}
 
 	private int auditShowLogBadgeCount;

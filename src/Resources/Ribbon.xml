@@ -32,7 +32,7 @@
 					<button id="calcEngineUtilitiesLoadData" keytip="D" label="Load Input Data..." imageMso="ImportMoreMenu" size="large" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_LoadInputTab" getEnabled="Ribbon_GetEnabled"/>
 					<button id="calcEngineUtilitiesRunMacros" keytip="R" label="Run Macros" imageMso="EventOnBeforeChange" size="large" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_RunMacros" getEnabled="Ribbon_GetEnabled"/>
 
-					<menu id="calcEngineUtilitiesExtrasMenu" keytip="2" label="Utilities" imageMso="ColumnListSetting" size="large">
+					<menu id="calcEngineUtilitiesExtrasMenu" keytip="U" label="Utilities" imageMso="ColumnListSetting" size="large">
 						<button id="calcEngineUtilitiesJsonResultData" keytip="R" label="Export Results" imageMso="CustomizeXSLTMenu" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_ExportResultJsonData" getEnabled="Ribbon_GetEnabled"/>
 						<button id="calcEngineUtilitiesDocGenXml" keytip="G" label="Export DocGen Xml" imageMso="ExportWord" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_ExportResultDocGenXml" getEnabled="Ribbon_GetEnabled"/>
 						<button id="calcEngineUtilitiesConfigureHighCharts" keytip="C" label="HighCharts Fiddle" imageMso="ChartLayoutGallery" onAction="Ribbon_OnAction" tag="CalcEngineUtilities_ConfigureHighCharts" getEnabled="Ribbon_GetEnabled"/>
@@ -59,7 +59,7 @@
 					<button id="auditShowDependencies" keytip="S" screentip="Show Dependencies for Current Selection" label="Show Dependencies" imageMso="TraceDependentCells" onAction="Ribbon_OnAction" tag="Audit_ShowDependencies" getEnabled="Ribbon_GetEnabled" />
 					<button id="auditHideDependencies" keytip="I" screentip="Hide Dependencies for Current Selection" label="Hide Dependencies" imageMso="TraceDependentRemoveArrows" onAction="Ribbon_OnAction" tag="Audit_HideDependencies" getEnabled="Ribbon_GetEnabled" />
 
-					<menu id="auditExtras" keytip="3" label="Audit Tools" imageMso="SiteColumnActionsValidationSettings">
+					<menu id="auditExtras" keytip="A" label="Audit Tools" imageMso="SiteColumnActionsValidationSettings">
 						<button id="auditCellsWithEmptyDependencies" keytip="F" screentip="Highlight cells with empty dependencies in current selection" label="Cells with Empty Dependencies" imageMso="FormulaEvaluate" onAction="Ribbon_OnAction" tag="Audit_ShowCellsWithEmptyDependencies" getEnabled="Ribbon_GetEnabled" />
 						<menuSeparator id="auditExtrasSep1"/>
 						<button id="auditSearchLocalCalcEngines" keytip="L" label="Search Local CalcEngines..." imageMso="MailMergeFindRecipient" onAction="Ribbon_OnAction" tag="Audit_SearchLocalCalcEngines" />
@@ -80,7 +80,7 @@
 				<group id="groupConfigurationExporting" keytip="cc" label="Configuration Exporting" imageMso="WorkspaceHtmlProperties" getVisible="Ribbon_GetVisible">
 					<button id="configurationExportingWorkbook" keytip="E" label="Export Configurations" imageMso="WorkspaceHtmlProperties" size="normal" onAction="Ribbon_OnAction" tag="ConfigurationExporting_ExportWorkbook" getEnabled="Ribbon_GetEnabled"/>
 					<button id="configurationExportingGlobalTables" keytip="G" label="Process Global Tables" imageMso="ExportMoreMenu" size="normal" onAction="Ribbon_OnAction" tag="ConfigurationExporting_ProcessGlobalTables" getVisible="Ribbon_GetVisible" getEnabled="Ribbon_GetEnabled"/>
-					<button id="configurationExportingSheet" keytip="U" label="Export Current Sheet" imageMso="DefinePrintStyles" size="normal" onAction="Ribbon_OnAction" tag="ConfigurationExporting_ExportSheet" getEnabled="Ribbon_GetEnabled"/>
+					<button id="configurationExportingSheet" keytip="C" label="Export Current Sheet" imageMso="DefinePrintStyles" size="normal" onAction="Ribbon_OnAction" tag="ConfigurationExporting_ExportSheet" getEnabled="Ribbon_GetEnabled"/>
 				</group>
 			</tab>
 		</tabs>

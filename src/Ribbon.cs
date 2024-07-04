@@ -230,12 +230,8 @@ public partial class Ribbon : ExcelRibbon
 			}
 			catch ( Exception ex )
 			{
-				ShowException( ex, $"Ribbon_OnAction {tag}" );
-			}
-			finally
-			{
-				// TODO: May have to remove this...if mi is async Task, then this will flip to default and I'm not sure of timing (if mi sets to wait)
 				application.Cursor = MSExcel.XlMousePointer.xlDefault;
+				ShowException( ex, $"Ribbon_OnAction {tag}" );
 			}
 		} );
 	}
@@ -330,15 +326,8 @@ public partial class Ribbon : ExcelRibbon
 
 			if ( info != null )
 			{
-				try
-				{
-					await UpdateAddInCredentialsAsync( info.UserName, info.Password );
-					SaveWindowConfiguration( nameof( Credentials ), info.WindowConfiguration );
-				}
-				finally
-				{
-					ExcelAsyncUtil.QueueAsMacro( () => application.Cursor = MSExcel.XlMousePointer.xlDefault );
-				}
+				await UpdateAddInCredentialsAsync( info.UserName, info.Password );
+				SaveWindowConfiguration( nameof( Credentials ), info.WindowConfiguration );
 			}
 		}
 	}
