@@ -84,6 +84,8 @@ My add-in has a CustomUI ribbon and to enable intellisense in the `Ribbon.xml` f
 1. [Using Windows Form Dialogs](#using-windows-form-dialogs)
 1. [Fixing Workbook Links](#fixing-workbook-links)
 1. [Extending Optional Parameters and Default Values](#extending-optional-parameters-and-default-values)
+1. [My Intellisense Journey](#my-intellisense-journey)
+1. [Creating a Setup Program](#creating-a-setup-program)
 
 ### Ribbon Organization
 
@@ -612,5 +614,179 @@ public static int MapOrdinal(
 	[ExcelArgument( "Value to return to make coding specification formulas easier." )] object? defaultValue = null
 ) => defaultValue.Check( nameof( defaultValue ), 1 );
 ```
+
+Back to [Features listing](#features).
+
+### My Intellisense Adventure
+
+Making intellisense has been made much easier as compared to when I originally implemented intellisense with a separate ExcelDNA Intellisense Host add-in that was required.  That being said, there are still some frustrations to overcome due to limitations in Excel (and not within ExcelDNA itself).  The 'Function Wizard' has similar issues that are discussed below as well.
+
+There are probably a few discussions on this topic, but the bottom line is Excel will truncate function and argument descriptions if they exceed 255 characters.  ExcelDNA has been accomodating and has provided a few workarounds for Excel's limitations.
+
+- [.intellisense.xml](https://groups.google.com/g/exceldna/c/BaoE8psmTxo) has priority over compiled descriptions from the `ExcelFunction` and `ExcelArgument` attributes.
+- [IntelliSense shows full descriptions](https://github.com/Excel-DNA/ExcelDna/issues/85) even though Excel truncates them.
+
+Given these capabilities, one could probably just manage an `.intellisense.xml` file and not use the `ExcelFunction` and `ExcelArgument` attributes for documentation.  I didn't want truncated descriptions to occur in the Excel Functionn Wizard even though intellisense displayed them correctly, so I had to come up with a solution that would support 'short(er)' descriptions for Excel Function Wizard and full descriptions in intellisense.
+
+In addition to function and attribute description limitations, there is a limitation in the Function Wizard with regard to the length of the names of all the arguments in the function.  If exceeded, the Function Wizard will simply truncate an argument name and/or full arguments from being displayed.  So again, I needed a solution for this problem as well.  What I came up with was this:
+
+1. Extend `ExcelFunction` and `ExcelArgument` attributes to include a 'short' name and description and a 'full' name and description so the Function Wizard could display 'all' information (albiet in abbreviated fashion) while IntelliSense and 'help' could display the full information.
+1. Function Wizard uses compiled `ExcelFunctionAttribute.Description`, `ExcelArgumentAttribute.Name`, and `ExcelArgumentAttribute.Description` properties.
+1. Using a post build script, enerate an `.intellisense.xml` file that includes the 'full' names and descriptions for IntelliSense to display and MarkDown documentation files for functions.
+1. During `AutoOpen`, register my functions and update the `ExcelFunctionAttribute.HelpTopic` property to point to the hosted MarkDown file in github.
+
+My extended attributes are as follows:
+
+```csharp
+public class KatExcelFunctionAttribute : ExcelFunctionAttribute
+{
+	public string? Returns = null; // Used in MarkDown documentation for more explicit information on the return type
+	public string? Summary = null; // Full/Long description of the function used in IntelliSense and MarkDown documentation
+	public string? Remarks = null; // Used in MarkDown documentation for additional remarks about the funciton
+	public string? Exceptions = null; // Used in MarkDown documentation to explain possible Exception types that are thrown.
+	public string? Example = null; // Used in MarkDown documentation to provide an example of the function usage
+	public bool CreateDebugFunction = false; // Used to create a debug version of the function that returns either the valid return value or Exception.Message as text (instead of #VALUE)
+	
+	public KatExcelFunctionAttribute() { }
+
+	public KatExcelFunctionAttribute( string description )
+	{
+		Description = description; // Base description shown in Function Wizard
+	}
+}
+public class KatExcelArgumentAttribute : ExcelArgumentAttribute
+{
+	public string? Summary = null; // Full/Long description of the argument used in IntelliSense and MarkDown documentation
+	public string? DisplayName = null; // Full/Long name of argument used in IntelliSense and MarkDown documentation
+	public Type? Type = null; // Used in MarkDown documentation to provide the type of an (optional) argument (instead of just `object`)
+	public string? Default = null; // Used in MarkDown documentation to provide the default value of an (optional) argument
+
+	public KatExcelArgumentAttribute() { }
+
+	public KatExcelArgumentAttribute( string description )
+	{
+		Description = description; // Base description shown in Function Wizard
+	}
+}
+```
+
+Here are some usage examples of the extended attributes:
+
+```csharp
+	[KatExcelFunction( 
+		Category = "Formatting", 
+		Description = "Formats a numeric value to a string representation using the specified format and culture-specific format information.",
+		Returns = "The string representation of the value of this instance as specified by `format` and `culture`.",
+		Remarks = @"The `BTRNumberFormat` method is similar to Excel's `Format()` function with the exception that `BTRNumberFormat` can dynamically format a number based on `culture` using the same `format` string.
+
+*See Also*
+[Standard Numeric Format Strings](http://msdn.microsoft.com/en-us/library/dwhawy9k(v=vs.110).aspx)
+[Custom Numeric Format Strings](http://msdn.microsoft.com/en-us/library/0c899ak8(v=vs.110).aspx)",
+		Example = @"This sample shows how to format a numeric value to currency format with a single format string but changes based on culture.
+
+\```
+// Assume this comes from the iCurrentCulture input.
+string culture = ""en-US"";
+// Assume this comes from a calculated result.
+double value = 10.5;
+// currencyValue would have ""$10.50"" for a value.
+string currencyValue = BTRNumberFormat( value, ""c"", culture );
+// If culture was French...
+culture = ""fr-FR"";
+// currencyValue would have ""10,50 €"" for a value.
+currencyValue = BTRNumberFormat( value, ""c"", culture );
+\\\"
+	)]
+	public static string BTRNumberFormat(
+		[ExcelArgument( "The numeric value to apply formatting to." )]
+		double value,
+		[ExcelArgument( "The C# string format to apply.  View the function's help for more detail on possible values." )]
+		string format,
+		[KatExcelArgument(
+			Description = "Optional.  The culture name in the format languagecode2-country/regioncode2 (default of `en-US`).  See 'National Language Support (NLS) API Reference' for available names.",
+			Type = typeof( string ),
+			Default = "en-US"
+		)]
+		object? culture = null
+	)
+	{
+		var cultureArg = culture.Check( nameof( culture ), "en-US" );
+		return Utility.LocaleFormat( value, format, cultureArg );
+	}
+```
+
+This function generates [this MarkDown documentation](#https://github.com/terryaney/Documentation.Camelot/blob/main/RBLe/RBLeFormatting.BTRNumberFormat.md).
+
+The post build script is simply a [LINQPad](#https://www.linqpad.net/) script that I run via the command line.  It is pretty trivial C# code that can be found [here](.vscode/DnaDocumentation/Generate.linq), but the meat of the script is simply getting appropriate functions and examining custom attributes.
+
+```csharp
+var assembly = typeof(Ribbon).Assembly;
+var info =
+	assembly.GetTypes()
+		.SelectMany(t => t.GetMethods())
+		.Where(m => (m.GetCustomAttribute<KatExcelFunctionAttribute>() ?? m.GetCustomAttribute<ExcelFunctionAttribute>()) != null)
+		.Select(m =>
+		{
+			var katFunc = m.GetCustomAttribute<KatExcelFunctionAttribute>();
+			var dnaFunc = (katFunc as ExcelFunctionAttribute) ?? m.GetCustomAttribute<ExcelFunctionAttribute>()!;
+
+			return new
+			{
+				Name = dnaFunc.Name ?? m.Name,
+				Category = dnaFunc.Category,
+				Description = katFunc?.Summary ?? dnaFunc.Description,
+				Returns = katFunc?.Returns,
+				Remarks = katFunc?.Remarks,
+				Example = katFunc?.Example,
+				HelpTopic = dnaFunc.HelpTopic,
+				CreateDebugFunction = katFunc?.CreateDebugFunction ?? false,
+				Arguments =
+					m.GetParameters()
+						.Select(p =>
+						{
+							var katArg = p.GetCustomAttribute<KatExcelArgumentAttribute>();
+							var dnaArg = (katArg as ExcelArgumentAttribute) ?? p.GetCustomAttribute<ExcelArgumentAttribute>();
+							return new
+							{
+								Name = katArg?.DisplayName ?? dnaArg?.Name ?? p.Name!,
+								Description = katArg?.Summary ?? dnaArg?.Description ?? "TODO: Document this parameter.",
+								Type = katArg?.Type ?? p.ParameterType,
+								IsOptional = p.IsOptional,
+								DefaultValue = katArg?.Default ?? p.DefaultValue?.ToString()
+							};
+						})
+			};
+		})
+		.ToArray();
+
+XNamespace ns = "http://schemas.excel-dna.net/intellisense/1.0";
+
+var fileName = isDebug ? "KAT.Extensibility.Excel.Debug.intellisense.xml" : "KAT.Extensibility.Excel.intellisense.xml";
+WriteLine($"Generating {fileName}...", true);
+var intelliSense =
+	new XElement(ns + "IntelliSense",
+		new XElement(ns + "FunctionInfo",
+			info.Select(i =>
+				new XElement(ns + "Function",
+					new XAttribute("Name", i.Name),
+					new XAttribute("Description", i.Description),
+					i.HelpTopic != null ? new XAttribute("HelpTopic", i.HelpTopic) : null,
+					i.Arguments.Select(a =>
+						new XElement(ns + "Argument",
+							new XAttribute("Name", a.Name),
+							new XAttribute("Description", a.Description)
+						)
+					)
+				)
+			)
+		)
+	);
+
+// Omitting MarkDown file generation for brevity
+```
+
+Back to [Features listing](#features).
+
+### Creating a Setup Program
 
 Back to [Features listing](#features).
