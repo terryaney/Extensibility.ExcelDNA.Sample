@@ -36,6 +36,7 @@ partial class SearchLocalCalcEngines
         searchLocationSelect = new Button();
         cancel = new Button();
         ok = new Button();
+        label1 = new Label();
         SuspendLayout();
         // 
         // searchLocationLabel
@@ -52,9 +53,9 @@ partial class SearchLocalCalcEngines
         // 
         searchLocation.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         searchLocation.Location = new Point(18, 29);
-        searchLocation.Margin = new Padding(4, 4, 4, 4);
+        searchLocation.Margin = new Padding(4);
         searchLocation.Name = "searchLocation";
-        searchLocation.Size = new Size(378, 23);
+        searchLocation.Size = new Size(428, 23);
         searchLocation.TabIndex = 1;
         // 
         // tokensToFindLabel
@@ -71,16 +72,16 @@ partial class SearchLocalCalcEngines
         // 
         tokensToFind.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
         tokensToFind.Location = new Point(17, 72);
-        tokensToFind.Margin = new Padding(4, 4, 4, 4);
+        tokensToFind.Margin = new Padding(4);
         tokensToFind.Name = "tokensToFind";
-        tokensToFind.Size = new Size(426, 23);
+        tokensToFind.Size = new Size(476, 23);
         tokensToFind.TabIndex = 4;
         // 
         // searchLocationSelect
         // 
         searchLocationSelect.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-        searchLocationSelect.Location = new Point(402, 29);
-        searchLocationSelect.Margin = new Padding(4, 4, 4, 4);
+        searchLocationSelect.Location = new Point(452, 29);
+        searchLocationSelect.Margin = new Padding(4);
         searchLocationSelect.Name = "searchLocationSelect";
         searchLocationSelect.Size = new Size(39, 21);
         searchLocationSelect.TabIndex = 2;
@@ -92,8 +93,8 @@ partial class SearchLocalCalcEngines
         // 
         cancel.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
         cancel.DialogResult = DialogResult.Cancel;
-        cancel.Location = new Point(354, 103);
-        cancel.Margin = new Padding(4, 4, 4, 4);
+        cancel.Location = new Point(404, 159);
+        cancel.Margin = new Padding(4);
         cancel.Name = "cancel";
         cancel.Size = new Size(88, 26);
         cancel.TabIndex = 6;
@@ -103,8 +104,8 @@ partial class SearchLocalCalcEngines
         // ok
         // 
         ok.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
-        ok.Location = new Point(260, 103);
-        ok.Margin = new Padding(4, 4, 4, 4);
+        ok.Location = new Point(310, 159);
+        ok.Margin = new Padding(4);
         ok.Name = "ok";
         ok.Size = new Size(88, 26);
         ok.TabIndex = 5;
@@ -112,13 +113,24 @@ partial class SearchLocalCalcEngines
         ok.UseVisualStyleBackColor = true;
         ok.Click += Ok_Click;
         // 
+        // label1
+        // 
+        label1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        label1.Location = new Point(18, 112);
+        label1.Margin = new Padding(4, 0, 4, 0);
+        label1.Name = "label1";
+        label1.Size = new Size(473, 43);
+        label1.TabIndex = 7;
+        label1.Text = "The KAT Addin will search all Excel files in the selected folder and will display results when complete.  You can continue to work while the search is performed.";
+        // 
         // SearchLocalCalcEngines
         // 
         AcceptButton = ok;
         AutoScaleDimensions = new SizeF(7F, 15F);
         AutoScaleMode = AutoScaleMode.Font;
         CancelButton = cancel;
-        ClientSize = new Size(456, 140);
+        ClientSize = new Size(506, 196);
+        Controls.Add(label1);
         Controls.Add(tokensToFind);
         Controls.Add(tokensToFindLabel);
         Controls.Add(ok);
@@ -126,11 +138,11 @@ partial class SearchLocalCalcEngines
         Controls.Add(searchLocationSelect);
         Controls.Add(searchLocation);
         Controls.Add(searchLocationLabel);
-        Margin = new Padding(4, 4, 4, 4);
+        Margin = new Padding(4);
         MaximizeBox = false;
         MaximumSize = new Size(813, 245);
         MinimizeBox = false;
-        MinimumSize = new Size(370, 179);
+        MinimumSize = new Size(522, 235);
         Name = "SearchLocalCalcEngines";
         ShowIcon = false;
         ShowInTaskbar = false;
@@ -150,4 +162,5 @@ partial class SearchLocalCalcEngines
 	private System.Windows.Forms.Button ok;
 	private System.Windows.Forms.Label tokensToFindLabel;
 	private System.Windows.Forms.TextBox tokensToFind;
+    private Label label1;
 }

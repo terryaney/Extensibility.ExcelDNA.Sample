@@ -14,13 +14,14 @@ namespace Excel.AddIn.Setup
 {
 	public partial class Install : Form
     {
-		private (bool IsInstalled, string Version, bool Is32Bit, string Path, string RegKeyName, string RegValueName) excelInfo;
+		private ExcelInfo excelInfo;
 		private string installPath;
 
-		public Install()
+		public Install( ExcelInfo excelInfo )
         {
             InitializeComponent();
-        }
+			this.excelInfo = excelInfo;
+		}
 
 		private void Install_Load( object sender, EventArgs e )
 		{
@@ -37,7 +38,6 @@ namespace Excel.AddIn.Setup
 				step1Check.Image = Image.FromStream( s );
 			}
 
-			excelInfo = GetExcelInstallationInfo();
 			installPath = Path.Combine( excelInfo.Path, @"Library\KatTools" );
 
 			ok.Enabled = isDotNet7Installed && excelInfo.IsInstalled;
@@ -57,79 +57,6 @@ namespace Excel.AddIn.Setup
 			step2Label.Text = excelInfo.IsInstalled
 				? "Detected Install Path: " + installPath
 				: "Unable to detect Microsoft Office Excel installation path.";
-		}
-
-		static (bool IsInstalled, string Version, bool Is32Bit, string Path, string RegKeyName, string RegValueName) GetExcelInstallationInfo()
-		{
-			// Registry paths to check
-			var officeKeys = new []
-			{
-				@"SOFTWARE\Microsoft\Office",
-				@"SOFTWARE\WOW6432Node\Microsoft\Office", // For 32-bit applications on 64-bit Windows
-			};
-			var baseHives = new [] { RegistryHive.LocalMachine, RegistryHive.CurrentUser };
-
-			foreach( var hive in baseHives )
-			{
-				using ( var baseKey = RegistryKey.OpenBaseKey( hive, RegistryView.Registry64 ) )
-				{
-					foreach ( var officePath in officeKeys )
-					{
-						using ( var officeKey = baseKey.OpenSubKey( officePath ) )
-						{
-							if ( officeKey != null )
-							{
-								foreach ( var versionKey in officeKey.GetSubKeyNames() )
-								{
-									// Check for Excel in each version key
-									using ( var installRoot = officeKey.OpenSubKey( $@"{versionKey}\Excel\InstallRoot" ) )
-									{
-										if ( installRoot != null )
-										{
-											var regPathName = $@"{officePath}\{versionKey}\Excel\Options";
-
-											var path = installRoot.GetValue( "Path" ) as string;
-											var is32Bit = officePath.Contains( "WOW6432Node" );
-											var regValueName = "OPEN";
-											var xllName = is32Bit ? "KAT.Extensibility.Excel.x86.xll" : "KAT.Extensibility.Excel.xll";
-											var xllFound = false;
-
-											using ( var currentUser = RegistryKey.OpenBaseKey( RegistryHive.CurrentUser, RegistryView.Registry64 ) )
-											using ( var options = currentUser.OpenSubKey( regPathName ) )
-											{
-												if ( options != null )
-												{
-													var counter = 0;
-
-													// Check if the value exists and create a new value name if it does
-													string openValue = null;
-													while ( ( openValue = options.GetValue( regValueName ) as string ) != null )
-													{
-														if ( openValue.IndexOf( xllName, StringComparison.OrdinalIgnoreCase ) > -1 )
-														{
-															xllFound = true;
-															break;
-														}
-														counter++;
-														regValueName = "OPEN" + counter.ToString();
-													}
-												}
-
-											}
-
-											return (!string.IsNullOrEmpty( path ), versionKey, is32Bit, path, regPathName, !xllFound ? regValueName : null);
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-
-
-			// Excel not found
-			return (false, null, false, null, null, null);
 		}
 
 		static bool IsDotNet7Installed()
@@ -200,6 +127,7 @@ namespace Excel.AddIn.Setup
 			}
 
 			var xllName = excelInfo.Is32Bit ? "KAT.Extensibility.Excel.x86.xll" : "KAT.Extensibility.Excel.xll";
+			var xmlName = Path.GetFileNameWithoutExtension( xllName ) + ".intellisense.xml";
 
 			try
 			{
@@ -214,16 +142,17 @@ namespace Excel.AddIn.Setup
 					Directory.SetAccessControl( installPath, ds );
 				}
 
-				var filesToCopy = new[] { xllName, "appsettings.json", "KAT.Extensibility.Excel.intellisense.xml" }
-					.Select( f =>
+				foreach( var f in new [] { "KAT.Extensibility.Excel.xll", "KAT.Extensibility.Excel.x86.xll", "KAT.Extensibility.Excel.intellisense.xml", "KAT.Extensibility.Excel.x86.intellisense.xml" } )
+				{
+					var path = Path.Combine( installPath, f );
+					if ( File.Exists( path ) )
 					{
-						var path = Path.Combine( installPath, f );
-						if ( f != "appsettings.json" && File.Exists( path ) )
-						{
-							File.Delete( path );
-						}
-						return path;
-					} )
+						File.Delete( path );
+					}
+				}
+
+				var filesToCopy = new[] { xllName, xmlName, "appsettings.json" }
+					.Select( f => Path.Combine( installPath, f ) )
 					.Where( f => !File.Exists( f ) )
 					.ToArray();
 

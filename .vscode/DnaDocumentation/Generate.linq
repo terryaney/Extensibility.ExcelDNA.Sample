@@ -28,9 +28,9 @@ async Task Main( string[] args )
 
 		WriteLine($"\r\n========== KAT Tools Documentation Processing ==========\r\n", false);
 
-		var assembly = typeof(Ribbon).Assembly;
-
 		WriteLine("Detecting DNA Functions...", true);
+
+		var assembly = typeof(Ribbon).Assembly;
 		var info =
 			assembly.GetTypes()
 				.SelectMany(t => t.GetMethods())
@@ -101,6 +101,8 @@ async Task Main( string[] args )
 		{
 			intelliSense.Save(@$"C:\BTR\Camelot\Extensibility\Excel.AddIn\.vscode\DnaDocumentation\{fileName}");
 			intelliSense.Save(@$"C:\BTR\Camelot\Extensibility\Excel.AddIn\dist\Resources\{fileName}");
+			intelliSense.Save(@$"C:\BTR\Camelot\Extensibility\Excel.AddIn\dist\Resources\{Path.GetFileNameWithoutExtension( fileName )}.x86.xml");
+			intelliSense.Save(@$"C:\Program Files\Microsoft Office\root\Office16\Library\KatTools\{fileName}");
 		}
 
 		WriteLine("Generating Markdown Documentation...", true);

@@ -82,6 +82,7 @@
     <EmbeddedResource Include="Resources\KAT.Extensibility.Excel.x86.xll" />
     <EmbeddedResource Include="Resources\KAT.Extensibility.Excel.xll" />
     <EmbeddedResource Include="Resources\KAT.Extensibility.Excel.intellisense.xml" />
+    <EmbeddedResource Include="Resources\KAT.Extensibility.Excel.x86.intellisense.xml" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

@@ -3,6 +3,7 @@ namespace KAT.Camelot.Extensibility.Excel.AddIn;
 public partial class AddInSettings
 {
 	public bool ShowRibbon { get; init; }
+	public bool ShowConfigurationExports { get; init; }
 	// Path (or file if path is in %PATH%) to the text editor to use for opening xml/json files...
 	public string TextEditor { get; init; } = @"C:\Program Files\Microsoft VS Code\code.exe";
 	public string ApiEndpoint { get; init; } = "https://btr.lifeatworkportal.com/services/camelot/excel";

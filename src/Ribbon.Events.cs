@@ -13,7 +13,8 @@ public partial class Ribbon
 		{
 			return control.Id switch
 			{
-				"tabKat" => showRibbon,
+				"tabKat" => showRibbon, 
+				"groupConfigurationExporting" => AddIn.Settings.ShowConfigurationExports,
 
 				"katDataStoreDebugCalcEnginesMenu" => !string.IsNullOrEmpty( WorkbookState.ManagementName ),
 				"katDataStoreCheckOut" => WorkbookState.IsCalcEngine && !string.IsNullOrEmpty( AddIn.Settings.KatUserName ) && string.Compare( WorkbookState.CheckedOutBy, AddIn.Settings.KatUserName, true ) != 0 && !string.IsNullOrEmpty( WorkbookState.UploadedVersion ),
